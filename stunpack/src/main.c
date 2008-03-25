@@ -159,6 +159,7 @@ int decompress(char *srcFileName, char *dstFileName, int passes, int verbose)
 
 	// Flush unpacked data to file.
 	if (!retval) {
+		STPK_VERBOSE1("\n");
 		STPK_MSG("Writing file \"%s\"... ", dstFileName);
 
 		if ((dstFile = fopen(dstFileName, "wb")) == NULL) {

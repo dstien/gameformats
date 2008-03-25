@@ -181,8 +181,8 @@ uint stpk_rleDecodeSeq(stpk_Buffer *src, stpk_Buffer *dst, uchar esc, int verbos
 
 	STPK_NOVERBOSE("[");
 
-	STPK_VERBOSE1("Decoding sequence runs...\n\n");
-	STPK_VERBOSE2("srcOff dstOff rep seq\n");
+	STPK_VERBOSE1("Decoding sequence runs...    ");
+	STPK_VERBOSE2("\n\nsrcOff dstOff rep seq\n");
 	STPK_VERBOSE2("~~~~~~ ~~~~~~ ~~~ ~~~~~~~~\n");
 
 	// We do not know the destination length for this pass, dst->len covers both RLE passes.
@@ -201,7 +201,7 @@ uint stpk_rleDecodeSeq(stpk_Buffer *src, stpk_Buffer *dst, uchar esc, int verbos
 				dst->data[dst->offset++] = cur;
 			}
 
-			rep = src->data[src->offset++] - 1; // Already wrote sequence once
+			rep = src->data[src->offset++] - 1; // Already wrote sequence once.
 			STPK_VERBOSE2("%6d %6d %02X  %2.*X\n", src->offset, dst->offset, rep + 1, src->offset - seqOffset - 2, src->data[seqOffset]);
 
 			while (rep--) {
@@ -227,12 +227,12 @@ uint stpk_rleDecodeSeq(stpk_Buffer *src, stpk_Buffer *dst, uchar esc, int verbos
 		}
 
 		// Progress bar.
-		if ((verbose == 1) && ((src->offset * 100) / src->len) >= (progress * 25)) {
+		if (verbose && (verbose < 3) && ((src->offset * 100) / src->len) >= (progress * 25)) {
 			printf("%4d%%", progress++ * 25);
 		}
 	}
 
-	STPK_VERBOSE2("\n");
+	STPK_VERBOSE1("\n");
 	STPK_NOVERBOSE("]   ");
 
 	return 0;
@@ -246,10 +246,10 @@ uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbo
 
 	STPK_NOVERBOSE("[");
 
-	STPK_VERBOSE1("Decoding single-byte runs...\n\n");
+	STPK_VERBOSE1("Decoding single-byte runs... ");
 
-	STPK_VERBOSE2("srcOff dstOff rep cur\n");
-	STPK_VERBOSE2("~~~~~~ ~~~~~~ ~~~ ~~~\n");
+	STPK_VERBOSE2("\n\nsrcOff dstOff   rep cur\n");
+	STPK_VERBOSE2("~~~~~~ ~~~~~~ ~~~~~ ~~~\n");
 
 	while (dst->offset < dst->len) {
 		cur = src->data[src->offset++];
@@ -264,7 +264,7 @@ uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbo
 					rep = src->data[src->offset];
 					cur = src->data[src->offset + 1];
 					src->offset += 2;
-					STPK_VERBOSE2("%6d %6d  %02X  %02X\n", src->offset, dst->offset, rep, cur);
+					STPK_VERBOSE2("%6d %6d    %02X  %02X\n", src->offset, dst->offset, rep, cur);
 
 					while (rep--) {
 						if (dst->offset >= dst->len) {
@@ -280,7 +280,7 @@ uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbo
 					rep = src->data[src->offset] | src->data[src->offset + 1] << 8;
 					cur = src->data[src->offset + 2];
 					src->offset += 3;
-					STPK_VERBOSE2("%6d %6d  %02X  %02X\n", src->offset, dst->offset, rep, cur);
+					STPK_VERBOSE2("%6d %6d  %04X  %02X\n", src->offset, dst->offset, rep, cur);
 
 					while (rep--) {
 						if (dst->offset >= dst->len) {
@@ -295,7 +295,7 @@ uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbo
 				default:
 					rep = esc[cur] - 1;
 					cur = src->data[src->offset++];
-					STPK_VERBOSE2("%6d %6d  %02X  %02X\n", src->offset, dst->offset, rep, cur);
+					STPK_VERBOSE2("%6d %6d    %02X  %02X\n", src->offset, dst->offset, rep, cur);
 
 					while (rep--) {
 						if (dst->offset >= dst->len) {
@@ -309,16 +309,16 @@ uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbo
 		}
 		else {
 			dst->data[dst->offset++] = cur;
-			STPK_VERBOSE2("%6d %6d      %02X\n", src->offset, dst->offset, cur);
+			STPK_VERBOSE2("%6d %6d        %02X\n", src->offset, dst->offset, cur);
 		}
 
 		// Progress bar.
-		if ((verbose == 1) && ((src->offset * 100) / src->len) >= (progress * 25)) {
+		if (verbose && (verbose < 3) && ((src->offset * 100) / src->len) >= (progress * 25)) {
 			printf("%4d%%", progress++ * 25);
 		}
 	}
 
-	STPK_VERBOSE2("\n");
+	STPK_VERBOSE1("\n");
 	STPK_NOVERBOSE("]\n");
 
 	if (src->offset < src->len) {
@@ -404,7 +404,7 @@ void stpk_vleGenLookup(stpk_Buffer *src, uint widthsLen, uchar *alphabet, uchar 
 	uint i, j, width = 1, widthDistrLen = (widthsLen >= 8 ? 8 : widthsLen);
 	uchar symbsWidth, symbsCount = STPK_VLE_BYTE_MSB, symbsCountLeft;
 
-	// Distribution of widths and symbols.
+	// Distribution of symbols and widths.
 	for (i = 0, j = 0; width <= widthDistrLen; width++, symbsCount >>= 1) {
 		for (symbsWidth = src->data[src->offset++]; symbsWidth > 0; symbsWidth--, j++) {
 			for (symbsCountLeft = symbsCount; symbsCountLeft; symbsCountLeft--, i++) {
@@ -432,8 +432,8 @@ uint stpk_vleDecode(stpk_Buffer *src, stpk_Buffer *dst, uchar *alphabet, uchar *
 
 	STPK_NOVERBOSE("Var-length [");
 
-	STPK_VERBOSE1("Decoding compression codes...\n\n");
-	STPK_VERBOSE2("srcOff dstOff cW nW curWord               cd    Description\n");
+	STPK_VERBOSE1("Decoding compression codes... \n");
+	STPK_VERBOSE2("\nsrcOff dstOff cW nW curWord               cd    Description\n");
 
 	while (dst->offset < dst->len) {
 		STPK_VERBOSE2("~~~~~~ ~~~~~~ ~~ ~~ ~~~~~~~~~~~~~~~~~~~~~ ~~    ~~~~~~~~~~~~~~~~~~\n");
@@ -520,12 +520,13 @@ uint stpk_vleDecode(stpk_Buffer *src, stpk_Buffer *dst, uchar *alphabet, uchar *
 		}
 
 		// Progress bar.
-		if ((verbose == 1) && ((dst->offset * 100) / dst->len) >= (progress * 10)) {
+		if (verbose && (verbose < 3) && ((dst->offset * 100) / dst->len) >= (progress * 10)) {
 			printf("%4d%%", progress++ * 10);
 		}
 	}
 
 	STPK_NOVERBOSE("]\n");
+	STPK_VERBOSE1("\n");
 
 	if (src->offset < src->len) {
 		STPK_WARN("Variable-length decoding finished with unprocessed data left in source buffer (%d bytes left)\n", src->len - src->offset);
