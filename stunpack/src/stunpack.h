@@ -28,8 +28,8 @@
 #define STPK_ERR(msg, ...) if (verbose) fprintf(stderr, "\n" STPK_NAME ": " msg, ## __VA_ARGS__)
 #define STPK_WARN(msg, ...) STPK_ERR("(Warning) " msg, ## __VA_ARGS__);
 #define STPK_NOVERBOSE(msg, ...) if (verbose == 1) printf(msg, ## __VA_ARGS__)
-#define STPK_VERBOSE1(msg, ...) if (verbose > 1) printf(msg, ## __VA_ARGS__)
-#define STPK_VERBOSE2(msg, ...) if (verbose > 2) printf(msg, ## __VA_ARGS__)
+#define STPK_VERBOSE1(msg, ...)  if (verbose > 1)  printf(msg, ## __VA_ARGS__)
+#define STPK_VERBOSE2(msg, ...)  if (verbose > 2)  printf(msg, ## __VA_ARGS__)
 #define STPK_VERBOSE_ARR(arr, len, name) if (verbose > 1) stpk_printArray(arr, len, name)
 #define STPK_VERBOSE_VLE(msg, ...) STPK_VERBOSE2("%6d %6d %2d %2d %04X %s %02X -> " msg "\n", \
 					src->offset, dst->offset, curWidth, nextWidth, curWord, \
