@@ -25,10 +25,10 @@
 #include "stunpack.h"
 
 // Decompress sub-files in source buffer.
-uint stpk_decomp(stpk_Buffer *src, stpk_Buffer *dst, int maxPasses, int verbose)
+uint stpk_decomp(stpk_Buffer *src, stpk_Buffer *dst, int maxPasses, int verbose, char *err)
 {
-	uchar passes, type;
-	uint retval = 1, finalLen, i;
+	uchar passes, type, i;
+	uint retval = 1, finalLen;
 
 	passes = src->data[src->offset];
 	if (STPK_GET_FLAG(passes, STPK_PASSES_RECUR)) {
@@ -47,7 +47,7 @@ uint stpk_decomp(stpk_Buffer *src, stpk_Buffer *dst, int maxPasses, int verbose)
 	}
 
 	if (src->offset > src->len) {
-		STPK_ERR("Reached EOF while parsing file header\n");
+		STPK_ERR2("Reached EOF while parsing file header\n");
 		return 1;
 	}
 
@@ -60,21 +60,21 @@ uint stpk_decomp(stpk_Buffer *src, stpk_Buffer *dst, int maxPasses, int verbose)
 		STPK_VERBOSE1("  %-10s %d\n", "dstLen", dst->len);
 
 		if ((dst->data = (uchar*)malloc(sizeof(uchar) * dst->len)) == NULL) {
-			STPK_ERR("Error allocating memory for destination buffer. (%s)\n", strerror(errno));
+			STPK_ERR2("Error allocating memory for destination buffer. (%s)\n", strerror(errno));
 			return 1;
 		}
 
 		switch (type) {
 			case STPK_TYPE_RLE:
 				STPK_VERBOSE1("  %-10s Run-length encoding\n", "type");
-				retval = stpk_decompRLE(src, dst, verbose);
+				retval = stpk_decompRLE(src, dst, verbose, err);
 				break;
 			case STPK_TYPE_VLE:
 				STPK_VERBOSE1("  %-10s Variable-length encoding\n", "type");
-				retval = stpk_decompVLE(src, dst, verbose);
+				retval = stpk_decompVLE(src, dst, verbose, err);
 				break;
 			default:
-				STPK_ERR("Error parsing source file. Expected type 1 (run-length) or 2 (variable-length), got %02X\n", type);
+				STPK_ERR2("Error parsing source file. Expected type 1 (run-length) or 2 (variable-length), got %02X\n", type);
 				return 1;
 		}
 
@@ -101,7 +101,7 @@ uint stpk_decomp(stpk_Buffer *src, stpk_Buffer *dst, int maxPasses, int verbose)
 }
 
 // Decompress run-length encoded sub-file.
-uint stpk_decompRLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose)
+uint stpk_decompRLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err)
 {
 	uint retval = 1, srcLen, i;
 	uchar unk, escLen, esc[STPK_RLE_ESCLEN_MAX], escLookup[STPK_RLE_ESCLOOKUP_LEN];
@@ -120,7 +120,7 @@ uint stpk_decompRLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose)
 	STPK_VERBOSE1("  %-10s %d (no sequences = %d)\n\n", "escLen", escLen & STPK_RLE_ESCLEN_MASK, STPK_GET_FLAG(escLen, STPK_RLE_ESCLEN_NOSEQ));
 
 	if ((escLen & STPK_RLE_ESCLEN_MASK) > STPK_RLE_ESCLEN_MAX) {
-		STPK_ERR("escLen & STPK_RLE_ESCLEN_MASK greater than max length %02X, got %02X\n", STPK_RLE_ESCLEN_MAX, escLen & STPK_RLE_ESCLEN_MASK);
+		STPK_ERR2("escLen & STPK_RLE_ESCLEN_MASK greater than max length %02X, got %02X\n", STPK_RLE_ESCLEN_MAX, escLen & STPK_RLE_ESCLEN_MASK);
 		return 1;
 	}
 
@@ -129,7 +129,7 @@ uint stpk_decompRLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose)
 	STPK_VERBOSE_ARR(esc, escLen & STPK_RLE_ESCLEN_MASK, "esc");
 
 	if (src->offset > src->len) {
-		STPK_ERR("Reached end of source buffer while parsing run-length header\n");
+		STPK_ERR2("Reached end of source buffer while parsing run-length header\n");
 		return 1;
 	}
 
@@ -150,11 +150,11 @@ uint stpk_decompRLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose)
 		tmp.offset = 0;
 
 		if ((tmp.data = (uchar*)malloc(sizeof(uchar) * tmp.len)) == NULL) {
-			STPK_ERR("Error allocating memory for temporary RLE buffer. (%s)\n", strerror(errno));
+			STPK_ERR2("Error allocating memory for temporary RLE buffer. (%s)\n", strerror(errno));
 			return 1;
 		}
 
-		if ((retval = stpk_rleDecodeSeq(src, &tmp, esc[STPK_RLE_ESCSEQ_POS], verbose))) {
+		if ((retval = stpk_rleDecodeSeq(src, &tmp, esc[STPK_RLE_ESCSEQ_POS], verbose, err))) {
 			goto freeTmpBuf;
 		}
 
@@ -165,7 +165,7 @@ uint stpk_decompRLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose)
 		finalSrc = src;
 	}
 
-	retval = stpk_rleDecodeOne(finalSrc, dst, escLookup, verbose);
+	retval = stpk_rleDecodeOne(finalSrc, dst, escLookup, verbose, err);
 
 freeTmpBuf:
 	free(tmp.data);
@@ -174,7 +174,7 @@ freeTmpBuf:
 }
 
 // Decode sequence runs.
-uint stpk_rleDecodeSeq(stpk_Buffer *src, stpk_Buffer *dst, uchar esc, int verbose)
+uint stpk_rleDecodeSeq(stpk_Buffer *src, stpk_Buffer *dst, uchar esc, int verbose, char *err)
 {
 	uchar cur;
 	uint progress = 0, seqOffset, rep, i;
@@ -194,7 +194,7 @@ uint stpk_rleDecodeSeq(stpk_Buffer *src, stpk_Buffer *dst, uchar esc, int verbos
 
 			while ((cur = src->data[src->offset++]) != esc) {
 				if (src->offset >= src->len) {
-					STPK_ERR("Reached end of source buffer before finding sequence end escape code %02X\n", esc);
+					STPK_ERR2("Reached end of source buffer before finding sequence end escape code %02X\n", esc);
 					return 1;
 				}
 
@@ -207,7 +207,7 @@ uint stpk_rleDecodeSeq(stpk_Buffer *src, stpk_Buffer *dst, uchar esc, int verbos
 			while (rep--) {
 				for (i = 0; i < (src->offset - seqOffset - 2); i++) {
 					if (dst->offset >= dst->len) {
-						STPK_ERR("Reached end of temporary buffer while writing repeated sequence\n");
+						STPK_ERR2("Reached end of temporary buffer while writing repeated sequence\n");
 						return 1;
 					}
 
@@ -221,7 +221,7 @@ uint stpk_rleDecodeSeq(stpk_Buffer *src, stpk_Buffer *dst, uchar esc, int verbos
 			STPK_VERBOSE2("%6d %6d     %02X\n", src->offset, dst->offset, cur);
 
 			if (dst->offset > dst->len) {
-				STPK_ERR("Reached end of temporary buffer while writing non-RLE byte\n");
+				STPK_ERR2("Reached end of temporary buffer while writing non-RLE byte\n");
 				return 1;
 			}
 		}
@@ -239,7 +239,7 @@ uint stpk_rleDecodeSeq(stpk_Buffer *src, stpk_Buffer *dst, uchar esc, int verbos
 }
 
 // Decode single-byte runs.
-uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbose)
+uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbose, char *err)
 {
 	uchar cur;
 	uint progress = 0, rep;
@@ -255,7 +255,7 @@ uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbo
 		cur = src->data[src->offset++];
 
 		if (src->offset > src->len) {
-			STPK_ERR("Reached unexpected end of source buffer while decoding single-byte runs\n");
+			STPK_ERR2("Reached unexpected end of source buffer while decoding single-byte runs\n");
 		}
 
 		if (esc[cur] & 0xFF) {
@@ -268,7 +268,7 @@ uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbo
 
 					while (rep--) {
 						if (dst->offset >= dst->len) {
-							STPK_ERR("Reached end of temporary buffer while writing byte run\n");
+							STPK_ERR2("Reached end of temporary buffer while writing byte run\n");
 							return 1;
 						}
 
@@ -284,7 +284,7 @@ uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbo
 
 					while (rep--) {
 						if (dst->offset >= dst->len) {
-							STPK_ERR("Reached end of temporary buffer while writing byte run\n");
+							STPK_ERR2("Reached end of temporary buffer while writing byte run\n");
 							return 1;
 						}
 
@@ -299,7 +299,7 @@ uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbo
 
 					while (rep--) {
 						if (dst->offset >= dst->len) {
-							STPK_ERR("Reached end of temporary buffer while writing byte run\n");
+							STPK_ERR2("Reached end of temporary buffer while writing byte run\n");
 							return 1;
 						}
 
@@ -329,7 +329,7 @@ uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbo
 }
 
 // Decompress variable-length sub-file.
-uint stpk_decompVLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose)
+uint stpk_decompVLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err)
 {
 	uchar widthsLen, alphabet[STPK_VLE_ALPH_LEN], symbols[STPK_VLE_ALPH_LEN], widths[STPK_VLE_ALPH_LEN];
 	ushort esc1[STPK_VLE_ESCARR_LEN], esc2[STPK_VLE_ESCARR_LEN];
@@ -341,18 +341,18 @@ uint stpk_decompVLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose)
 	STPK_VERBOSE1("  %-10s %d (unknown flag = %d)\n\n", "widthsLen", widthsLen & STPK_VLE_WDTLEN_MASK, STPK_GET_FLAG(widthsLen, STPK_VLE_WDTLEN_UNK));
 
 	if (STPK_GET_FLAG(widthsLen, STPK_VLE_WDTLEN_UNK)) {
-		STPK_ERR("Invalid source file. Unknown flag set in widthsLen\n");
+		STPK_ERR2("Invalid source file. Unknown flag set in widthsLen\n");
 		return 1;
 	}
 	else if ((widthsLen & STPK_VLE_WDTLEN_MASK) > STPK_VLE_WDTLEN_MAX) {
-		STPK_ERR("widthsLen & STPK_VLE_WDTLEN_MASK greater than %02X, got %02X\n", STPK_VLE_WDTLEN_MAX, widthsLen & STPK_VLE_WDTLEN_MASK);
+		STPK_ERR2("widthsLen & STPK_VLE_WDTLEN_MASK greater than %02X, got %02X\n", STPK_VLE_WDTLEN_MAX, widthsLen & STPK_VLE_WDTLEN_MASK);
 		return 1;
 	}
 
 	alphLen = stpk_vleGenEsc(src, esc1, esc2, widthsLen, verbose);
 
 	if (alphLen > STPK_VLE_ALPH_LEN) {
-		STPK_ERR("alphLen greater than %02X, got %02X\n", STPK_VLE_ALPH_LEN, alphLen);
+		STPK_ERR2("alphLen greater than %02X, got %02X\n", STPK_VLE_ALPH_LEN, alphLen);
 		return 1;
 	}
 
@@ -361,7 +361,7 @@ uint stpk_decompVLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose)
 	STPK_VERBOSE_ARR(alphabet, alphLen, "alphabet");
 
 	if (src->offset > src->len) {
-		STPK_ERR("Reached end of source buffer while parsing variable-length header\n");
+		STPK_ERR2("Reached end of source buffer while parsing variable-length header\n");
 		return 1;
 	}
 
@@ -372,7 +372,7 @@ uint stpk_decompVLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose)
 
 	src->offset = codesOffset;
 
-	return stpk_vleDecode(src, dst, alphabet, symbols, widths, esc1, esc2, verbose);
+	return stpk_vleDecode(src, dst, alphabet, symbols, widths, esc1, esc2, verbose, err);
 }
 
 // Read widths to generate escape table and return length of alphabet.
@@ -421,7 +421,7 @@ void stpk_vleGenLookup(stpk_Buffer *src, uint widthsLen, uchar *alphabet, uchar 
 }
 
 // Decode variable-length compression codes.
-uint stpk_vleDecode(stpk_Buffer *src, stpk_Buffer *dst, uchar *alphabet, uchar *symbols, uchar *widths, ushort *esc1, ushort *esc2, int verbose)
+uint stpk_vleDecode(stpk_Buffer *src, stpk_Buffer *dst, uchar *alphabet, uchar *symbols, uchar *widths, ushort *esc1, ushort *esc2, int verbose, char *err)
 {
 	uchar curWidth = 8, nextWidth = 0, code, ind;
 	ushort curWord = 0;
@@ -445,7 +445,7 @@ uint stpk_vleDecode(stpk_Buffer *src, stpk_Buffer *dst, uchar *alphabet, uchar *
 
 		if (nextWidth > 8) {
 			if (nextWidth != STPK_VLE_ESC_WIDTH) {
-				STPK_ERR("Invalid escape value. nextWidth != %02X, got %02X\n", STPK_VLE_ESC_WIDTH, nextWidth);
+				STPK_ERR2("Invalid escape value. nextWidth != %02X, got %02X\n", STPK_VLE_ESC_WIDTH, nextWidth);
 				return 1;
 			}
 
@@ -470,7 +470,7 @@ uint stpk_vleDecode(stpk_Buffer *src, stpk_Buffer *dst, uchar *alphabet, uchar *
 				STPK_VERBOSE_VLE("ind = %02X", ind);
 
 				if (ind >= STPK_VLE_ESCARR_LEN) {
-					STPK_ERR("Escape array index out of bounds (%04X >= %04X)\n", ind, STPK_VLE_ESCARR_LEN);
+					STPK_ERR2("Escape array index out of bounds (%04X >= %04X)\n", ind, STPK_VLE_ESCARR_LEN);
 					return 1;
 				}
 
@@ -478,7 +478,7 @@ uint stpk_vleDecode(stpk_Buffer *src, stpk_Buffer *dst, uchar *alphabet, uchar *
 					curWord += esc1[ind];
 
 					if (curWord > 0xFF) {
-						STPK_ERR("Alphabet index out of bounds (%04X > %04X)\n", curWord, STPK_VLE_ALPH_LEN);
+						STPK_ERR2("Alphabet index out of bounds (%04X > %04X)\n", curWord, STPK_VLE_ALPH_LEN);
 						return 1;
 					}
 
@@ -515,7 +515,7 @@ uint stpk_vleDecode(stpk_Buffer *src, stpk_Buffer *dst, uchar *alphabet, uchar *
 		curWidth -= nextWidth;
 
 		if ((src->offset - 1) > src->len && dst->offset < dst->len) {
-			STPK_ERR("Reached unexpected end of source buffer while decoding variable-length compression codes\n");
+			STPK_ERR2("Reached unexpected end of source buffer while decoding variable-length compression codes\n");
 			return 1;
 		}
 
@@ -556,7 +556,7 @@ char *stpk_stringBits16(ushort val)
 // Print formatted array. Used in verbose output.
 void stpk_printArray(uchar *arr, uint len, char *name)
 {
-	int i = 0;
+	uint i = 0;
 
 	printf("  %s[%02X]\n", name, len);
 	printf("    0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F\n");

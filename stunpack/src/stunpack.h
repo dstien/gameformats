@@ -25,8 +25,11 @@
 #define STPK_BUGS    "daniel@stien.org"
 
 #define STPK_MSG(msg, ...) if (verbose) printf(msg, ## __VA_ARGS__)
-#define STPK_ERR(msg, ...) if (verbose) fprintf(stderr, "\n" STPK_NAME ": " msg, ## __VA_ARGS__)
-#define STPK_WARN(msg, ...) STPK_ERR("(Warning) " msg, ## __VA_ARGS__);
+#define STPK_ERR1(msg, ...) if (verbose) fprintf(stderr, "\n" STPK_NAME ": " msg, ## __VA_ARGS__)
+#define STPK_ERR2(msg, ...) STPK_ERR1(msg, ## __VA_ARGS__); \
+					if (err != NULL) snprintf(err, 255, msg, ## __VA_ARGS__)
+#define STPK_WARN(msg, ...) STPK_ERR1("(Warning) " msg, ## __VA_ARGS__);
+
 #define STPK_NOVERBOSE(msg, ...) if (verbose == 1) printf(msg, ## __VA_ARGS__)
 #define STPK_VERBOSE1(msg, ...)  if (verbose > 1)  printf(msg, ## __VA_ARGS__)
 #define STPK_VERBOSE2(msg, ...)  if (verbose > 2)  printf(msg, ## __VA_ARGS__)
@@ -69,16 +72,19 @@ typedef struct {
 	uint  len;
 } stpk_Buffer;
 
-uint stpk_decomp(stpk_Buffer *src, stpk_Buffer *dst, int maxPasses, int verbose);
+#ifdef __cplusplus
+extern "C"
+#endif
+uint stpk_decomp(stpk_Buffer *src, stpk_Buffer *dst, int maxPasses, int verbose, char *err);
 
-uint stpk_decompRLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose);
-uint stpk_rleDecodeSeq(stpk_Buffer *src, stpk_Buffer *dst, uchar esc, int verbose);
-uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbose);
+uint stpk_decompRLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err);
+uint stpk_rleDecodeSeq(stpk_Buffer *src, stpk_Buffer *dst, uchar esc, int verbose, char *err);
+uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbose, char *err);
 
-uint stpk_decompVLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose);
+uint stpk_decompVLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err);
 uint stpk_vleGenEsc(stpk_Buffer *src, ushort *esc1, ushort *esc2, uint widthsLen, int verbose);
 void stpk_vleGenLookup(stpk_Buffer *src, uint widthsLen, uchar *alphabet, uchar *symbols, uchar *widths, int verbose);
-uint stpk_vleDecode(stpk_Buffer *src, stpk_Buffer *dst, uchar *alphabet, uchar *symbols, uchar *widths, ushort *esc1, ushort *esc2, int verbose);
+uint stpk_vleDecode(stpk_Buffer *src, stpk_Buffer *dst, uchar *alphabet, uchar *symbols, uchar *widths, ushort *esc1, ushort *esc2, int verbose, char *err);
 
 inline void stpk_getLength(stpk_Buffer *buf, uint *len);
 
