@@ -1,0 +1,40 @@
+<ui version="4.0" >
+ <class>TextResource</class>
+ <widget class="QWidget" name="TextResource" >
+  <layout class="QHBoxLayout" >
+   <property name="leftMargin" >
+    <number>0</number>
+   </property>
+   <property name="topMargin" >
+    <number>0</number>
+   </property>
+   <property name="rightMargin" >
+    <number>0</number>
+   </property>
+   <property name="bottomMargin" >
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QTextEdit" name="textEdit" >
+     <property name="font" >
+      <font>
+       <family>Monospace</family>
+      </font>
+     </property>
+     <property name="acceptRichText" >
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>textEdit</sender>
+   <signal>textChanged()</signal>
+   <receiver>TextResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+ </connections>
+</ui>
