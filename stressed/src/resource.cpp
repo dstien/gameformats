@@ -20,6 +20,7 @@
 #include <QFile>
 #include <QListWidget>
 
+#include "bitmapresource.h"
 #include "resource.h"
 #include "settings.h"
 #include "stunpack.h"
@@ -39,8 +40,8 @@ ResMap Resource::parse(const QString& fileName, QListWidget* idsList)
   compSrc.data = compDst.data = NULL;
   QBuffer buf;
 
-  QString *ids = NULL;
-  quint32 *offsets = NULL;
+  QString* ids = NULL;
+  quint32* offsets = NULL;
   quint32 baseOffset;
 
   QFile file(fileName);
@@ -154,6 +155,9 @@ ResMap Resource::parse(const QString& fileName, QListWidget* idsList)
       if (type == "text") {
         resources.insert(ids[i], new TextResource(ids[i], &in));
       }
+      else if (type == "bitmap") {
+        resources.insert(ids[i], new BitmapResource(ids[i], &in));
+      }
       else {
         throw tr("Unknown type for id \"%1\"").arg(ids[i]);
       }
@@ -200,6 +204,8 @@ void Resource::write(const QString& fileName, const QListWidget* idsList, const 
 
   out << (quint32)0 << numResources;
 
+  checkError(&out, tr("header"), true);
+
   for (int i = 0; i < numResources; i++) {
     QByteArray id = (QString("%1").arg(idsList->item(i)->text().left(4), 4, '\0')).toAscii();
     out << (qint8)id[0] << (qint8)id[1] << (qint8)id[2] << (qint8)id[3];
@@ -211,6 +217,8 @@ void Resource::write(const QString& fileName, const QListWidget* idsList, const 
   for (int i = 0; i < numResources; i++) {
     out << (quint32)0;
   }
+
+  checkError(&out, tr("table of contents"), true);
 
   quint32 curOffset = 0, baseOffset = out.device()->size();
 
@@ -228,6 +236,8 @@ void Resource::write(const QString& fileName, const QListWidget* idsList, const 
   // Final file size header field.
   out.device()->seek(0);
   out << (quint32)out.device()->size();
+
+  checkError(&out, tr("final file size"), true);
 
   out.unsetDevice();
   file.close();

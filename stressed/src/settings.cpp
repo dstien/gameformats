@@ -74,3 +74,49 @@ void Settings::restoreStringMap(const QString& path)
 
   setStringMap(path, map);
 }
+
+Palette Settings::getPalette(const QString& path)
+{
+  QStringList colorList = value(path).toStringList();
+
+  if (colorList.empty()) {
+    return restorePalette(path);
+  }
+
+  return parsePalette(colorList);
+}
+
+void Settings::setPalette(const QString& path, const Palette& pal)
+{
+  QStringList colorList;
+
+  foreach (QRgb color, pal) {
+    colorList << QString("%1").arg(color, 0, 16).toUpper().right(6);
+  }
+
+  setValue(path, colorList);
+}
+
+Palette Settings::restorePalette(const QString& path)
+{
+  QSettings defaults(DEFAULTS, IniFormat);
+
+  QStringList colorList = defaults.value(path).toStringList();
+
+  Palette pal = parsePalette(colorList);
+
+  setPalette(path, pal);
+
+  return pal;
+}
+
+Palette Settings::parsePalette(const QStringList& colorList)
+{
+  Palette pal;
+
+  foreach (QString hex, colorList) {
+    pal.push_back(QColor(QString("#%1").arg(hex.trimmed())).rgb());
+  }
+
+  return pal;
+}

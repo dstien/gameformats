@@ -15,34 +15,29 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-#ifndef SETTINGS_H
-#define SETTINGS_H
+#ifndef BITMAPRESOURCE_H
+#define BITMAPRESOURCE_H
 
-#include <QColor>
-#include <QHash>
-#include <QSettings>
-#include <QVector>
+#include "resource.h"
 
-typedef QHash<QString, QString> StringMap;
-typedef QVector<QRgb>           Palette;
+#include "ui_bitmapresource.h"
 
-class Settings : public QSettings
+class BitmapResource : public Resource
 {
   Q_OBJECT
 
 public:
-  StringMap         getStringMap(const QString& path);
-  void              setStringMap(const QString& path, const StringMap& map);
-  void              restoreStringMap(const QString& path);
+  BitmapResource(QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
+  ~BitmapResource();
 
-  Palette           getPalette(const QString& path);
-  void              setPalette(const QString& path, const Palette& pal);
-  Palette           restorePalette(const QString& path);
-
-  static const char DEFAULTS[];
+protected:
+  void               parse(QDataStream* in);
+  void               write(QDataStream* out) const;
 
 private:
-  Palette           parsePalette(const QStringList& colorList);
+  Ui::BitmapResource ui;
+
+  QImage*            image;
 };
 
 #endif

@@ -111,7 +111,7 @@ bool MainWindow::reset()
     currentResource = NULL;
   }
 
-  foreach(QString key, resources.keys()) {
+  foreach (QString key, resources.keys()) {
     delete resources[key];
   }
 

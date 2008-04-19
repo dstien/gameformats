@@ -8,16 +8,19 @@ QMAKE_CLEAN += $(TARGET)
 
 RESOURCES +=  ../resources/resources.qrc
 
-FORMS   += mainwindow.ui \
+FORMS   += bitmapresource.ui \
+           mainwindow.ui \
            textresource.ui
 
-HEADERS += mainwindow.h \
+HEADERS += bitmapresource.h \
+           mainwindow.h \
            resource.h \
            settings.h \
            stunpack.h \
            textresource.h
 
-SOURCES += main.cpp \
+SOURCES += bitmapresource.cpp \
+           main.cpp \
            mainwindow.cpp \
            resource.cpp \
            settings.cpp \
