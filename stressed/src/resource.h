@@ -32,7 +32,7 @@ class Resource : public QWidget
   Q_OBJECT
 
 public:
-  Resource(QString fileName, QString id, QWidget* parent = 0, Qt::WFlags flags = 0);
+  Resource(const QString& fileName, QString id, QWidget* parent = 0, Qt::WFlags flags = 0);
   virtual ~Resource() {};
 
   static ResMap     parse(const QString& fileName, QListWidget* idsList);

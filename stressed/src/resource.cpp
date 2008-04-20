@@ -26,11 +26,11 @@
 #include "stunpack.h"
 #include "textresource.h"
 
-Resource::Resource(QString fileName, QString id, QWidget* parent, Qt::WFlags flags) :
+Resource::Resource(const QString& fileName, QString id, QWidget* parent, Qt::WFlags flags) :
   QWidget(parent, flags),
-  fileName(fileName),
   id(id)
 {
+  Resource::fileName = QString(fileName).remove(0, fileName.lastIndexOf("/") + 1); // Strip path.
 }
 
 ResMap Resource::parse(const QString& fileName, QListWidget* idsList)
@@ -251,14 +251,16 @@ void Resource::isModified()
 
 void Resource::checkError(QDataStream* stream, const QString& what, bool write)
 {
+  QString action = write ? tr("writing") : tr("reading");
+
   switch (stream->status()) {
     case QDataStream::Ok:
       break;
     case QDataStream::ReadPastEnd:
-      throw tr("Reached unexpected end of file while %1 %2.").arg(write ? "writing" : "reading").arg(what);
+      throw tr("Reached unexpected end of file while %1 %2.").arg(action).arg(what);
     case QDataStream::ReadCorruptData:
-      throw tr("Data corruption occured while %1 %2.").arg(write ? "writing" : "reading").arg(what);
+      throw tr("Data corruption occured while %1 %2.").arg(action).arg(what);
     default:
-      throw tr("Device error occured while %1 %2 (\"%3\").").arg(write ? "writing" : "reading").arg(what).arg(stream->device()->errorString());
+      throw tr("Device error occured while %1 %2 (\"%3\").").arg(action).arg(what).arg(stream->device()->errorString());
   }
 }

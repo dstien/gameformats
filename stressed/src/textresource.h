@@ -27,7 +27,7 @@ class TextResource : public Resource
   Q_OBJECT
 
 public:
-  TextResource(QString fileName, QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
+  TextResource(const QString& fileName, QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
 
 protected:
   void              parse(QDataStream* in);

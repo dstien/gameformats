@@ -22,12 +22,24 @@
 
 #include "bitmapresource.h"
 
+QString BitmapResource::currentFilePath;
+QString BitmapResource::currentFileFilter;
+
+const char BitmapResource::FILE_FILTERS[] =
+    "Image files (*.png *.bmp *.gif *.jpg *.jpeg);;"
+    "Portable Network Graphics (*.png);;"
+    "Windows Bitmap (*.bmp);;"
+    "Joint Photographic Experts Group (*.jpg *.jpeg);;"
+    "All files (*)";
+
 const Palette BitmapResource::PALETTE = Settings().getPalette("palettes/vga");
 
-BitmapResource::BitmapResource(QString fileName, QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags) :
+BitmapResource::BitmapResource(const QString& fileName, QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags) :
   Resource(fileName, id, parent, flags)
 {
   ui.setupUi(this);
+
+  currentFilePath = fileName;
 
   image = NULL;
   parse(in);
@@ -172,40 +184,49 @@ void BitmapResource::scale()
 
 void BitmapResource::exportFile()
 {
-  QString pngFileName = QFileDialog::getSaveFileName(
+  currentFilePath = QString("%1%2-%3.png").
+      arg(currentDir()).
+      arg(QString(fileName).replace('.', '_')).
+      arg(id);
+
+  QString outFileName = QFileDialog::getSaveFileName(
       this,
       tr("Export bitmap"),
-      QString("%1-%2.png").arg(fileName, id),
-      tr("Portable Network Graphics (*.png);;All files (*)"),
-      0);
+      currentFilePath,
+      FILE_FILTERS,
+      &currentFileFilter);
 
-  if (!pngFileName.isEmpty()) {
-    QImageWriter writer(pngFileName, "png");
-    writer.setText("Comment", QString("Stunts bitmap \"%1\" (%2)").arg(id, QString(fileName).remove(0, fileName.lastIndexOf("/") + 1)));
+  if (!outFileName.isEmpty()) {
+    currentFilePath = outFileName;
+
+    QImageWriter writer(outFileName);
+    writer.setText("Comment", QString("Stunts bitmap \"%1\" (%2)").arg(id, fileName));
 
     if (!writer.write(*image)) {
       QMessageBox::critical(
           this,
           QCoreApplication::applicationName(),
-          tr("Error exporting bitmap resource \"%1\" to image file \"%2\":\n%3").arg(id, pngFileName, writer.errorString()));
+          tr("Error exporting bitmap resource \"%1\" to image file \"%2\":\n%3").arg(id, outFileName, writer.errorString()));
     }
   }
 }
 
 void BitmapResource::importFile()
 {
-  QString pngFileName = QFileDialog::getOpenFileName(
+  QString inFileName = QFileDialog::getOpenFileName(
       this,
       tr("Import bitmap"),
-      QString(fileName).remove(fileName.lastIndexOf("/"), fileName.length()),
-      tr("Portable Network Graphics (*.png);;All files (*)"),
-      0);
+      currentDir(),
+      FILE_FILTERS,
+      &currentFileFilter);
 
-  if (!pngFileName.isEmpty()) {
+  if (!inFileName.isEmpty()) {
+    currentFilePath = inFileName;
+
     QImage* newImage = new QImage();
     QImage* oldImage = image;
 
-    QImageReader reader(pngFileName);
+    QImageReader reader(inFileName);
 
     try {
       QSize size = reader.size();
@@ -217,6 +238,16 @@ void BitmapResource::importFile()
         throw reader.errorString();
       }
 
+      // Qt will not upsample color space on images with less than 256 colors.
+      // We'll have to increase the color depth to 32 bits before downsampling
+      // in order to avoid palette corruption.
+      if (newImage->numColors() && newImage->numColors() < 256) {
+        QImage* tmpImage = newImage;
+        newImage =  new QImage(newImage->convertToFormat(QImage::Format_ARGB32));
+        delete tmpImage;
+      }
+
+
       delete oldImage;
       oldImage = NULL;
 
@@ -224,12 +255,6 @@ void BitmapResource::importFile()
 
       delete newImage;
       newImage = NULL;
-
-      // Override color settings if source file has less than 256 colors.
-      if (image->numColors() < 256) {
-        image->setNumColors(256);
-        image->setColorTable(PALETTE);
-      }
 
       ui.editWidth->setText(QString::number(image->width()));
       ui.editHeight->setText(QString::number(image->height()));
@@ -250,7 +275,13 @@ void BitmapResource::importFile()
       QMessageBox::critical(
           this,
           QCoreApplication::applicationName(),
-          tr("Error importing bitmap resource \"%1\" from image file \"%2\":\n%3").arg(id, pngFileName, msg));
+          tr("Error importing bitmap resource \"%1\" from image file \"%2\":\n%3").arg(id, inFileName, msg));
     }
   }
+}
+
+// Get directory from currentFilePath.
+QString BitmapResource::currentDir()
+{
+  return QString(currentFilePath).remove(currentFilePath.lastIndexOf("/") + 1, currentFilePath.length());
 }

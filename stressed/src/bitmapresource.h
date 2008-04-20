@@ -28,7 +28,7 @@ class BitmapResource : public Resource
   Q_OBJECT
 
 public:
-  BitmapResource(QString fileName, QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
+  BitmapResource(const QString& fileName, QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
   ~BitmapResource();
 
 protected:
@@ -42,9 +42,16 @@ private slots:
   void                 importFile();
 
 private:
+  QString              currentDir();
+
   Ui::BitmapResource   ui;
 
   QImage*              image;
+
+  static QString       currentFilePath;
+  static QString       currentFileFilter;
+
+  static const char    FILE_FILTERS[];
 
   static const Palette PALETTE;
 
