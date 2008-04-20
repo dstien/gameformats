@@ -26,8 +26,9 @@
 #include "stunpack.h"
 #include "textresource.h"
 
-Resource::Resource(QString id, QWidget* parent, Qt::WFlags flags) :
+Resource::Resource(QString fileName, QString id, QWidget* parent, Qt::WFlags flags) :
   QWidget(parent, flags),
+  fileName(fileName),
   id(id)
 {
 }
@@ -153,10 +154,10 @@ ResMap Resource::parse(const QString& fileName, QListWidget* idsList)
 
       QString type = types[ids[i]];
       if (type == "text") {
-        resources.insert(ids[i], new TextResource(ids[i], &in));
+        resources.insert(ids[i], new TextResource(fileName, ids[i], &in));
       }
       else if (type == "bitmap") {
-        resources.insert(ids[i], new BitmapResource(ids[i], &in));
+        resources.insert(ids[i], new BitmapResource(fileName, ids[i], &in));
       }
       else {
         throw tr("Unknown type for id \"%1\"").arg(ids[i]);

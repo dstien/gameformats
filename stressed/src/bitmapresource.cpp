@@ -15,14 +15,21 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-#include "bitmapresource.h"
-#include "settings.h"
+#include <QFileDialog>
+#include <QImageReader>
+#include <QImageWriter>
+#include <QMessageBox>
 
-BitmapResource::BitmapResource(QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags) :
-  Resource(id, parent, flags)
+#include "bitmapresource.h"
+
+const Palette BitmapResource::PALETTE = Settings().getPalette("palettes/vga");
+
+BitmapResource::BitmapResource(QString fileName, QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags) :
+  Resource(fileName, id, parent, flags)
 {
   ui.setupUi(this);
 
+  image = NULL;
   parse(in);
 }
 
@@ -42,17 +49,17 @@ void BitmapResource::parse(QDataStream* in)
   *in >> unk5 >> unk6 >> unk7 >> unk8;
   checkError(in, tr("resource \"%1\" bitmap header").arg(id));
 
-  ui.editWidth->insert(QString::number(width));
-  ui.editHeight->insert(QString::number(height));
+  ui.editWidth->setText(QString::number(width));
+  ui.editHeight->setText(QString::number(height));
 
-  ui.editUnk1->insert(QString("%1").arg(unk1, 4, 16, QChar('0')).toUpper());
-  ui.editUnk2->insert(QString("%1").arg(unk2, 4, 16, QChar('0')).toUpper());
-  ui.editUnk3->insert(QString("%1").arg(unk3, 4, 16, QChar('0')).toUpper());
-  ui.editUnk4->insert(QString("%1").arg(unk4, 4, 16, QChar('0')).toUpper());
-  ui.editUnk5->insert(QString("%1").arg(unk5, 2, 16, QChar('0')).toUpper());
-  ui.editUnk6->insert(QString("%1").arg(unk6, 2, 16, QChar('0')).toUpper());
-  ui.editUnk7->insert(QString("%1").arg(unk7, 2, 16, QChar('0')).toUpper());
-  ui.editUnk8->insert(QString("%1").arg(unk8, 2, 16, QChar('0')).toUpper());
+  ui.editUnk1->setText(QString("%1").arg(unk1, 4, 16, QChar('0')).toUpper());
+  ui.editUnk2->setText(QString("%1").arg(unk2, 4, 16, QChar('0')).toUpper());
+  ui.editUnk3->setText(QString("%1").arg(unk3, 4, 16, QChar('0')).toUpper());
+  ui.editUnk4->setText(QString("%1").arg(unk4, 4, 16, QChar('0')).toUpper());
+  ui.editUnk5->setText(QString("%1").arg(unk5, 2, 16, QChar('0')).toUpper());
+  ui.editUnk6->setText(QString("%1").arg(unk6, 2, 16, QChar('0')).toUpper());
+  ui.editUnk7->setText(QString("%1").arg(unk7, 2, 16, QChar('0')).toUpper());
+  ui.editUnk8->setText(QString("%1").arg(unk8, 2, 16, QChar('0')).toUpper());
 
   // Image data.
   int length = width * height;
@@ -71,7 +78,7 @@ void BitmapResource::parse(QDataStream* in)
 
   // Process data.
   image = new QImage(width, height, QImage::Format_Indexed8);
-  image->setColorTable(Settings().getPalette("palettes/vga"));
+  image->setColorTable(PALETTE);
 
   int ry = 0;
   for (int y = 0; y < height; y++) {
@@ -101,18 +108,17 @@ void BitmapResource::parse(QDataStream* in)
   data = NULL;
 
   QLabel *label = new QLabel;
-  label->setPixmap(QPixmap::fromImage(*image));
   ui.scrollArea->setWidget(label);
+
+  toggleAlpha(ui.checkAlpha->isChecked());
 }
 
 void BitmapResource::write(QDataStream* out) const
 {
-  quint16 width, height, unk1, unk2, unk3, unk4;
-  quint8 unk5, unk6, unk7, unk8;
+  quint16 unk1, unk2, unk3, unk4;
+  quint8  unk5, unk6, unk7, unk8;
 
-  width = ui.editWidth->text().toUShort();
-  height = ui.editHeight->text().toUShort();
-  *out << width << height;
+  *out << (quint16)image->width() << (quint16)image->height();
 
   unk1 = ui.editUnk1->text().toUShort(0, 16);
   unk2 = ui.editUnk2->text().toUShort(0, 16);
@@ -128,7 +134,123 @@ void BitmapResource::write(QDataStream* out) const
 
   checkError(out, tr("resource \"%1\" bitmap header").arg(id), true);
 
-  if (out->writeRawData((char*)image->bits(), width * height) != (width * height)) {
+  int length = image->width() * image->height();
+  if (out->writeRawData((char*)image->bits(), length) != length) {
     throw tr("Writing resource \"%1\" image data failed.");
+  }
+}
+
+void BitmapResource::toggleAlpha(bool alpha)
+{
+  QColor color(image->color(ALPHA_INDEX));
+  color.setAlpha(alpha ? 0 : 255);
+  image->setColor(ALPHA_INDEX, color.rgba());
+
+  scale(); // Repaint.
+}
+
+void BitmapResource::scale()
+{
+  QLabel* label = dynamic_cast<QLabel*>(ui.scrollArea->widget());
+
+  if (label == NULL) {
+    return;
+  }
+
+  if (ui.radioScale1->isChecked()) {
+    label->setPixmap(QPixmap::fromImage(*image));
+  }
+  else if (ui.radioScale2->isChecked()) {
+    label->setPixmap(QPixmap::fromImage(image->scaled(image->width() * 2, image->height() * 2)));
+  }
+  else if (ui.radioScale4->isChecked()) {
+    label->setPixmap(QPixmap::fromImage(image->scaled(image->width() * 4, image->height() * 4)));
+  }
+
+  label->adjustSize();
+}
+
+void BitmapResource::exportFile()
+{
+  QString pngFileName = QFileDialog::getSaveFileName(
+      this,
+      tr("Export bitmap"),
+      QString("%1-%2.png").arg(fileName, id),
+      tr("Portable Network Graphics (*.png);;All files (*)"),
+      0);
+
+  if (!pngFileName.isEmpty()) {
+    QImageWriter writer(pngFileName, "png");
+    writer.setText("Comment", QString("Stunts bitmap \"%1\" (%2)").arg(id, QString(fileName).remove(0, fileName.lastIndexOf("/") + 1)));
+
+    if (!writer.write(*image)) {
+      QMessageBox::critical(
+          this,
+          QCoreApplication::applicationName(),
+          tr("Error exporting bitmap resource \"%1\" to image file \"%2\":\n%3").arg(id, pngFileName, writer.errorString()));
+    }
+  }
+}
+
+void BitmapResource::importFile()
+{
+  QString pngFileName = QFileDialog::getOpenFileName(
+      this,
+      tr("Import bitmap"),
+      QString(fileName).remove(fileName.lastIndexOf("/"), fileName.length()),
+      tr("Portable Network Graphics (*.png);;All files (*)"),
+      0);
+
+  if (!pngFileName.isEmpty()) {
+    QImage* newImage = new QImage();
+    QImage* oldImage = image;
+
+    QImageReader reader(pngFileName);
+
+    try {
+      QSize size = reader.size();
+      if ((size.width() > MAX_WIDTH) || (size.height() > MAX_HEIGHT)) {
+        throw tr("Source file exceeds max dimensions.");
+      }
+
+      if (!reader.read(newImage)) {
+        throw reader.errorString();
+      }
+
+      delete oldImage;
+      oldImage = NULL;
+
+      image = new QImage(newImage->convertToFormat(QImage::Format_Indexed8, PALETTE));
+
+      delete newImage;
+      newImage = NULL;
+
+      // Override color settings if source file has less than 256 colors.
+      if (image->numColors() < 256) {
+        image->setNumColors(256);
+        image->setColorTable(PALETTE);
+      }
+
+      ui.editWidth->setText(QString::number(image->width()));
+      ui.editHeight->setText(QString::number(image->height()));
+      ui.editUnk5->setText(QString("%1").arg(1, 2, 16, QChar('0')));
+      ui.editUnk6->setText(QString("%1").arg(2, 2, 16, QChar('0')));
+      ui.editUnk7->setText(QString("%1").arg(4, 2, 16, QChar('0')));
+      ui.editUnk8->setText(QString("%1").arg(8, 2, 16, QChar('0')));
+
+      scale(); // Repaint
+      isModified();
+    }
+    catch (QString msg) {
+      delete newImage;
+      newImage = NULL;
+
+      image = oldImage;
+
+      QMessageBox::critical(
+          this,
+          QCoreApplication::applicationName(),
+          tr("Error importing bitmap resource \"%1\" from image file \"%2\":\n%3").arg(id, pngFileName, msg));
+    }
   }
 }

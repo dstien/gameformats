@@ -19,6 +19,7 @@
 #define BITMAPRESOURCE_H
 
 #include "resource.h"
+#include "settings.h"
 
 #include "ui_bitmapresource.h"
 
@@ -27,17 +28,29 @@ class BitmapResource : public Resource
   Q_OBJECT
 
 public:
-  BitmapResource(QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
+  BitmapResource(QString fileName, QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
   ~BitmapResource();
 
 protected:
-  void               parse(QDataStream* in);
-  void               write(QDataStream* out) const;
+  void                 parse(QDataStream* in);
+  void                 write(QDataStream* out) const;
+
+private slots:
+  void                 toggleAlpha(bool alpha);
+  void                 scale();
+  void                 exportFile();
+  void                 importFile();
 
 private:
-  Ui::BitmapResource ui;
+  Ui::BitmapResource   ui;
 
-  QImage*            image;
+  QImage*              image;
+
+  static const Palette PALETTE;
+
+  static const int     MAX_WIDTH   = 0xFFFF;
+  static const int     MAX_HEIGHT  = 0xFFFF;
+  static const int     ALPHA_INDEX = 0xFF;
 };
 
 #endif
