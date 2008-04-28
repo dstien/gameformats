@@ -18,7 +18,7 @@
 #ifndef TEXTRESOURCE_H
 #define TEXTRESOURCE_H
 
-#include "resource.h"
+#include "app/resource.h"
 
 #include "ui_textresource.h"
 

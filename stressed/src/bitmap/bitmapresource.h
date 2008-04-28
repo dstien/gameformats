@@ -18,8 +18,8 @@
 #ifndef BITMAPRESOURCE_H
 #define BITMAPRESOURCE_H
 
-#include "resource.h"
-#include "settings.h"
+#include "app/resource.h"
+#include "app/settings.h"
 
 #include "ui_bitmapresource.h"
 

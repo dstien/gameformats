@@ -20,11 +20,11 @@
 #include <QFile>
 #include <QListWidget>
 
-#include "bitmapresource.h"
+#include "bitmap/bitmapresource.h"
+#include "text/textresource.h"
 #include "resource.h"
 #include "settings.h"
 #include "stunpack.h"
-#include "textresource.h"
 
 Resource::Resource(const QString& fileName, QString id, QWidget* parent, Qt::WFlags flags) :
   QWidget(parent, flags),
