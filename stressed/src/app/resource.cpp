@@ -26,11 +26,11 @@
 #include "settings.h"
 #include "stunpack.h"
 
-Resource::Resource(const QString& fileName, QString id, QWidget* parent, Qt::WFlags flags) :
-  QWidget(parent, flags),
-  id(id)
+Resource::Resource(const QString& fileName, QString id, QWidget* parent, Qt::WFlags flags)
+: QWidget(parent, flags),
+  m_id(id)
 {
-  Resource::fileName = QString(fileName).remove(0, fileName.lastIndexOf("/") + 1); // Strip path.
+  m_fileName = QString(fileName).remove(0, fileName.lastIndexOf("/") + 1); // Strip path.
 }
 
 ResMap Resource::parse(const QString& fileName, QListWidget* idsList)
@@ -148,19 +148,25 @@ ResMap Resource::parse(const QString& fileName, QListWidget* idsList)
     for (int i = 0; i < numResources; i++) {
       in.device()->seek(baseOffset + offsets[i]);
 
-      if (resources.count(ids[i])) {
-        throw tr("Resource id \"%1\" not unique.").arg(ids[i]);
-      }
-
       QString type = types[ids[i]];
-      if (type == "text") {
-        resources.insert(ids[i], new TextResource(fileName, ids[i], &in));
+
+      try {
+        if (resources.count(ids[i])) {
+          throw tr("Id name not unique.");
+        }
+
+        if (type == "text") {
+          resources.insert(ids[i], new TextResource(fileName, ids[i], &in));
+        }
+        else if (type == "bitmap") {
+          resources.insert(ids[i], new BitmapResource(fileName, ids[i], &in));
+        }
+        else {
+          throw tr("Unknown type.");
+        }
       }
-      else if (type == "bitmap") {
-        resources.insert(ids[i], new BitmapResource(fileName, ids[i], &in));
-      }
-      else {
-        throw tr("Unknown type for id \"%1\"").arg(ids[i]);
+      catch (QString msg) {
+        throw tr("Parsing %1 resource \"%2\" failed: %3").arg(type).arg(ids[i]).arg(msg);
       }
 
       // QHash entries are arbitrarily sorted, we're adding the id to the
@@ -230,8 +236,15 @@ void Resource::write(const QString& fileName, const QListWidget* idsList, const 
     out << curOffset;
     out.device()->seek(baseOffset + curOffset);
 
+    Resource* resource = resources[idsList->item(i)->text()];
+
     // Write content.
-    resources[idsList->item(i)->text()]->write(&out);
+    try {
+      resource->write(&out);
+    }
+    catch (QString msg) {
+      throw tr("Writing %1 resource \"%2\" failed: %3").arg(resource->type()).arg(resource->id()).arg(msg);
+    }
   }
 
   // Final file size header field.

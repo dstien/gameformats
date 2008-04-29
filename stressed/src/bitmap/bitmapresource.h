@@ -31,6 +31,8 @@ public:
   BitmapResource(const QString& fileName, QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
   ~BitmapResource();
 
+  QString              type() const { return "bitmap"; }
+
 protected:
   void                 parse(QDataStream* in);
   void                 write(QDataStream* out) const;

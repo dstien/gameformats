@@ -34,14 +34,14 @@ const char BitmapResource::FILE_FILTERS[] =
 
 const Palette BitmapResource::PALETTE = Settings().getPalette("palettes/vga");
 
-BitmapResource::BitmapResource(const QString& fileName, QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags) :
-  Resource(fileName, id, parent, flags)
+BitmapResource::BitmapResource(const QString& fileName, QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags)
+: Resource(fileName, id, parent, flags)
 {
   ui.setupUi(this);
 
   currentFilePath = fileName;
 
-  image = NULL;
+  image = 0;
   parse(in);
 }
 
@@ -59,7 +59,7 @@ void BitmapResource::parse(QDataStream* in)
   *in >> width >> height;
   *in >> unk1 >> unk2 >> unk3 >> unk4;
   *in >> unk5 >> unk6 >> unk7 >> unk8;
-  checkError(in, tr("resource \"%1\" bitmap header").arg(id));
+  checkError(in, tr("header"));
 
   ui.editWidth->setText(QString::number(width));
   ui.editHeight->setText(QString::number(height));
@@ -75,52 +75,62 @@ void BitmapResource::parse(QDataStream* in)
 
   // Image data.
   int length = width * height;
-  unsigned char* data;
+  unsigned char* data = 0;
 
   try {
-    data = new unsigned char[length];
-  }
-  catch (std::bad_alloc& exc) {
-    throw tr("Couldn't allocate memory for bitmap image data.");
-  }
+    try {
+      data = new unsigned char[length];
+    }
+    catch (std::bad_alloc& exc) {
+      throw tr("Couldn't allocate memory for image data.");
+    }
 
-  if (in->readRawData((char*)data, length) != length) {
-    throw tr("Reading resource \"%1\" image data failed.");
-  }
+    if (in->readRawData((char*)data, length) != length) {
+      throw tr("Couldn't read image data.");
+    }
 
-  // Process data.
-  image = new QImage(width, height, QImage::Format_Indexed8);
-  image->setColorTable(PALETTE);
+    // Process data.
+    image = new QImage(width, height, QImage::Format_Indexed8);
+    image->setColorTable(PALETTE);
 
-  int ry = 0;
-  for (int y = 0; y < height; y++) {
-    for (int x = 0; x < width; x++) {
-      if ((unk7 & 0x10) == 0x10) {
-        image->setPixel(x, y, data[(x * height) + y]);
-      }
-      else if ((unk7 & 0x20) == 0x20) {
-        if ((y % 2) == 0) {
-          image->setPixel(x, y, data[(x * height) + ry]);
+    int ry = 0;
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        if ((unk7 & 0x10) == 0x10) {
+          image->setPixel(x, y, data[(x * height) + y]);
+        }
+        else if ((unk7 & 0x20) == 0x20) {
+          if ((y % 2) == 0) {
+            image->setPixel(x, y, data[(x * height) + ry]);
+          }
+          else {
+            image->setPixel(x, y, data[(height / 2) + (x * height) + ry]);
+          }
         }
         else {
-          image->setPixel(x, y, data[(height / 2) + (x * height) + ry]);
+          image->setPixel(x, y, data[(y * width) + x]);
         }
       }
-      else {
-        image->setPixel(x, y, data[(y * width) + x]);
+
+      if ((y % 2) == 0) {
+        ry++;
       }
     }
+  }
+  catch (QString msg) {
+    delete[] data;
+    data = 0;
 
-    if ((y % 2) == 0) {
-      ry++;
-    }
+    delete image;
+    image = 0;
+
+    throw msg;
   }
 
   delete[] data;
-  data = NULL;
+  data = 0;
 
-  QLabel *label = new QLabel;
-  ui.scrollArea->setWidget(label);
+  ui.scrollArea->setWidget(new QLabel());
 
   toggleAlpha(ui.checkAlpha->isChecked());
 }
@@ -144,11 +154,11 @@ void BitmapResource::write(QDataStream* out) const
   unk8 = ui.editUnk8->text().toUShort(0, 16);
   *out << unk5 << unk6 << unk7 << unk8;
 
-  checkError(out, tr("resource \"%1\" bitmap header").arg(id), true);
+  checkError(out, tr("header"), true);
 
   int length = image->width() * image->height();
   if (out->writeRawData((char*)image->bits(), length) != length) {
-    throw tr("Writing resource \"%1\" image data failed.");
+    throw tr("Couldn't write image data.");
   }
 }
 
@@ -163,9 +173,9 @@ void BitmapResource::toggleAlpha(bool alpha)
 
 void BitmapResource::scale()
 {
-  QLabel* label = dynamic_cast<QLabel*>(ui.scrollArea->widget());
+  QLabel* label = qobject_cast<QLabel*>(ui.scrollArea->widget());
 
-  if (label == NULL) {
+  if (!label) {
     return;
   }
 
@@ -186,8 +196,8 @@ void BitmapResource::exportFile()
 {
   currentFilePath = QString("%1%2-%3.png").
       arg(currentDir()).
-      arg(QString(fileName).replace('.', '_')).
-      arg(id);
+      arg(QString(fileName()).replace('.', '_')).
+      arg(id());
 
   QString outFileName = QFileDialog::getSaveFileName(
       this,
@@ -200,13 +210,13 @@ void BitmapResource::exportFile()
     currentFilePath = outFileName;
 
     QImageWriter writer(outFileName);
-    writer.setText("Comment", QString("Stunts bitmap \"%1\" (%2)").arg(id, fileName));
+    writer.setText("Comment", QString("Stunts bitmap \"%1\" (%2)").arg(id(), fileName()));
 
     if (!writer.write(*image)) {
       QMessageBox::critical(
           this,
           QCoreApplication::applicationName(),
-          tr("Error exporting bitmap resource \"%1\" to image file \"%2\":\n%3").arg(id, outFileName, writer.errorString()));
+          tr("Error exporting bitmap resource \"%1\" to image file \"%2\":\n%3").arg(id(), outFileName, writer.errorString()));
     }
   }
 }
@@ -249,12 +259,12 @@ void BitmapResource::importFile()
 
 
       delete oldImage;
-      oldImage = NULL;
+      oldImage = 0;
 
       image = new QImage(newImage->convertToFormat(QImage::Format_Indexed8, PALETTE));
 
       delete newImage;
-      newImage = NULL;
+      newImage = 0;
 
       ui.editWidth->setText(QString::number(image->width()));
       ui.editHeight->setText(QString::number(image->height()));
@@ -268,14 +278,14 @@ void BitmapResource::importFile()
     }
     catch (QString msg) {
       delete newImage;
-      newImage = NULL;
+      newImage = 0;
 
       image = oldImage;
 
       QMessageBox::critical(
           this,
           QCoreApplication::applicationName(),
-          tr("Error importing bitmap resource \"%1\" from image file \"%2\":\n%3").arg(id, inFileName, msg));
+          tr("Error importing bitmap resource \"%1\" from image file \"%2\":\n%3").arg(id(), inFileName, msg));
     }
   }
 }

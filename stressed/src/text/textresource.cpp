@@ -17,8 +17,8 @@
 
 #include "textresource.h"
 
-TextResource::TextResource(const QString& fileName, QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags) :
-  Resource(fileName, id, parent, flags)
+TextResource::TextResource(const QString& fileName, QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags)
+: Resource(fileName, id, parent, flags)
 {
   ui.setupUi(this);
 
@@ -42,7 +42,7 @@ void TextResource::parse(QDataStream* in)
     *in >> cur;
   }
 
-  checkError(in, tr("resource \"%1\" text data").arg(id));
+  checkError(in, tr("plain text data"));
 
   ui.textEdit->setPlainText(content);
 }
@@ -62,5 +62,5 @@ void TextResource::write(QDataStream* out) const
 
   *out << (qint8)0;
 
-  checkError(out, tr("resource \"%1\" text data").arg(id), true);
+  checkError(out, tr("plain text data"), true);
 }

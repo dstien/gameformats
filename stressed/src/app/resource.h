@@ -38,6 +38,10 @@ public:
   static ResMap     parse(const QString& fileName, QListWidget* idsList);
   static void       write(const QString& fileName, const QListWidget* idsList, const ResMap& resources);
 
+  QString           fileName() const  { return m_fileName; }
+  QString           id() const        { return m_id; }
+  virtual QString   type() const = 0;
+
 signals:
   void              dataChanged();
 
@@ -49,8 +53,9 @@ protected:
   virtual void      parse(QDataStream* in) = 0;
   virtual void      write(QDataStream* out) const = 0;
 
-  QString           fileName;
-  QString           id;
+private:
+  QString           m_fileName;
+  QString           m_id;
 };
 
 #endif

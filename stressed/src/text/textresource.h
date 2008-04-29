@@ -29,6 +29,8 @@ class TextResource : public Resource
 public:
   TextResource(const QString& fileName, QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
 
+  QString           type() const { return "text"; }
+
 protected:
   void              parse(QDataStream* in);
   void              write(QDataStream* out) const;

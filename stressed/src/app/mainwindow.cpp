@@ -24,8 +24,8 @@
 const char MainWindow::APP_NAME[] = "stressed";
 const char MainWindow::ORG_NAME[] = "stuntstools";
 
-MainWindow::MainWindow(QWidget* parent, Qt::WFlags flags) :
-  QMainWindow(parent, flags)
+MainWindow::MainWindow(QWidget* parent, Qt::WFlags flags)
+: QMainWindow(parent, flags)
 {
   ui.setupUi(this);
 
