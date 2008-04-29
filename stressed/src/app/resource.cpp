@@ -21,6 +21,7 @@
 #include <QListWidget>
 
 #include "bitmap/bitmapresource.h"
+#include "shape/shaperesource.h"
 #include "text/textresource.h"
 #include "resource.h"
 #include "settings.h"
@@ -157,6 +158,9 @@ ResMap Resource::parse(const QString& fileName, QListWidget* idsList)
 
         if (type == "text") {
           resources.insert(ids[i], new TextResource(fileName, ids[i], &in));
+        }
+        if (type == "shape") {
+          resources.insert(ids[i], new ShapeResource(fileName, ids[i], &in));
         }
         else if (type == "bitmap") {
           resources.insert(ids[i], new BitmapResource(fileName, ids[i], &in));

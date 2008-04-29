@@ -46,7 +46,7 @@ signals:
   void              dataChanged();
 
 protected slots:
-  void              isModified();
+  virtual void      isModified();
 
 protected:
   static void       checkError(QDataStream* stream, const QString& what, bool write = false);

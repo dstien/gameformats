@@ -2,6 +2,8 @@ TEMPLATE = app
 
 CONFIG += warn_on qt
 
+QT += opengl
+
 TARGET = stressed
 
 QMAKE_CLEAN += $(TARGET)
@@ -10,6 +12,7 @@ DEPENDPATH  += ..
 INCLUDEPATH += $$DEPENDPATH
 
 PRE_TARGETDEPS += ../bitmap/libbitmap.a \
+                  ../shape/libshape.a \
                   ../text/libtext.a
 
 LIBS += $$PRE_TARGETDEPS

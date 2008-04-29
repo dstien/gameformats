@@ -2,4 +2,4 @@ TEMPLATE = subdirs
 
 CONFIG += ordered
 
-SUBDIRS = bitmap text app
+SUBDIRS = bitmap shape text app

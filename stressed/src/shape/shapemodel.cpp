@@ -1,0 +1,117 @@
+// stressed - Stunts/4D [Sports] Driving resource editor
+// Copyright (C) 2008 Daniel Stien <daniel@stien.org>
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+#include "materialsmodel.h"
+#include "shapemodel.h"
+#include "verticesmodel.h"
+
+ShapeModel::ShapeModel(PrimitivesList& primitives, QObject* parent)
+: QAbstractTableModel(parent),
+  primitives(primitives)
+{
+  foreach (Primitive primitive, primitives) {
+    primitive.verticesModel->setParent(this);
+    primitive.materialsModel->setParent(this);
+  }
+
+  updateBoundBox();
+}
+
+Qt::ItemFlags ShapeModel::flags(const QModelIndex& index) const
+{
+  if (!index.isValid()) {
+    return Qt::ItemIsEnabled;
+  }
+
+  return QAbstractItemModel::flags(index);
+}
+
+QVariant ShapeModel::data(const QModelIndex& index, int role) const
+{
+  int row = index.row(), col = index.column();
+
+  if (!index.isValid() ||
+      row < 0 || row >= rowCount() ||
+      col < 0 || col >= columnCount()) {
+    return QVariant();
+  }
+
+  switch (role) {
+    case Qt::TextAlignmentRole:
+      return QVariant(Qt::AlignRight | Qt::AlignVCenter);
+    case Qt::DisplayRole:
+      if (col == 0) {
+        return QString("%1").arg(primitives[row].type);
+      }
+      else if (col == 1) {
+        return QString("%1").arg(primitives[row].depthIndex);
+      }
+      else if (col == 2) {
+        return primitives[row].unknown;
+      }
+    default:
+      return QVariant();
+  }
+}
+
+QVariant ShapeModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+  if (role != Qt::DisplayRole) {
+    return QVariant();
+  }
+
+  if (orientation == Qt::Horizontal) {
+    switch (section) {
+      case 0:
+        return QString("Type");
+      case 1:
+        return QString("Depth");
+      case 2:
+      default:
+        return QString("Unknown");
+    }
+  }
+  else {
+    return QString("%1").arg(section + 1);
+  }
+}
+
+void ShapeModel::updateBoundBox()
+{
+  Vertex first = primitives.at(0).verticesModel->verticesList()->at(0);
+  qint16 minX = first.x, minY = first.y, minZ = first.z, maxX = minX, maxY = minY, maxZ = minZ;
+
+  foreach (Primitive primitive, primitives) {
+    foreach (Vertex vertex, *(primitive.verticesModel->verticesList())) {
+      if (vertex.x < minX) minX = vertex.x;
+      else if (vertex.x > maxX) maxX = vertex.x;
+      if (vertex.y < minY) minY = vertex.y;
+      else if (vertex.y > maxY) maxY = vertex.y;
+      if (vertex.z < minZ) minZ = vertex.z;
+      else if (vertex.z > maxZ) maxZ = vertex.z;
+    }
+  }
+
+  bound[0].x = minX; bound[0].y = minY; bound[0].z = maxZ;
+  bound[1].x = maxX; bound[1].y = minY; bound[1].z = maxZ;
+  bound[2].x = minX; bound[2].y = minY; bound[2].z = minZ;
+  bound[3].x = maxX; bound[3].y = minY; bound[3].z = minZ;
+  bound[4].x = minX; bound[4].y = maxY; bound[4].z = maxZ;
+  bound[5].x = maxX; bound[5].y = maxY; bound[5].z = maxZ;
+  bound[6].x = minX; bound[6].y = maxY; bound[6].z = minZ;
+  bound[7].x = maxX; bound[7].y = maxY; bound[7].z = minZ;
+}

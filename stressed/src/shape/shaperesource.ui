@@ -1,0 +1,157 @@
+<ui version="4.0" >
+ <class>ShapeResource</class>
+ <widget class="QWidget" name="ShapeResource" >
+  <layout class="QVBoxLayout" >
+   <item>
+    <widget class="ShapeView" native="1" name="shapeView">
+     <property name="selectionBehavior" >
+      <enum>QAbstractItemView::SelectRows</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QLabel" name="paintJobLabel" >
+       <property name="text" >
+        <string>Paint job</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="paintJobSpinBox" >
+       <property name="minimum" >
+        <number>1</number>
+       </property>
+       <property name="maximum" >
+        <number>1</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="wireframeCheckBox" >
+       <property name="text" >
+        <string>&amp;Wireframe</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="cullingCheckBox" >
+       <property name="text" >
+        <string>&amp;Back-face culling</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="deselectButton" >
+       <property name="text" >
+        <string>&amp;Deselect all</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer>
+       <property name="orientation" >
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" >
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="exportButton" >
+       <property name="enabled" >
+        <bool>false</bool>
+       </property>
+       <property name="text" >
+        <string>&amp;Export...</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="importButton" >
+       <property name="enabled" >
+        <bool>false</bool>
+       </property>
+       <property name="text" >
+        <string>&amp;Import...</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QTableView" name="primitivesView" >
+       <property name="selectionBehavior" >
+        <enum>QAbstractItemView::SelectRows</enum>
+       </property>
+       <property name="cornerButtonEnabled" >
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QTableView" name="verticesView" >
+       <property name="selectionBehavior" >
+        <enum>QAbstractItemView::SelectRows</enum>
+       </property>
+       <property name="cornerButtonEnabled" >
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QTableView" name="materialsView" >
+       <property name="selectionBehavior" >
+        <enum>QAbstractItemView::SelectRows</enum>
+       </property>
+       <property name="cornerButtonEnabled" >
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ShapeView</class>
+   <extends>QWidget</extends>
+   <header>shapeview.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>paintJobSpinBox</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>shapeView</receiver>
+   <slot>setCurrentPaintJob(int)</slot>
+  </connection>
+  <connection>
+   <sender>wireframeCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>shapeView</receiver>
+   <slot>toggleWireframe(bool)</slot>
+  </connection>
+  <connection>
+   <sender>cullingCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>shapeView</receiver>
+   <slot>toggleCulling(bool)</slot>
+  </connection>
+  <connection>
+   <sender>deselectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>ShapeResource</receiver>
+   <slot>deselectAll()</slot>
+  </connection>
+ </connections>
+</ui>
