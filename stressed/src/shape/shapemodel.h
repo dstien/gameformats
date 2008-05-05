@@ -29,7 +29,8 @@ typedef struct {
   quint8            depthIndex;
   VerticesModel*    verticesModel;
   MaterialsModel*   materialsModel;
-  QString           unknown;
+  quint32           unknown1;
+  quint32           unknown2;
 } Primitive;
 
 typedef QList<Primitive> PrimitivesList;
@@ -43,10 +44,11 @@ public:
 
   Qt::ItemFlags     flags(const QModelIndex& index) const;
   QVariant          data(const QModelIndex& index, int role) const;
+  bool              setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole);
   QVariant          headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
 
   int               rowCount(const QModelIndex& /*parent*/ = QModelIndex()) const    { return primitives.size(); }
-  int               columnCount(const QModelIndex& /*parent*/ = QModelIndex()) const { return 3; }
+  int               columnCount(const QModelIndex& /*parent*/ = QModelIndex()) const { return 4; }
 
   PrimitivesList*   primitivesList()                                                 { return &primitives; }
   Vertex*           boundBox()                                                       { return bound; }
@@ -56,6 +58,9 @@ private:
 
   PrimitivesList    primitives;
   Vertex            bound[8];
+
+  static const int  DEPTH_MIN = 0;
+  static const int  DEPTH_MAX = 255;
 };
 
 #endif

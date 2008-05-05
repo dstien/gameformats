@@ -15,7 +15,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-#include <QStandardItemModel>
+#include <QHeaderView>
 
 #include "materialsmodel.h"
 #include "shapemodel.h"
@@ -27,6 +27,10 @@ ShapeResource::ShapeResource(const QString& fileName, QString id, QDataStream* i
 {
   ui.setupUi(this);
 
+  ui.primitivesView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
+  ui.verticesView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
+  ui.materialsView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
+
   parse(in);
 }
 
@@ -36,7 +40,8 @@ void ShapeResource::parse(QDataStream* in)
 
   quint8 numVertices, numPrimitives, numPaintJobs, reserved;
   Vertex* vertices = 0;
-  qint8*  unknowns = 0;
+  quint32* unknowns1 = 0;
+  quint32* unknowns2 = 0;
 
   // Header.
   *in >> numVertices >> numPrimitives >> numPaintJobs >> reserved;
@@ -63,14 +68,18 @@ void ShapeResource::parse(QDataStream* in)
     }
 
     try {
-      unknowns = new qint8[numPrimitives * 8];
+      unknowns1 = new quint32[numPrimitives];
+      unknowns2 = new quint32[numPrimitives];
     }
     catch (std::bad_alloc& exc) {
       throw tr("Couldn't allocate memory for unknown shape primitive data.");
     }
 
-    in->readRawData(reinterpret_cast<char*>(unknowns), numPrimitives * 8 * sizeof(qint8));
-    checkError(in, tr("unknown primitive data"));
+    in->readRawData(reinterpret_cast<char*>(unknowns1), numPrimitives * sizeof(quint32));
+    checkError(in, tr("unknown primitive data 1"));
+
+    in->readRawData(reinterpret_cast<char*>(unknowns2), numPrimitives * sizeof(quint32));
+    checkError(in, tr("unknown primitive data 2"));
 
     quint8 type, depthIndex, material, vertexIndex;
     for (int i = 0; i < numPrimitives; i++) {
@@ -112,11 +121,11 @@ void ShapeResource::parse(QDataStream* in)
       primitive.verticesModel = new VerticesModel(verticesList);
       primitive.materialsModel = new MaterialsModel(materialsList);
 
-      primitive.unknown = QString();
-      for (int j = 0; j < 8; j++) {
-        primitive.unknown.append(QString("%1").arg((quint8)unknowns[(i * 8) + j], 2, 16, QChar('0')).toUpper());
-      }
+      primitive.unknown1 = unknowns1[i];
+      primitive.unknown2 = unknowns2[i];
 
+      connect(primitive.verticesModel, SIGNAL(dataChanged(QModelIndex,QModelIndex)),
+          this, SLOT(isModified()));
       connect(primitive.materialsModel, SIGNAL(dataChanged(QModelIndex,QModelIndex)),
           this, SLOT(isModified()));
 
@@ -125,15 +134,26 @@ void ShapeResource::parse(QDataStream* in)
   }
   catch (QString msg) {
     delete[] vertices;
-    delete[] unknowns;
+    vertices = 0;
+    delete[] unknowns1;
+    unknowns1 = 0;
+    delete[] unknowns2;
+    unknowns2 = 0;
 
     throw msg;
   }
 
   delete[] vertices;
-  delete[] unknowns;
+  vertices = 0;
+  delete[] unknowns1;
+  unknowns1 = 0;
+  delete[] unknowns2;
+  unknowns2 = 0;
 
   ShapeModel* shapeModel = new ShapeModel(primitives, this);
+
+  connect(shapeModel, SIGNAL(dataChanged(QModelIndex,QModelIndex)),
+      this, SLOT(isModified()));
 
   ui.primitivesView->setModel(shapeModel);
   ui.shapeView->setModel(shapeModel);
@@ -186,14 +206,14 @@ void ShapeResource::write(QDataStream* out) const
 
   // Write unknowns.
   foreach (Primitive primitive, *(shapeModel->primitivesList())) {
-    for (int i = 0; i < 8; i++) {
-      QString curByte;
-      curByte.append(primitive.unknown[i * 2]);
-      curByte.append(primitive.unknown[(i * 2) + 1]);
-      *out << (quint8)curByte.toUShort(0, 16);
-    }
+    *out << primitive.unknown1;
   }
-  checkError(out, tr("unknown primitive data"), true);
+  checkError(out, tr("unknown primitive data 1"), true);
+
+  foreach (Primitive primitive, *(shapeModel->primitivesList())) {
+    *out << primitive.unknown2;
+  }
+  checkError(out, tr("unknown primitive data 2"), true);
 
   // Write primitives.
   int i = 0;

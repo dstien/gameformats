@@ -29,7 +29,7 @@ MaterialsModel::MaterialsModel(const MaterialsList& materials, QObject* parent)
 Qt::ItemFlags MaterialsModel::flags(const QModelIndex& index) const
 {
   if (!index.isValid()) {
-    return Qt::ItemIsEnabled;
+    return 0;
   }
 
   return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
@@ -39,9 +39,7 @@ QVariant MaterialsModel::data(const QModelIndex& index, int role) const
 {
   int row = index.row(), col = index.column();
 
-  if (!index.isValid() ||
-      row < 0 || row >= rowCount() ||
-      col != 0) {
+  if (!index.isValid() || row >= rowCount() || col != 0) {
     return QVariant();
   }
 
@@ -50,7 +48,7 @@ QVariant MaterialsModel::data(const QModelIndex& index, int role) const
       return QVariant(Qt::AlignRight | Qt::AlignVCenter);
     case Qt::DisplayRole:
     case Qt::EditRole:
-      return QString("%1").arg(materials[row]);
+      return materials[row];
     default:
       return QVariant();
   }
@@ -58,15 +56,21 @@ QVariant MaterialsModel::data(const QModelIndex& index, int role) const
 
 bool MaterialsModel::setData(const QModelIndex &index, const QVariant& value, int role)
 {
-  int row = index.row(), col = index.column();
+  int row = index.row();
 
   if (!index.isValid() || role != Qt::EditRole ||
-      row < 0 || row >= rowCount() ||
-      col != 0) {
+      row >= rowCount() || index.column() != 0) {
     return false;
   }
 
-  materials[index.row()] = (quint8)qBound(VAL_MIN, value.toInt(), VAL_MAX);
+  bool success;
+  quint8 result = qBound(VAL_MIN, value.toInt(&success), VAL_MAX);
+
+  if (!success || (result == materials[index.row()])) {
+    return false;
+  }
+
+  materials[index.row()] = result;
   emit dataChanged(index, index);
   return true;
 }
@@ -78,9 +82,9 @@ QVariant MaterialsModel::headerData(int section, Qt::Orientation orientation, in
   }
 
   if (orientation == Qt::Horizontal) {
-    return QString("Material");
+    return "Material";
   }
   else {
-    return QString("%1").arg(section + 1);
+    return section + 1;
   }
 }

@@ -19,6 +19,9 @@
 #include "shapemodel.h"
 #include "verticesmodel.h"
 
+const int ShapeModel::DEPTH_MIN;
+const int ShapeModel::DEPTH_MAX;
+
 ShapeModel::ShapeModel(PrimitivesList& primitives, QObject* parent)
 : QAbstractTableModel(parent),
   primitives(primitives)
@@ -34,7 +37,11 @@ ShapeModel::ShapeModel(PrimitivesList& primitives, QObject* parent)
 Qt::ItemFlags ShapeModel::flags(const QModelIndex& index) const
 {
   if (!index.isValid()) {
-    return Qt::ItemIsEnabled;
+    return 0;
+  }
+
+  if (index.column() > 0) {
+    return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
   }
 
   return QAbstractItemModel::flags(index);
@@ -45,27 +52,86 @@ QVariant ShapeModel::data(const QModelIndex& index, int role) const
   int row = index.row(), col = index.column();
 
   if (!index.isValid() ||
-      row < 0 || row >= rowCount() ||
-      col < 0 || col >= columnCount()) {
+      row >= rowCount() ||
+      col >= columnCount()) {
     return QVariant();
   }
 
   switch (role) {
     case Qt::TextAlignmentRole:
       return QVariant(Qt::AlignRight | Qt::AlignVCenter);
+    case Qt::FontRole:
+      if (col > 1) {
+        return "Monospace";
+      }
+      else {
+        return QVariant();
+      }
     case Qt::DisplayRole:
+    case Qt::EditRole:
       if (col == 0) {
-        return QString("%1").arg(primitives[row].type);
+        return primitives[row].type;
       }
       else if (col == 1) {
-        return QString("%1").arg(primitives[row].depthIndex);
+        return primitives[row].depthIndex;
       }
       else if (col == 2) {
-        return primitives[row].unknown;
+        return QString("%1").arg(primitives[row].unknown1, 8, 16, QChar('0')).toUpper();
+      }
+      else if (col == 3) {
+        return QString("%1").arg(primitives[row].unknown2, 8, 16, QChar('0')).toUpper();
       }
     default:
       return QVariant();
   }
+}
+
+bool ShapeModel::setData(const QModelIndex &index, const QVariant& value, int role)
+{
+  int row = index.row(), col = index.column();
+
+  if (!index.isValid() || role != Qt::EditRole ||
+      row >= rowCount() || col >= columnCount() || col < 1) {
+    return false;
+  }
+
+  if (col == 1) {
+    bool success;
+    quint8 result = qBound(DEPTH_MIN, value.toInt(&success), DEPTH_MAX);
+
+    if (!success || (result == primitives[row].depthIndex)) {
+      return false;
+    }
+
+    primitives[row].depthIndex = result;
+  }
+  else {
+    bool success;
+    quint32 result = value.toString().toUInt(&success, 16);
+
+    if (!success) {
+      return false;
+    }
+
+    if (col == 2) {
+      if (result == primitives[row].unknown1) {
+        return false;
+      }
+      primitives[row].unknown1 = result;
+    }
+    else if (col == 3) {
+      if (result == primitives[row].unknown2) {
+        return false;
+      }
+      primitives[row].unknown2 = result;
+    }
+    else {
+      return false;
+    }
+  }
+
+  emit dataChanged(index, index);
+  return true;
 }
 
 QVariant ShapeModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -77,16 +143,18 @@ QVariant ShapeModel::headerData(int section, Qt::Orientation orientation, int ro
   if (orientation == Qt::Horizontal) {
     switch (section) {
       case 0:
-        return QString("Type");
+        return "Type";
       case 1:
-        return QString("Depth");
+        return "Depth";
       case 2:
+        return "Unknown 1";
+      case 3:
       default:
-        return QString("Unknown");
+        return "Unknown 2";
     }
   }
   else {
-    return QString("%1").arg(section + 1);
+    return section + 1;
   }
 }
 

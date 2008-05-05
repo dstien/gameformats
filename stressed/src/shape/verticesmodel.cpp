@@ -17,6 +17,9 @@
 
 #include "verticesmodel.h"
 
+const int VerticesModel::VAL_MIN;
+const int VerticesModel::VAL_MAX;
+
 VerticesModel::VerticesModel(const VerticesList& vertices, QObject* parent)
 : QAbstractTableModel(parent),
   vertices(vertices)
@@ -26,10 +29,10 @@ VerticesModel::VerticesModel(const VerticesList& vertices, QObject* parent)
 Qt::ItemFlags VerticesModel::flags(const QModelIndex& index) const
 {
   if (!index.isValid()) {
-    return Qt::ItemIsEnabled;
+    return 0;
   }
 
-  return QAbstractItemModel::flags(index);
+  return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
 }
 
 QVariant VerticesModel::data(const QModelIndex& index, int role) const
@@ -37,8 +40,7 @@ QVariant VerticesModel::data(const QModelIndex& index, int role) const
   int row = index.row(), col = index.column();
 
   if (!index.isValid() ||
-      row < 0 || row >= rowCount() ||
-      col < 0 || col >= columnCount()) {
+      row >= rowCount() || col >= columnCount()) {
     return QVariant();
   }
 
@@ -46,18 +48,59 @@ QVariant VerticesModel::data(const QModelIndex& index, int role) const
     case Qt::TextAlignmentRole:
       return QVariant(Qt::AlignRight | Qt::AlignVCenter);
     case Qt::DisplayRole:
+    case Qt::EditRole:
       if (col == 0) {
-        return QString("%1").arg(vertices[row].x);
+        return vertices[row].x;
       }
       else if (col == 1) {
-        return QString("%1").arg(vertices[row].y);
+        return vertices[row].y;
       }
       else if (col == 2) {
-        return QString("%1").arg(vertices[row].z);
+        return vertices[row].z;
       }
     default:
       return QVariant();
   }
+}
+
+bool VerticesModel::setData(const QModelIndex &index, const QVariant& value, int role)
+{
+  int row = index.row(), col = index.column();
+
+  if (!index.isValid() || role != Qt::EditRole ||
+      row >= rowCount() || col >= columnCount()) {
+    return false;
+  }
+
+  bool success;
+  qint16 result = qBound(VAL_MIN, value.toInt(&success), VAL_MAX);
+
+  if (!success) {
+    return false;
+  }
+
+  switch (col) {
+    case 0:
+      if (result == vertices[row].x) {
+        return false;
+      }
+      vertices[row].x = result;
+      break;
+    case 1:
+      if (result == vertices[row].y) {
+        return false;
+      }
+      vertices[row].y = result;
+      break;
+    case 2:
+      if (result == vertices[row].z) {
+        return false;
+      }
+      vertices[row].z = result;
+  }
+
+  emit dataChanged(index, index);
+  return true;
 }
 
 QVariant VerticesModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -69,15 +112,15 @@ QVariant VerticesModel::headerData(int section, Qt::Orientation orientation, int
   if (orientation == Qt::Horizontal) {
     switch (section) {
       case 0:
-        return QString("x");
+        return "x";
       case 1:
-        return QString("y");
+        return "y";
       case 2:
       default:
-        return QString("z");
+        return "z";
     }
   }
   else {
-    return QString("%1").arg(section + 1);
+    return section + 1;
   }
 }
