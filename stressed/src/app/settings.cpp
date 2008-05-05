@@ -125,3 +125,69 @@ Palette Settings::parsePalette(const QStringList& colorList)
 
   return pal;
 }
+
+Materials Settings::getMaterials()
+{
+  QStringList colors = value("materials/colors").toStringList();
+  QStringList patterns = value("materials/patterns").toStringList();
+
+  if (colors.empty() | patterns.empty()) {
+    return restoreMaterials();
+  }
+
+  return parseMaterials(colors, patterns);
+}
+
+void Settings::setMaterials(const Materials& materials)
+{
+  QStringList colors, patterns;
+
+  foreach (Material mat, materials) {
+    colors << QString("%1").arg(mat.color);
+    patterns << QString("%1").arg(mat.pattern);
+  }
+
+  setValue("materials/colors", colors);
+  setValue("materials/patterns", patterns);
+}
+
+Materials Settings::restoreMaterials()
+{
+  QSettings defaults(DEFAULTS, IniFormat);
+
+  QStringList colors = defaults.value("materials/colors").toStringList();
+  QStringList patterns = defaults.value("materials/patterns").toStringList();
+
+  Materials materials = parseMaterials(colors, patterns);
+
+  setMaterials(materials);
+
+  return materials;
+}
+
+Materials Settings::parseMaterials(const QStringList& colors, const QStringList& patterns)
+{
+  Materials materials;
+  for (int i = 0; i < colors.size(); i++) {
+    Material mat;
+    mat.color = qBound(0, colors[i].toInt(), 255);
+
+    if (i < patterns.size()) {
+      mat.pattern = qBound(0, patterns[i].toInt(), 6);
+    }
+    else {
+      mat.pattern = 0;
+    }
+    materials.append(mat);
+  }
+
+  // Ensure at least 256 materials.
+  for (int i = materials.size(); i < 256; i++) {
+    Material mat;
+    mat.color = 0;
+    mat.pattern = 0;
+    materials.append(mat);
+  }
+
+  return materials;
+}

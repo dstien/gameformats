@@ -20,6 +20,7 @@
 
 #include <QAbstractItemView>
 
+#include "app/settings.h"
 #include "matrix.h"
 
 class QGLWidget;
@@ -59,14 +60,15 @@ protected:
   void              mousePressEvent(QMouseEvent* event);
 
 private:
+  Palette             palette();
+  Materials           materials();
+
   QGLWidget*          glWidget;
   QPoint              lastMousePosition;
   Matrix              transform;
   int                 currentPaintJob;
 
   static const quint8 PATTERNS[5][0x80];
-  static const quint8 MAT_PAT[0x100];
-  static const QColor MAT_COL[0x100];
 };
 
 #endif

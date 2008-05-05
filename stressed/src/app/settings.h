@@ -23,8 +23,14 @@
 #include <QSettings>
 #include <QVector>
 
+typedef struct {
+  int color;
+  int pattern;
+} Material;
+
 typedef QHash<QString, QString> StringMap;
 typedef QVector<QRgb>           Palette;
+typedef QList<Material>         Materials;
 
 class Settings : public QSettings
 {
@@ -39,10 +45,15 @@ public:
   void              setPalette(const QString& path, const Palette& pal);
   Palette           restorePalette(const QString& path);
 
+  Materials         getMaterials();
+  void              setMaterials(const Materials& materials);
+  Materials         restoreMaterials();
+
   static const char DEFAULTS[];
 
 private:
   Palette           parsePalette(const QStringList& colorList);
+  Materials         parseMaterials(const QStringList& colors, const QStringList& patterns);
 };
 
 #endif
