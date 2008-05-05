@@ -65,7 +65,8 @@ private:
 
   QGLWidget*          glWidget;
   QPoint              lastMousePosition;
-  Matrix              transform;
+  Matrix              rotation;
+  Matrix              translation;
   int                 currentPaintJob;
 
   static const quint8 PATTERNS[5][0x80];

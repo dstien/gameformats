@@ -80,7 +80,8 @@ ShapeView::ShapeView(QWidget* parent)
 : QAbstractItemView(parent)
 {
   currentPaintJob = 0;
-  transform = Matrix();
+  translation = Matrix();
+  rotation = Matrix();
 
   glWidget = new QGLWidget(this);
   glWidget->makeCurrent();
@@ -97,11 +98,9 @@ void ShapeView::setModel(QAbstractItemModel* model)
   ShapeModel* shapeModel = qobject_cast<ShapeModel*>(model);
 
   if (shapeModel) {
-    transform.move(-((shapeModel->boundBox()[4].y + shapeModel->boundBox()[0].y) / 2), Matrix::AXIS_Y);
-    transform.move(shapeModel->boundBox()[2].z * 2, Matrix::AXIS_Z);
-//    transform.rotate(45.0f, Matrix::AXIS_Y);
-    transform.rotate(10.0f, Matrix::AXIS_X);
-//    transform.rotate(10.0f, Matrix::AXIS_Z);
+    translation.move(-((shapeModel->boundBox()[4].y + shapeModel->boundBox()[0].y) / 2), Matrix::AXIS_Y);
+    translation.move(shapeModel->boundBox()[2].z * 2, Matrix::AXIS_Z);
+    rotation.rotate(10.0f, Matrix::AXIS_X);
   }
 
   QAbstractItemView::setModel(model);
@@ -167,7 +166,8 @@ void ShapeView::paintEvent(QPaintEvent* event)
   glLoadIdentity();
 
   glPushMatrix();
-  transform.multMatrix();
+  translation.multMatrix();
+  rotation.multMatrix();
 
   int i = 0;
   QItemSelectionModel* selections = selectionModel();
@@ -267,16 +267,19 @@ void ShapeView::mouseMoveEvent(QMouseEvent* event)
   QPoint delta = event->pos() - lastMousePosition;
   lastMousePosition = event->pos();
 
-  if (event->buttons() & Qt::LeftButton) {
-    transform.rotate(-delta.x() * 0.25f, Matrix::AXIS_Y);
-    transform.rotate(-delta.y() * 0.25f, Matrix::AXIS_X);
+  if ((event->buttons() & Qt::LeftButton) && (event->buttons() & Qt::RightButton)) {
+    translation.move(delta.y() * 5.0f, Matrix::AXIS_Y);
+  }
+  else if (event->buttons() & Qt::LeftButton) {
+    rotation.rotate(-delta.x() * 0.25f, Matrix::AXIS_Y);
+    rotation.rotate(-delta.y() * 0.25f, Matrix::AXIS_X);
   }
   else if (event->buttons() & Qt::RightButton) {
-    transform.rotate(delta.x() * 0.25f, Matrix::AXIS_Z);
+    rotation.rotate(delta.x() * 0.25f, Matrix::AXIS_Z);
   }
   else if (event->buttons() & Qt::MidButton) {
-    transform.move(delta.y() * 10.0f, Matrix::AXIS_Z);
-    transform.move(delta.x() * 10.0f, Matrix::AXIS_X);
+    translation.move(delta.x() * 5.0f, Matrix::AXIS_X);
+    translation.move(-delta.y() * 5.0f, Matrix::AXIS_Z);
   }
 
   viewport()->update();
