@@ -91,7 +91,7 @@ void Settings::setPalette(const QString& path, const Palette& pal)
   QStringList colorList;
 
   foreach (QRgb color, pal) {
-    colorList << QString("%1").arg(color, 0, 16).toUpper().right(6);
+    colorList << QColor(color).name().toUpper();
   }
 
   setValue(path, colorList);
@@ -115,7 +115,12 @@ Palette Settings::parsePalette(const QStringList& colorList)
   Palette pal;
 
   foreach (QString hex, colorList) {
-    pal.push_back(QColor(QString("#%1").arg(hex.trimmed())).rgb());
+    pal.append(QColor(hex.trimmed()).rgb());
+  }
+
+  // Ensure at least 256 colors.
+  for (int i = pal.size(); i < 256; i++) {
+    pal.append(QColor().rgb());
   }
 
   return pal;

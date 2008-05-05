@@ -32,8 +32,6 @@ const char BitmapResource::FILE_FILTERS[] =
     "Joint Photographic Experts Group (*.jpg *.jpeg);;"
     "All files (*)";
 
-const Palette BitmapResource::PALETTE = Settings().getPalette("palettes/vga");
-
 BitmapResource::BitmapResource(const QString& fileName, QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags)
 : Resource(fileName, id, parent, flags)
 {
@@ -91,7 +89,7 @@ void BitmapResource::parse(QDataStream* in)
 
     // Process data.
     image = new QImage(width, height, QImage::Format_Indexed8);
-    image->setColorTable(PALETTE);
+    image->setColorTable(palette());
 
     int ry = 0;
     for (int y = 0; y < height; y++) {
@@ -261,7 +259,7 @@ void BitmapResource::importFile()
       delete oldImage;
       oldImage = 0;
 
-      image = new QImage(newImage->convertToFormat(QImage::Format_Indexed8, PALETTE));
+      image = new QImage(newImage->convertToFormat(QImage::Format_Indexed8, palette()));
 
       delete newImage;
       newImage = 0;
@@ -288,6 +286,12 @@ void BitmapResource::importFile()
           tr("Error importing bitmap resource \"%1\" from image file \"%2\":\n%3").arg(id(), inFileName, msg));
     }
   }
+}
+
+Palette BitmapResource::palette()
+{
+  static Palette pal = Settings().getPalette("palettes/vga");
+  return pal;
 }
 
 // Get directory from currentFilePath.

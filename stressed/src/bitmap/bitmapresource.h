@@ -44,6 +44,8 @@ private slots:
   void                 importFile();
 
 private:
+  Palette              palette();
+
   QString              currentDir();
 
   Ui::BitmapResource   ui;
@@ -54,8 +56,6 @@ private:
   static QString       currentFileFilter;
 
   static const char    FILE_FILTERS[];
-
-  static const Palette PALETTE;
 
   static const int     MAX_WIDTH   = 0xFFFF;
   static const int     MAX_HEIGHT  = 0xFFFF;

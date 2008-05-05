@@ -21,10 +21,9 @@
 
 int main(int argc, char** argv)
 {
-  QCoreApplication::setOrganizationName(MainWindow::ORG_NAME);
-  QCoreApplication::setApplicationName(MainWindow::APP_NAME);
-
   QApplication app(argc, argv);
+  app.setOrganizationName(MainWindow::ORG_NAME);
+  app.setApplicationName(MainWindow::APP_NAME);
 
   // Scan argument list for filename.
   QString fileName;
