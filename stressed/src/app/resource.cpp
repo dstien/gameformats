@@ -159,7 +159,7 @@ ResMap Resource::parse(const QString& fileName, QListWidget* idsList)
         if (type == "text") {
           resources.insert(ids[i], new TextResource(fileName, ids[i], &in));
         }
-        if (type == "shape") {
+        else if (type == "shape") {
           resources.insert(ids[i], new ShapeResource(fileName, ids[i], &in));
         }
         else if (type == "bitmap") {

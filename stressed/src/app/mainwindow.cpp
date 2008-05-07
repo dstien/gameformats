@@ -85,8 +85,6 @@ void MainWindow::closeEvent(QCloseEvent* event)
 bool MainWindow::reset()
 {
   if (modified) {
-    modified = false;
-
     QMessageBox::StandardButton ret;
     ret = QMessageBox::warning(
         this,
@@ -117,6 +115,7 @@ bool MainWindow::reset()
 
   resources.clear();
 
+  modified = false;
   currentFileName.clear();
   updateWindowTitle();
 

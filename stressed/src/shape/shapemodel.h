@@ -40,22 +40,26 @@ class ShapeModel : public QAbstractTableModel
   Q_OBJECT
 
 public:
-  ShapeModel(PrimitivesList& primitives, QObject* parent = 0);
+  ShapeModel(QObject* parent = 0);
 
   Qt::ItemFlags     flags(const QModelIndex& index) const;
   QVariant          data(const QModelIndex& index, int role) const;
   bool              setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole);
   QVariant          headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
 
+  bool              removeRows(int position, int rows, const QModelIndex& index = QModelIndex());
+
   int               rowCount(const QModelIndex& /*parent*/ = QModelIndex()) const    { return primitives.size(); }
   int               columnCount(const QModelIndex& /*parent*/ = QModelIndex()) const { return 4; }
 
+  void              setShape(PrimitivesList& primitives);
   PrimitivesList*   primitivesList()                                                 { return &primitives; }
-  Vertex*           boundBox()                                                       { return bound; }
+  Vertex*           boundBox();
+
+public slots:
+  void              removeRows(const QModelIndexList& rows);
 
 private:
-  void              updateBoundBox();
-
   PrimitivesList    primitives;
   Vertex            bound[8];
 

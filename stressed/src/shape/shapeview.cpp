@@ -79,6 +79,7 @@ const quint8 ShapeView::PATTERNS[5][0x80] = {
 ShapeView::ShapeView(QWidget* parent)
 : QAbstractItemView(parent)
 {
+  shapeModel = 0;
   currentPaintJob = 0;
   translation = Matrix();
   rotation = Matrix();
@@ -95,15 +96,21 @@ ShapeView::ShapeView(QWidget* parent)
 
 void ShapeView::setModel(QAbstractItemModel* model)
 {
-  ShapeModel* shapeModel = qobject_cast<ShapeModel*>(model);
+  shapeModel = qobject_cast<ShapeModel*>(model);
 
+  QAbstractItemView::setModel(model);
+}
+
+void ShapeView::reset()
+{
   if (shapeModel) {
-    translation.move(-((shapeModel->boundBox()[4].y + shapeModel->boundBox()[0].y) / 2), Matrix::AXIS_Y);
-    translation.move(shapeModel->boundBox()[2].z * 2, Matrix::AXIS_Z);
+    Vertex* bound = shapeModel->boundBox();
+    translation.move(-((bound[4].y + bound[0].y) / 2), Matrix::AXIS_Y);
+    translation.move(bound[2].z * 2, Matrix::AXIS_Z);
     rotation.rotate(10.0f, Matrix::AXIS_X);
   }
 
-  QAbstractItemView::setModel(model);
+  QAbstractItemView::reset();
 }
 
 void ShapeView::setCurrentPaintJob(int paintJob)
@@ -156,7 +163,6 @@ void ShapeView::showEvent(QShowEvent* event)
 void ShapeView::paintEvent(QPaintEvent* event)
 {
   event->accept();
-  ShapeModel* shapeModel = qobject_cast<ShapeModel*>(model());
 
   if (!shapeModel) {
     return;

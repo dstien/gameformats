@@ -16,6 +16,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 #include <QHeaderView>
+#include <QMenu>
 
 #include "materialsmodel.h"
 #include "shapemodel.h"
@@ -31,7 +32,19 @@ ShapeResource::ShapeResource(const QString& fileName, QString id, QDataStream* i
   ui.verticesView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
   ui.materialsView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
 
+  shapeModel = new ShapeModel(this);
+
+  ui.primitivesView->setModel(shapeModel);
+  ui.shapeView->setModel(shapeModel);
+  ui.shapeView->setSelectionModel(ui.primitivesView->selectionModel());
+
   parse(in);
+  ui.shapeView->reset();
+
+  connect(shapeModel, SIGNAL(dataChanged(QModelIndex, QModelIndex)),
+      this, SLOT(isModified()));
+  connect(ui.primitivesView->selectionModel(), SIGNAL(currentChanged(QModelIndex, QModelIndex)),
+      this, SLOT(setModels(QModelIndex)));
 }
 
 void ShapeResource::parse(QDataStream* in)
@@ -118,8 +131,8 @@ void ShapeResource::parse(QDataStream* in)
       Primitive primitive;
       primitive.type = type;
       primitive.depthIndex = depthIndex;
-      primitive.verticesModel = new VerticesModel(verticesList);
-      primitive.materialsModel = new MaterialsModel(materialsList);
+      primitive.verticesModel = new VerticesModel(verticesList, shapeModel);
+      primitive.materialsModel = new MaterialsModel(materialsList, shapeModel);
 
       primitive.unknown1 = unknowns1[i];
       primitive.unknown2 = unknowns2[i];
@@ -150,30 +163,15 @@ void ShapeResource::parse(QDataStream* in)
   delete[] unknowns2;
   unknowns2 = 0;
 
-  ShapeModel* shapeModel = new ShapeModel(primitives, this);
-
-  connect(shapeModel, SIGNAL(dataChanged(QModelIndex,QModelIndex)),
-      this, SLOT(isModified()));
-
-  ui.primitivesView->setModel(shapeModel);
-  ui.shapeView->setModel(shapeModel);
-  ui.shapeView->setSelectionModel(ui.primitivesView->selectionModel());
+  shapeModel->setShape(primitives);
 
   ui.numPaintJobsSpinBox->setValue(numPaintJobs);
   ui.paintJobSpinBox->setMaximum(numPaintJobs);
-
-  connect(ui.primitivesView->selectionModel(), SIGNAL(currentChanged(QModelIndex, QModelIndex)),
-      this, SLOT(setModels(QModelIndex)));
 }
 
 void ShapeResource::write(QDataStream* out) const
 {
   VerticesList vertices;
-  ShapeModel* shapeModel = qobject_cast<ShapeModel*>(ui.shapeView->model());
-
-  if (!shapeModel) {
-    throw tr("No shape data.");
-  }
 
   // Bound box for all shapes but explosion debris.
   if (!id().contains(QRegExp("exp[0-3]{1,1}$"))) {
@@ -239,7 +237,7 @@ void ShapeResource::write(QDataStream* out) const
   }
 
   // Unknown padding.
-  *out << (qint8)0 << (qint8)0 << (qint8)0x0f;
+  *out << (qint8)0 << (qint8)0 << (qint8)0;
 
   checkError(out, tr("padding"), true);
 }
@@ -254,10 +252,8 @@ void ShapeResource::deselectAll()
 void ShapeResource::setModels(const QModelIndex& index)
 {
   int row = index.row();
-  ShapeModel* shapeModel = qobject_cast<ShapeModel*>(ui.shapeView->model());
 
-  if (!shapeModel || !index.isValid() ||
-      (row < 0) || row >= shapeModel->rowCount()) {
+  if (!index.isValid() || row >= shapeModel->rowCount()) {
     return;
   }
 
@@ -272,11 +268,6 @@ void ShapeResource::setModels(const QModelIndex& index)
 void ShapeResource::setNumPaintJobs()
 {
   int num = qBound(1, ui.numPaintJobsSpinBox->value(), 127);
-  ShapeModel* shapeModel = qobject_cast<ShapeModel*>(ui.shapeView->model());
-
-  if (!shapeModel) {
-    return;
-  }
 
   foreach (Primitive primitive, *(shapeModel->primitivesList())) {
     int rows = primitive.materialsModel->rowCount();
@@ -294,6 +285,30 @@ void ShapeResource::setNumPaintJobs()
 
   ui.paintJobSpinBox->setMaximum(num);
   isModified();
+}
+
+void ShapeResource::removePrimitives()
+{
+  shapeModel->removeRows(ui.primitivesView->selectionModel()->selectedRows());
+
+  if (!shapeModel->rowCount()) {
+    ui.verticesView->setModel(0);
+    ui.materialsView->setModel(0);
+  }
+
+  isModified();
+}
+
+void ShapeResource::primitivesContextMenu(const QPoint& /*pos*/)
+{
+  if (ui.primitivesView->selectionModel()->hasSelection()) {
+    ui.removePrimitivesAction->setEnabled(true);
+  }
+  else {
+    ui.removePrimitivesAction->setEnabled(false);
+  }
+
+  ui.primitivesMenu->exec(QCursor::pos());
 }
 
 void ShapeResource::isModified()

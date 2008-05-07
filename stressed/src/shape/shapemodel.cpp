@@ -22,16 +22,9 @@
 const int ShapeModel::DEPTH_MIN;
 const int ShapeModel::DEPTH_MAX;
 
-ShapeModel::ShapeModel(PrimitivesList& primitives, QObject* parent)
-: QAbstractTableModel(parent),
-  primitives(primitives)
+ShapeModel::ShapeModel(QObject* parent)
+: QAbstractTableModel(parent)
 {
-  foreach (Primitive primitive, primitives) {
-    primitive.verticesModel->setParent(this);
-    primitive.materialsModel->setParent(this);
-  }
-
-  updateBoundBox();
 }
 
 Qt::ItemFlags ShapeModel::flags(const QModelIndex& index) const
@@ -158,28 +151,79 @@ QVariant ShapeModel::headerData(int section, Qt::Orientation orientation, int ro
   }
 }
 
-void ShapeModel::updateBoundBox()
+bool ShapeModel::removeRows(int position, int rows, const QModelIndex& /*index*/)
 {
-  Vertex first = primitives.at(0).verticesModel->verticesList()->at(0);
-  qint16 minX = first.x, minY = first.y, minZ = first.z, maxX = minX, maxY = minY, maxZ = minZ;
+  beginRemoveRows(QModelIndex(), position, position + rows - 1);
 
-  foreach (Primitive primitive, primitives) {
-    foreach (Vertex vertex, *(primitive.verticesModel->verticesList())) {
-      if (vertex.x < minX) minX = vertex.x;
-      else if (vertex.x > maxX) maxX = vertex.x;
-      if (vertex.y < minY) minY = vertex.y;
-      else if (vertex.y > maxY) maxY = vertex.y;
-      if (vertex.z < minZ) minZ = vertex.z;
-      else if (vertex.z > maxZ) maxZ = vertex.z;
-    }
+  for (int row = 0; row < rows; row++) {
+    primitives.removeAt(position);
   }
 
-  bound[0].x = minX; bound[0].y = minY; bound[0].z = maxZ;
-  bound[1].x = maxX; bound[1].y = minY; bound[1].z = maxZ;
-  bound[2].x = minX; bound[2].y = minY; bound[2].z = minZ;
-  bound[3].x = maxX; bound[3].y = minY; bound[3].z = minZ;
-  bound[4].x = minX; bound[4].y = maxY; bound[4].z = maxZ;
-  bound[5].x = maxX; bound[5].y = maxY; bound[5].z = maxZ;
-  bound[6].x = minX; bound[6].y = maxY; bound[6].z = minZ;
-  bound[7].x = maxX; bound[7].y = maxY; bound[7].z = minZ;
+  endRemoveRows();
+
+  return true;
+}
+
+void ShapeModel::removeRows(const QModelIndexList& rows)
+{
+  // Using persistent indices since row removal will invalidate current selection.
+  QList<QPersistentModelIndex> persistentRows;
+  foreach (QModelIndex row, rows) {
+    persistentRows.append(QPersistentModelIndex(row));
+  }
+
+  foreach (QPersistentModelIndex row, persistentRows) {
+    removeRows(row.row(), 1);
+  }
+}
+
+void ShapeModel::setShape(PrimitivesList& primitives)
+{
+  if (!primitives.isEmpty()) {
+    this->primitives = primitives;
+
+    beginInsertRows(QModelIndex(), 0, primitives.size() - 1);
+
+    foreach (Primitive primitive, primitives) {
+      primitive.verticesModel->setParent(this);
+      primitive.materialsModel->setParent(this);
+    }
+
+    endInsertRows();
+  }
+}
+
+Vertex* ShapeModel::boundBox()
+{
+  if (primitives.isEmpty()) {
+    for (int i = 0; i < 8; i++) {
+      bound[i].x = 0; bound[i].y = 0; bound[i].z = 0;
+    }
+  }
+  else {
+    Vertex first = primitives.at(0).verticesModel->verticesList()->at(0);
+    qint16 minX = first.x, minY = first.y, minZ = first.z, maxX = minX, maxY = minY, maxZ = minZ;
+
+    foreach (Primitive primitive, primitives) {
+      foreach (Vertex vertex, *(primitive.verticesModel->verticesList())) {
+        if (vertex.x < minX) minX = vertex.x;
+        else if (vertex.x > maxX) maxX = vertex.x;
+        if (vertex.y < minY) minY = vertex.y;
+        else if (vertex.y > maxY) maxY = vertex.y;
+        if (vertex.z < minZ) minZ = vertex.z;
+        else if (vertex.z > maxZ) maxZ = vertex.z;
+      }
+    }
+
+    bound[0].x = minX; bound[0].y = minY; bound[0].z = maxZ;
+    bound[1].x = maxX; bound[1].y = minY; bound[1].z = maxZ;
+    bound[2].x = minX; bound[2].y = minY; bound[2].z = minZ;
+    bound[3].x = maxX; bound[3].y = minY; bound[3].z = minZ;
+    bound[4].x = minX; bound[4].y = maxY; bound[4].z = maxZ;
+    bound[5].x = maxX; bound[5].y = maxY; bound[5].z = maxZ;
+    bound[6].x = minX; bound[6].y = maxY; bound[6].z = minZ;
+    bound[7].x = maxX; bound[7].y = maxY; bound[7].z = minZ;
+  }
+
+  return bound;
 }

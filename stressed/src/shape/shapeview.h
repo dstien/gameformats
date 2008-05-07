@@ -23,6 +23,7 @@
 #include "app/settings.h"
 #include "matrix.h"
 
+class ShapeModel;
 class QGLWidget;
 
 class ShapeView : public QAbstractItemView
@@ -36,6 +37,9 @@ public:
   QRect             visualRect(const QModelIndex& /*index*/) const                      { return viewport()->rect(); }
   void              scrollTo(const QModelIndex& /*index*/, ScrollHint /*hint*/ = EnsureVisible) { }
   QModelIndex       indexAt(const QPoint& /*point*/) const                              { return QModelIndex(); }
+
+public slots:
+  void              reset();
 
 protected slots:
   void              setCurrentPaintJob(int paintJob);
@@ -64,6 +68,7 @@ private:
   Materials           materials();
 
   QGLWidget*          glWidget;
+  ShapeModel*         shapeModel;
   QPoint              lastMousePosition;
   Matrix              rotation;
   Matrix              translation;

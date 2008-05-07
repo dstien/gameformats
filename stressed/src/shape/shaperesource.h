@@ -22,6 +22,8 @@
 
 #include "ui_shaperesource.h"
 
+class ShapeModel;
+
 class ShapeResource : public Resource
 {
   Q_OBJECT
@@ -39,10 +41,16 @@ private slots:
   void              deselectAll();
   void              setModels(const QModelIndex& index);
   void              setNumPaintJobs();
+
+  void              removePrimitives();
+  void              primitivesContextMenu(const QPoint& pos);
+
   void              isModified();
 
 private:
   Ui::ShapeResource ui;
+
+  ShapeModel*       shapeModel;
 };
 
 #endif
