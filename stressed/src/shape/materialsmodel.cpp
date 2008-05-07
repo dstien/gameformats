@@ -88,3 +88,30 @@ QVariant MaterialsModel::headerData(int section, Qt::Orientation orientation, in
     return section + 1;
   }
 }
+
+bool MaterialsModel::insertRows(int position, int rows, const QModelIndex& /*index*/)
+{
+  beginInsertRows(QModelIndex(), position, position + rows - 1);
+
+  for (int row = 0; row < rows; row++) {
+    // Expand by copying last material.
+    materials.insert(position, materials.last());
+  }
+
+  endInsertRows();
+
+  return true;
+}
+
+bool MaterialsModel::removeRows(int position, int rows, const QModelIndex& /*index*/)
+{
+  beginRemoveRows(QModelIndex(), position, position + rows - 1);
+  
+  for (int row = 0; row < rows; row++) {
+    materials.removeAt(position);
+  }
+
+  endRemoveRows();
+
+  return true;
+}

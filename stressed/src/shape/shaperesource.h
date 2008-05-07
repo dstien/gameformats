@@ -38,6 +38,7 @@ protected:
 private slots:
   void              deselectAll();
   void              setModels(const QModelIndex& index);
+  void              setNumPaintJobs();
   void              isModified();
 
 private:

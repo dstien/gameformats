@@ -115,14 +115,42 @@
           </widget>
          </item>
          <item>
-          <widget class="QTableView" name="materialsView" >
-           <property name="selectionBehavior" >
-            <enum>QAbstractItemView::SelectRows</enum>
-           </property>
-           <property name="cornerButtonEnabled" >
-            <bool>false</bool>
-           </property>
-          </widget>
+          <layout class="QVBoxLayout" >
+           <item>
+            <widget class="QTableView" name="materialsView" >
+             <property name="selectionBehavior" >
+              <enum>QAbstractItemView::SelectRows</enum>
+             </property>
+             <property name="cornerButtonEnabled" >
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" >
+             <item>
+              <widget class="QLabel" name="numPaintJobsLabel" >
+               <property name="text" >
+                <string>Number of paint-jobs</string>
+               </property>
+               <property name="buddy" >
+                <cstring>numPaintJobsSpinBox</cstring>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="numPaintJobsSpinBox" >
+               <property name="minimum" >
+                <number>1</number>
+               </property>
+               <property name="maximum" >
+                <number>127</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
          </item>
         </layout>
        </item>
@@ -164,6 +192,12 @@
    <signal>pressed()</signal>
    <receiver>ShapeResource</receiver>
    <slot>deselectAll()</slot>
+  </connection>
+  <connection>
+   <sender>numPaintJobsSpinBox</sender>
+   <signal>editingFinished()</signal>
+   <receiver>ShapeResource</receiver>
+   <slot>setNumPaintJobs()</slot>
   </connection>
  </connections>
 </ui>

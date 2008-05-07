@@ -157,9 +157,10 @@ void ShapeResource::parse(QDataStream* in)
 
   ui.primitivesView->setModel(shapeModel);
   ui.shapeView->setModel(shapeModel);
-  ui.paintJobSpinBox->setMaximum(numPaintJobs);
-
   ui.shapeView->setSelectionModel(ui.primitivesView->selectionModel());
+
+  ui.numPaintJobsSpinBox->setValue(numPaintJobs);
+  ui.paintJobSpinBox->setMaximum(numPaintJobs);
 
   connect(ui.primitivesView->selectionModel(), SIGNAL(currentChanged(QModelIndex, QModelIndex)),
       this, SLOT(setModels(QModelIndex)));
@@ -266,6 +267,33 @@ void ShapeResource::setModels(const QModelIndex& index)
   ui.materialsView->setModel(currentPrimitive.materialsModel);
 
   ui.shapeView->setCurrentIndex(index);
+}
+
+void ShapeResource::setNumPaintJobs()
+{
+  int num = qBound(1, ui.numPaintJobsSpinBox->value(), 127);
+  ShapeModel* shapeModel = qobject_cast<ShapeModel*>(ui.shapeView->model());
+
+  if (!shapeModel) {
+    return;
+  }
+
+  foreach (Primitive primitive, *(shapeModel->primitivesList())) {
+    int rows = primitive.materialsModel->rowCount();
+    if (num == rows) {
+      return;
+    }
+    else if (num < rows) {
+      int diff = rows - num;
+      primitive.materialsModel->removeRows(rows - diff, diff);
+    }
+    else {
+      primitive.materialsModel->insertRows(rows, num - rows);
+    }
+  }
+
+  ui.paintJobSpinBox->setMaximum(num);
+  isModified();
 }
 
 void ShapeResource::isModified()
