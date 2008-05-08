@@ -131,11 +131,6 @@ void ShapeResource::parse(QDataStream* in)
       primitive.unknown1 = unknowns1[i];
       primitive.unknown2 = unknowns2[i];
 
-      connect(primitive.verticesModel, SIGNAL(dataChanged(QModelIndex,QModelIndex)),
-          this, SLOT(isModified()));
-      connect(primitive.materialsModel, SIGNAL(dataChanged(QModelIndex,QModelIndex)),
-          this, SLOT(isModified()));
-
       primitives.append(primitive);
     }
   }
@@ -261,23 +256,25 @@ void ShapeResource::setModels(const QModelIndex& index)
 
 void ShapeResource::setNumPaintJobs()
 {
-  int num = qBound(1, ui.numPaintJobsSpinBox->value(), 127);
+  int num = ui.numPaintJobsSpinBox->value();
+  if (shapeModel->setNumPaintJobs(num)) {
+    ui.paintJobSpinBox->setMaximum(num);
+    isModified();
+  }
+}
 
-  foreach (Primitive primitive, *(shapeModel->primitivesList())) {
-    int rows = primitive.materialsModel->rowCount();
-    if (num == rows) {
-      return;
-    }
-    else if (num < rows) {
-      int diff = rows - num;
-      primitive.materialsModel->removeRows(rows - diff, diff);
-    }
-    else {
-      primitive.materialsModel->insertRows(rows, num - rows);
-    }
+void ShapeResource::insertPrimitive()
+{
+  int row;
+  if (ui.primitivesView->selectionModel()->hasSelection()) {
+    row = ui.primitivesView->currentIndex().row();
+  }
+  else {
+    // Insert at end if no rows are selected.
+    row = 256;
   }
 
-  ui.paintJobSpinBox->setMaximum(num);
+  shapeModel->insertRows(row, 1);
   isModified();
 }
 
@@ -300,6 +297,13 @@ void ShapeResource::primitivesContextMenu(const QPoint& /*pos*/)
   }
   else {
     ui.removePrimitivesAction->setEnabled(false);
+  }
+
+  if (shapeModel->rowCount() >= 255) {
+    ui.insertPrimitiveAction->setEnabled(false);
+  }
+  else {
+    ui.insertPrimitiveAction->setEnabled(true);
   }
 
   ui.primitivesMenu->exec(QCursor::pos());

@@ -15,6 +15,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+#include "shapemodel.h"
 #include "verticesmodel.h"
 
 const int VerticesModel::VAL_MIN;
@@ -22,8 +23,16 @@ const int VerticesModel::VAL_MAX;
 
 VerticesModel::VerticesModel(const VerticesList& vertices, QObject* parent)
 : QAbstractTableModel(parent),
-  vertices(vertices)
+  m_vertices(vertices)
 {
+  setup();
+}
+
+VerticesModel::VerticesModel(int type, QObject* parent)
+: QAbstractTableModel(parent)
+{
+  setup();
+  resize(type);
 }
 
 Qt::ItemFlags VerticesModel::flags(const QModelIndex& index) const
@@ -47,17 +56,19 @@ QVariant VerticesModel::data(const QModelIndex& index, int role) const
   switch (role) {
     case Qt::TextAlignmentRole:
       return QVariant(Qt::AlignRight | Qt::AlignVCenter);
+
     case Qt::DisplayRole:
     case Qt::EditRole:
       if (col == 0) {
-        return vertices[row].x;
+        return m_vertices[row].x;
       }
       else if (col == 1) {
-        return vertices[row].y;
+        return m_vertices[row].y;
       }
       else if (col == 2) {
-        return vertices[row].z;
+        return m_vertices[row].z;
       }
+
     default:
       return QVariant();
   }
@@ -81,22 +92,24 @@ bool VerticesModel::setData(const QModelIndex &index, const QVariant& value, int
 
   switch (col) {
     case 0:
-      if (result == vertices[row].x) {
+      if (result == m_vertices[row].x) {
         return false;
       }
-      vertices[row].x = result;
+      m_vertices[row].x = result;
       break;
+
     case 1:
-      if (result == vertices[row].y) {
+      if (result == m_vertices[row].y) {
         return false;
       }
-      vertices[row].y = result;
+      m_vertices[row].y = result;
       break;
+
     case 2:
-      if (result == vertices[row].z) {
+      if (result == m_vertices[row].z) {
         return false;
       }
-      vertices[row].z = result;
+      m_vertices[row].z = result;
   }
 
   emit dataChanged(index, index);
@@ -134,7 +147,8 @@ bool VerticesModel::insertRows(int position, int rows, const QModelIndex& index)
     vertex.x = 0;
     vertex.y = 0;
     vertex.z = 0;
-    vertices.insert(position, vertex);
+
+    m_vertices.insert(position, vertex);
   }
 
   endInsertRows();
@@ -146,7 +160,7 @@ bool VerticesModel::removeRows(int position, int rows, const QModelIndex& index)
   beginRemoveRows(index, position, position + rows - 1);
   
   for (int row = 0; row < rows; row++) {
-    vertices.removeAt(position);
+    m_vertices.removeAt(position);
   }
 
   endRemoveRows();
@@ -188,4 +202,10 @@ bool VerticesModel::verticesNeeded(int type, int& num)
   }
 
   return true;
+}
+
+void VerticesModel::setup()
+{
+  connect(this, SIGNAL(dataChanged(QModelIndex,QModelIndex)),
+      qobject_cast<ShapeModel*>(QObject::parent()), SLOT(isModified()));
 }

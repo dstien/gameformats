@@ -177,12 +177,18 @@
     </widget>
    </item>
   </layout>
+  <action name="insertPrimitiveAction" >
+   <property name="text" >
+    <string>&amp;Insert</string>
+   </property>
+  </action>
   <action name="removePrimitivesAction" >
    <property name="text" >
     <string>&amp;Remove selected</string>
    </property>
   </action>
   <widget class="QMenu" name="primitivesMenu" >
+   <addaction name="insertPrimitiveAction" />
    <addaction name="removePrimitivesAction" />
   </widget>
  </widget>
@@ -230,6 +236,12 @@
    <signal>customContextMenuRequested(QPoint)</signal>
    <receiver>ShapeResource</receiver>
    <slot>primitivesContextMenu(QPoint)</slot>
+  </connection>
+  <connection>
+   <sender>insertPrimitiveAction</sender>
+   <signal>triggered()</signal>
+   <receiver>ShapeResource</receiver>
+   <slot>insertPrimitive()</slot>
   </connection>
   <connection>
    <sender>removePrimitivesAction</sender>

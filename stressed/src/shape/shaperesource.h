@@ -42,6 +42,7 @@ private slots:
   void              setModels(const QModelIndex& index);
   void              setNumPaintJobs();
 
+  void              insertPrimitive();
   void              removePrimitives();
   void              primitivesContextMenu(const QPoint& pos);
 

@@ -28,6 +28,7 @@ class MaterialsModel : public QAbstractTableModel
 
 public:
   MaterialsModel(const MaterialsList& vertices, QObject* parent = 0);
+  MaterialsModel(int num, QObject* parent = 0);
 
   Qt::ItemFlags     flags(const QModelIndex& index) const;
   QVariant          data(const QModelIndex& index, int role) const;
@@ -37,13 +38,16 @@ public:
   bool              insertRows(int position, int rows, const QModelIndex& index = QModelIndex());
   bool              removeRows(int position, int rows, const QModelIndex& index = QModelIndex());
 
-  int               rowCount(const QModelIndex& /*parent*/ = QModelIndex()) const    { return materials.size(); }
+  int               rowCount(const QModelIndex& /*parent*/ = QModelIndex()) const    { return m_materials.size(); }
   int               columnCount(const QModelIndex& /*parent*/ = QModelIndex()) const { return 1; }
 
-  MaterialsList*    materialsList()                                                  { return &materials; }
+  void              resize(int num);
+  MaterialsList*    materialsList()                                                  { return &m_materials; }
 
 private:
-  MaterialsList     materials;
+  void              setup();
+
+  MaterialsList     m_materials;
 
   static const int  VAL_MIN = 0;
   static const int  VAL_MAX = 255;

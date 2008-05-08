@@ -39,6 +39,7 @@ class VerticesModel : public QAbstractTableModel
 
 public:
   VerticesModel(const VerticesList& vertices, QObject* parent = 0);
+  VerticesModel(int type, QObject* parent = 0);
 
   Qt::ItemFlags     flags(const QModelIndex& index) const;
   QVariant          data(const QModelIndex& index, int role) const;
@@ -48,16 +49,18 @@ public:
   bool              insertRows(int position, int rows, const QModelIndex& index = QModelIndex());
   bool              removeRows(int position, int rows, const QModelIndex& index = QModelIndex());
 
-  int               rowCount(const QModelIndex& /*parent*/ = QModelIndex()) const    { return vertices.size(); }
+  int               rowCount(const QModelIndex& /*parent*/ = QModelIndex()) const    { return m_vertices.size(); }
   int               columnCount(const QModelIndex& /*parent*/ = QModelIndex()) const { return 3; }
 
   void              resize(int type);
-  VerticesList*     verticesList()                                                   { return &vertices; }
+  VerticesList*     verticesList()                                                   { return &m_vertices; }
 
   static bool       verticesNeeded(int type, int& verticesNeeded);
 
 private:
-  VerticesList      vertices;
+  void              setup();
+
+  VerticesList      m_vertices;
 
   static const int  VAL_MIN = -32768;
   static const int  VAL_MAX =  32767;

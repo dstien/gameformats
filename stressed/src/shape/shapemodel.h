@@ -47,29 +47,37 @@ public:
   bool              setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole);
   QVariant          headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
 
+  bool              insertRows(int position, int rows, const QModelIndex& index = QModelIndex());
   bool              removeRows(int position, int rows, const QModelIndex& index = QModelIndex());
+  void              removeRows(const QModelIndexList& rows);
 
-  int               rowCount(const QModelIndex& /*parent*/ = QModelIndex()) const    { return primitives.size(); }
+  int               rowCount(const QModelIndex& /*parent*/ = QModelIndex()) const    { return m_primitives.size(); }
   int               columnCount(const QModelIndex& /*parent*/ = QModelIndex()) const { return 4; }
 
   void              setShape(PrimitivesList& primitives);
-  PrimitivesList*   primitivesList()                                                 { return &primitives; }
+  PrimitivesList*   primitivesList()                                                 { return &m_primitives; }
   Vertex*           boundBox();
+
+  bool              setNumPaintJobs(int& num);
 
   static const QStringList TYPES;
 
 public slots:
-  void              removeRows(const QModelIndexList& rows);
+  void              isModified();
 
 private:
-  PrimitivesList    primitives;
-  Vertex            bound[8];
+  PrimitivesList    m_primitives;
+  Vertex            m_bound[8];
+  int               m_numPaintJobs;
 
   static const int  TYPE_MIN = 1;
   static const int  TYPE_MAX = 12;
 
   static const int  DEPTH_MIN = 0;
   static const int  DEPTH_MAX = 255;
+
+  static const int  PAINTJOBS_MIN = 1;
+  static const int  PAINTJOBS_MAX = 127;
 };
 
 #endif

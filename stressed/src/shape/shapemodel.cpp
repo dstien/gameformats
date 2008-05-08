@@ -27,6 +27,9 @@ const int ShapeModel::TYPE_MAX;
 const int ShapeModel::DEPTH_MIN;
 const int ShapeModel::DEPTH_MAX;
 
+const int ShapeModel::PAINTJOBS_MIN;
+const int ShapeModel::PAINTJOBS_MAX;
+
 const QStringList ShapeModel::TYPES = (QStringList()
     << tr("Particle")    << tr("Line")         << tr("Polygon (3)") << tr("Polygon (4)")
     << tr("Polygon (5)") << tr("Polygon (6)")  << tr("Polygon (7)") << tr("Polygon (8)")
@@ -35,6 +38,7 @@ const QStringList ShapeModel::TYPES = (QStringList()
 ShapeModel::ShapeModel(QObject* parent)
 : QAbstractTableModel(parent)
 {
+  m_numPaintJobs = 1;
 }
 
 Qt::ItemFlags ShapeModel::flags(const QModelIndex& index) const
@@ -68,20 +72,20 @@ QVariant ShapeModel::data(const QModelIndex& index, int role) const
       }
     case Qt::DisplayRole:
       if (col == 0) {
-        return TYPES[primitives[row].type - 1];
+        return TYPES[m_primitives[row].type - 1];
       }
     case Qt::EditRole:
       if (col == 0) {
-        return primitives[row].type;
+        return m_primitives[row].type;
       }
       else if (col == 1) {
-        return primitives[row].depthIndex;
+        return m_primitives[row].depthIndex;
       }
       else if (col == 2) {
-        return QString("%1").arg(primitives[row].unknown1, 8, 16, QChar('0')).toUpper();
+        return QString("%1").arg(m_primitives[row].unknown1, 8, 16, QChar('0')).toUpper();
       }
       else if (col == 3) {
-        return QString("%1").arg(primitives[row].unknown2, 8, 16, QChar('0')).toUpper();
+        return QString("%1").arg(m_primitives[row].unknown2, 8, 16, QChar('0')).toUpper();
       }
     default:
       return QVariant();
@@ -102,21 +106,21 @@ bool ShapeModel::setData(const QModelIndex &index, const QVariant& value, int ro
   if (col == 0) {
     quint8 result = qBound(TYPE_MIN, value.toInt(&success), TYPE_MAX);
 
-    if (!success || (result == primitives[row].type)) {
+    if (!success || (result == m_primitives[row].type)) {
       return false;
     }
 
-    primitives[row].verticesModel->resize(result);
-    primitives[row].type = result;
+    m_primitives[row].verticesModel->resize(result);
+    m_primitives[row].type = result;
   }
   else if (col == 1) {
     quint8 result = qBound(DEPTH_MIN, value.toInt(&success), DEPTH_MAX);
 
-    if (!success || (result == primitives[row].depthIndex)) {
+    if (!success || (result == m_primitives[row].depthIndex)) {
       return false;
     }
 
-    primitives[row].depthIndex = result;
+    m_primitives[row].depthIndex = result;
   }
   else {
     quint32 result = value.toString().toUInt(&success, 16);
@@ -126,16 +130,16 @@ bool ShapeModel::setData(const QModelIndex &index, const QVariant& value, int ro
     }
 
     if (col == 2) {
-      if (result == primitives[row].unknown1) {
+      if (result == m_primitives[row].unknown1) {
         return false;
       }
-      primitives[row].unknown1 = result;
+      m_primitives[row].unknown1 = result;
     }
     else if (col == 3) {
-      if (result == primitives[row].unknown2) {
+      if (result == m_primitives[row].unknown2) {
         return false;
       }
-      primitives[row].unknown2 = result;
+      m_primitives[row].unknown2 = result;
     }
     else {
       return false;
@@ -170,12 +174,32 @@ QVariant ShapeModel::headerData(int section, Qt::Orientation orientation, int ro
   }
 }
 
+bool ShapeModel::insertRows(int position, int rows, const QModelIndex& index)
+{
+  beginInsertRows(index, position, position + rows - 1);
+
+  for (int row = 0; row < rows; row++) {
+    Primitive primitive;
+    primitive.type = 1;
+    primitive.depthIndex = 0;
+    primitive.verticesModel = new VerticesModel(primitive.type, this);
+    primitive.materialsModel = new MaterialsModel(m_numPaintJobs, this);
+    primitive.unknown1 = 0xFFFFFFFF;
+    primitive.unknown2 = 0xFFFFFFFF;
+
+    m_primitives.insert(position, primitive);
+  }
+
+  endInsertRows();
+  return true;
+}
+
 bool ShapeModel::removeRows(int position, int rows, const QModelIndex& index)
 {
   beginRemoveRows(index, position, position + rows - 1);
 
   for (int row = 0; row < rows; row++) {
-    primitives.removeAt(position);
+    m_primitives.removeAt(position);
   }
 
   endRemoveRows();
@@ -199,31 +223,33 @@ void ShapeModel::removeRows(const QModelIndexList& rows)
 void ShapeModel::setShape(PrimitivesList& primitives)
 {
   if (!primitives.isEmpty()) {
-    this->primitives = primitives;
+    m_primitives = primitives;
 
-    beginInsertRows(QModelIndex(), 0, primitives.size() - 1);
+    beginInsertRows(QModelIndex(), 0, m_primitives.size() - 1);
 
-    foreach (Primitive primitive, primitives) {
+    foreach (Primitive primitive, m_primitives) {
       primitive.verticesModel->setParent(this);
       primitive.materialsModel->setParent(this);
     }
 
     endInsertRows();
+
+    m_numPaintJobs = m_primitives[0].materialsModel->rowCount();
   }
 }
 
 Vertex* ShapeModel::boundBox()
 {
-  if (primitives.isEmpty()) {
+  if (m_primitives.isEmpty()) {
     for (int i = 0; i < 8; i++) {
-      bound[i].x = 0; bound[i].y = 0; bound[i].z = 0;
+      m_bound[i].x = 0; m_bound[i].y = 0; m_bound[i].z = 0;
     }
   }
   else {
-    Vertex first = primitives.at(0).verticesModel->verticesList()->at(0);
+    Vertex first = m_primitives.at(0).verticesModel->verticesList()->at(0);
     qint16 minX = first.x, minY = first.y, minZ = first.z, maxX = minX, maxY = minY, maxZ = minZ;
 
-    foreach (Primitive primitive, primitives) {
+    foreach (Primitive primitive, m_primitives) {
       foreach (Vertex vertex, *(primitive.verticesModel->verticesList())) {
         if (vertex.x < minX) minX = vertex.x;
         else if (vertex.x > maxX) maxX = vertex.x;
@@ -234,15 +260,37 @@ Vertex* ShapeModel::boundBox()
       }
     }
 
-    bound[0].x = minX; bound[0].y = minY; bound[0].z = maxZ;
-    bound[1].x = maxX; bound[1].y = minY; bound[1].z = maxZ;
-    bound[2].x = minX; bound[2].y = minY; bound[2].z = minZ;
-    bound[3].x = maxX; bound[3].y = minY; bound[3].z = minZ;
-    bound[4].x = minX; bound[4].y = maxY; bound[4].z = maxZ;
-    bound[5].x = maxX; bound[5].y = maxY; bound[5].z = maxZ;
-    bound[6].x = minX; bound[6].y = maxY; bound[6].z = minZ;
-    bound[7].x = maxX; bound[7].y = maxY; bound[7].z = minZ;
+    m_bound[0].x = minX; m_bound[0].y = minY; m_bound[0].z = maxZ;
+    m_bound[1].x = maxX; m_bound[1].y = minY; m_bound[1].z = maxZ;
+    m_bound[2].x = minX; m_bound[2].y = minY; m_bound[2].z = minZ;
+    m_bound[3].x = maxX; m_bound[3].y = minY; m_bound[3].z = minZ;
+    m_bound[4].x = minX; m_bound[4].y = maxY; m_bound[4].z = maxZ;
+    m_bound[5].x = maxX; m_bound[5].y = maxY; m_bound[5].z = maxZ;
+    m_bound[6].x = minX; m_bound[6].y = maxY; m_bound[6].z = minZ;
+    m_bound[7].x = maxX; m_bound[7].y = maxY; m_bound[7].z = minZ;
   }
 
-  return bound;
+  return m_bound;
+}
+
+bool ShapeModel::setNumPaintJobs(int& num)
+{
+  num = qBound(PAINTJOBS_MIN, num, PAINTJOBS_MAX);
+
+  if (num == m_numPaintJobs) {
+    return false;
+  }
+
+  foreach (Primitive primitive, m_primitives) {
+    primitive.materialsModel->resize(num);
+  }
+
+  m_numPaintJobs = num;
+
+  return true;
+}
+
+void ShapeModel::isModified()
+{
+  emit dataChanged(QModelIndex(), QModelIndex());
 }

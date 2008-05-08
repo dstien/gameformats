@@ -16,14 +16,23 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 #include "materialsmodel.h"
+#include "shapemodel.h"
 
 const int MaterialsModel::VAL_MIN;
 const int MaterialsModel::VAL_MAX;
 
 MaterialsModel::MaterialsModel(const MaterialsList& materials, QObject* parent)
 : QAbstractTableModel(parent),
-  materials(materials)
+  m_materials(materials)
 {
+  setup();
+}
+
+MaterialsModel::MaterialsModel(int num, QObject* parent)
+: QAbstractTableModel(parent)
+{
+  setup();
+  resize(num);
 }
 
 Qt::ItemFlags MaterialsModel::flags(const QModelIndex& index) const
@@ -46,9 +55,11 @@ QVariant MaterialsModel::data(const QModelIndex& index, int role) const
   switch (role) {
     case Qt::TextAlignmentRole:
       return QVariant(Qt::AlignRight | Qt::AlignVCenter);
+
     case Qt::DisplayRole:
     case Qt::EditRole:
-      return materials[row];
+      return m_materials[row];
+
     default:
       return QVariant();
   }
@@ -66,11 +77,11 @@ bool MaterialsModel::setData(const QModelIndex &index, const QVariant& value, in
   bool success;
   quint8 result = qBound(VAL_MIN, value.toInt(&success), VAL_MAX);
 
-  if (!success || (result == materials[index.row()])) {
+  if (!success || (result == m_materials[index.row()])) {
     return false;
   }
 
-  materials[index.row()] = result;
+  m_materials[index.row()] = result;
   emit dataChanged(index, index);
   return true;
 }
@@ -94,8 +105,8 @@ bool MaterialsModel::insertRows(int position, int rows, const QModelIndex& index
   beginInsertRows(index, position, position + rows - 1);
 
   for (int row = 0; row < rows; row++) {
-    // Expand by copying last material.
-    materials.insert(position, materials.last());
+    // Expand by copying last material if available.
+    m_materials.insert(position, (m_materials.isEmpty() ? 0 : m_materials.last()));
   }
 
   endInsertRows();
@@ -108,10 +119,31 @@ bool MaterialsModel::removeRows(int position, int rows, const QModelIndex& index
   beginRemoveRows(index, position, position + rows - 1);
   
   for (int row = 0; row < rows; row++) {
-    materials.removeAt(position);
+    m_materials.removeAt(position);
   }
 
   endRemoveRows();
 
   return true;
+}
+
+void MaterialsModel::resize(int num)
+{
+  if (num == rowCount()) {
+    return;
+  }
+
+  else if (num < rowCount()) {
+    int diff = rowCount() - num;
+    removeRows(rowCount() - diff, diff);
+  }
+  else {
+    insertRows(rowCount(), num - rowCount());
+  }
+}
+
+void MaterialsModel::setup()
+{
+  connect(this, SIGNAL(dataChanged(QModelIndex,QModelIndex)),
+      qobject_cast<ShapeModel*>(QObject::parent()), SLOT(isModified()));
 }
