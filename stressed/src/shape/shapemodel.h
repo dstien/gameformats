@@ -56,12 +56,17 @@ public:
   PrimitivesList*   primitivesList()                                                 { return &primitives; }
   Vertex*           boundBox();
 
+  static const QStringList TYPES;
+
 public slots:
   void              removeRows(const QModelIndexList& rows);
 
 private:
   PrimitivesList    primitives;
   Vertex            bound[8];
+
+  static const int  TYPE_MIN = 1;
+  static const int  TYPE_MAX = 12;
 
   static const int  DEPTH_MIN = 0;
   static const int  DEPTH_MAX = 255;

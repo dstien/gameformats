@@ -21,6 +21,7 @@
 #include "materialsmodel.h"
 #include "shapemodel.h"
 #include "shaperesource.h"
+#include "typedelegate.h"
 #include "verticesmodel.h"
 
 ShapeResource::ShapeResource(const QString& fileName, QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags) :
@@ -31,6 +32,8 @@ ShapeResource::ShapeResource(const QString& fileName, QString id, QDataStream* i
   ui.primitivesView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
   ui.verticesView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
   ui.materialsView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
+
+  ui.primitivesView->setItemDelegateForColumn(0, new TypeDelegate(ui.primitivesView));
 
   shapeModel = new ShapeModel(this);
 
@@ -109,17 +112,8 @@ void ShapeResource::parse(QDataStream* in)
       }
       checkError(in, tr("material indices in primitive %1").arg(i));
 
-      if (type < 1 || type > 12) {
+      if (!VerticesModel::verticesNeeded(type, verticesNeeded)) {
         throw tr("Unknown type (%1) for primitive %2.").arg(type).arg(i);
-      }
-      else if (type == 11) {
-        verticesNeeded = 2;
-      }
-      else if (type == 12) {
-        verticesNeeded = 6;
-      }
-      else {
-        verticesNeeded = type;
       }
 
       for (int j = 0; j < verticesNeeded; j++) {

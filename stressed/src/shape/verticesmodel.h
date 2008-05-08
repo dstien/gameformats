@@ -45,10 +45,16 @@ public:
   bool              setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole);
   QVariant          headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
 
+  bool              insertRows(int position, int rows, const QModelIndex& index = QModelIndex());
+  bool              removeRows(int position, int rows, const QModelIndex& index = QModelIndex());
+
   int               rowCount(const QModelIndex& /*parent*/ = QModelIndex()) const    { return vertices.size(); }
   int               columnCount(const QModelIndex& /*parent*/ = QModelIndex()) const { return 3; }
 
+  void              resize(int type);
   VerticesList*     verticesList()                                                   { return &vertices; }
+
+  static bool       verticesNeeded(int type, int& verticesNeeded);
 
 private:
   VerticesList      vertices;

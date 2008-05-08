@@ -16,6 +16,7 @@ HEADERS += materialsmodel.h \
            shapemodel.h \
            shaperesource.h \
            shapeview.h \
+           typedelegate.h \
            verticesmodel.h
 
 SOURCES += materialsmodel.cpp \
@@ -23,4 +24,5 @@ SOURCES += materialsmodel.cpp \
            shapemodel.cpp \
            shaperesource.cpp \
            shapeview.cpp \
+           typedelegate.cpp \
            verticesmodel.cpp

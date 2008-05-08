@@ -15,12 +15,22 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+#include <QStringList>
+
 #include "materialsmodel.h"
 #include "shapemodel.h"
 #include "verticesmodel.h"
 
+const int ShapeModel::TYPE_MIN;
+const int ShapeModel::TYPE_MAX;
+
 const int ShapeModel::DEPTH_MIN;
 const int ShapeModel::DEPTH_MAX;
+
+const QStringList ShapeModel::TYPES = (QStringList()
+    << tr("Particle")    << tr("Line")         << tr("Polygon (3)") << tr("Polygon (4)")
+    << tr("Polygon (5)") << tr("Polygon (6)")  << tr("Polygon (7)") << tr("Polygon (8)")
+    << tr("Polygon (9)") << tr("Polygon (10)") << tr("Sphere")      << tr("Wheel"));
 
 ShapeModel::ShapeModel(QObject* parent)
 : QAbstractTableModel(parent)
@@ -33,11 +43,7 @@ Qt::ItemFlags ShapeModel::flags(const QModelIndex& index) const
     return 0;
   }
 
-  if (index.column() > 0) {
-    return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
-  }
-
-  return QAbstractItemModel::flags(index);
+  return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
 }
 
 QVariant ShapeModel::data(const QModelIndex& index, int role) const
@@ -61,6 +67,9 @@ QVariant ShapeModel::data(const QModelIndex& index, int role) const
         return QVariant();
       }
     case Qt::DisplayRole:
+      if (col == 0) {
+        return TYPES[primitives[row].type - 1];
+      }
     case Qt::EditRole:
       if (col == 0) {
         return primitives[row].type;
@@ -84,12 +93,23 @@ bool ShapeModel::setData(const QModelIndex &index, const QVariant& value, int ro
   int row = index.row(), col = index.column();
 
   if (!index.isValid() || role != Qt::EditRole ||
-      row >= rowCount() || col >= columnCount() || col < 1) {
+      row >= rowCount() || col >= columnCount()) {
     return false;
   }
 
-  if (col == 1) {
-    bool success;
+  bool success;
+
+  if (col == 0) {
+    quint8 result = qBound(TYPE_MIN, value.toInt(&success), TYPE_MAX);
+
+    if (!success || (result == primitives[row].type)) {
+      return false;
+    }
+
+    primitives[row].verticesModel->resize(result);
+    primitives[row].type = result;
+  }
+  else if (col == 1) {
     quint8 result = qBound(DEPTH_MIN, value.toInt(&success), DEPTH_MAX);
 
     if (!success || (result == primitives[row].depthIndex)) {
@@ -99,7 +119,6 @@ bool ShapeModel::setData(const QModelIndex &index, const QVariant& value, int ro
     primitives[row].depthIndex = result;
   }
   else {
-    bool success;
     quint32 result = value.toString().toUInt(&success, 16);
 
     if (!success) {
@@ -151,9 +170,9 @@ QVariant ShapeModel::headerData(int section, Qt::Orientation orientation, int ro
   }
 }
 
-bool ShapeModel::removeRows(int position, int rows, const QModelIndex& /*index*/)
+bool ShapeModel::removeRows(int position, int rows, const QModelIndex& index)
 {
-  beginRemoveRows(QModelIndex(), position, position + rows - 1);
+  beginRemoveRows(index, position, position + rows - 1);
 
   for (int row = 0; row < rows; row++) {
     primitives.removeAt(position);

@@ -124,3 +124,68 @@ QVariant VerticesModel::headerData(int section, Qt::Orientation orientation, int
     return section + 1;
   }
 }
+
+bool VerticesModel::insertRows(int position, int rows, const QModelIndex& index)
+{
+  beginInsertRows(index, position, position + rows - 1);
+
+  for (int row = 0; row < rows; row++) {
+    Vertex vertex;
+    vertex.x = 0;
+    vertex.y = 0;
+    vertex.z = 0;
+    vertices.insert(position, vertex);
+  }
+
+  endInsertRows();
+  return true;
+}
+
+bool VerticesModel::removeRows(int position, int rows, const QModelIndex& index)
+{
+  beginRemoveRows(index, position, position + rows - 1);
+  
+  for (int row = 0; row < rows; row++) {
+    vertices.removeAt(position);
+  }
+
+  endRemoveRows();
+
+  return true;
+}
+
+void VerticesModel::resize(int type)
+{
+  int num;
+  verticesNeeded(type, num);
+
+  if (num == rowCount()) {
+    return;
+  }
+  else if (num < rowCount()) {
+    int diff = rowCount() - num;
+    removeRows(rowCount() - diff, diff);
+  }
+  else {
+    insertRows(rowCount(), num - rowCount());
+  }
+}
+
+bool VerticesModel::verticesNeeded(int type, int& num)
+{
+  if (type < 1 || type > 12) {
+    num = 0;
+    return false;
+  }
+  else if (type == 11) {
+    num = 2;
+  }
+  else if (type == 12) {
+    num = 6;
+  }
+  else {
+    num = type;
+  }
+
+  return true;
+}

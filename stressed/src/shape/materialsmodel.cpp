@@ -89,9 +89,9 @@ QVariant MaterialsModel::headerData(int section, Qt::Orientation orientation, in
   }
 }
 
-bool MaterialsModel::insertRows(int position, int rows, const QModelIndex& /*index*/)
+bool MaterialsModel::insertRows(int position, int rows, const QModelIndex& index)
 {
-  beginInsertRows(QModelIndex(), position, position + rows - 1);
+  beginInsertRows(index, position, position + rows - 1);
 
   for (int row = 0; row < rows; row++) {
     // Expand by copying last material.
@@ -103,9 +103,9 @@ bool MaterialsModel::insertRows(int position, int rows, const QModelIndex& /*ind
   return true;
 }
 
-bool MaterialsModel::removeRows(int position, int rows, const QModelIndex& /*index*/)
+bool MaterialsModel::removeRows(int position, int rows, const QModelIndex& index)
 {
-  beginRemoveRows(QModelIndex(), position, position + rows - 1);
+  beginRemoveRows(index, position, position + rows - 1);
   
   for (int row = 0; row < rows; row++) {
     materials.removeAt(position);
