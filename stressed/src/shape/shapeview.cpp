@@ -18,6 +18,7 @@
 #include <QGLWidget>
 #include <QPaintEvent>
 
+#include "app/settings.h"
 #include "materialsmodel.h"
 #include "shapemodel.h"
 #include "shapeview.h"
@@ -183,7 +184,7 @@ void ShapeView::paintEvent(QPaintEvent* event)
     MaterialsList* materialsList = primitive.materialsModel->materialsList();
 
     int material = materialsList->at(currentPaintJob);
-    QColor color = palette()[materials()[material].color];
+    QColor color = Settings::PALETTE[Settings::MATERIALS[material].color];
 
     if (selections->isSelected(shapeModel->index(i, 0))) {
       color.setRed(qMin(0xFF, color.red() + 0x7F));
@@ -193,13 +194,13 @@ void ShapeView::paintEvent(QPaintEvent* event)
 
     glWidget->qglColor(color);
 
-    if (materials()[material].pattern && (materials()[material].pattern <= 6)) {
-      if (materials()[material].pattern == 1) { // Skip transparent primitives.
+    if (Settings::MATERIALS[material].pattern && (Settings::MATERIALS[material].pattern <= 6)) {
+      if (Settings::MATERIALS[material].pattern == 1) { // Skip transparent primitives.
         continue;
       }
 
       glEnable(GL_POLYGON_STIPPLE);
-      glPolygonStipple(PATTERNS[materials()[material].pattern - 2]);
+      glPolygonStipple(PATTERNS[Settings::MATERIALS[material].pattern - 2]);
     }
 
     if (primitive.depthIndex) {
@@ -242,7 +243,7 @@ void ShapeView::paintEvent(QPaintEvent* event)
       glEnd();
     }
 
-    if (materials()[material].pattern) {
+    if (Settings::MATERIALS[material].pattern) {
       glDisable(GL_POLYGON_STIPPLE);
     }
 
@@ -289,16 +290,4 @@ void ShapeView::mouseMoveEvent(QMouseEvent* event)
   }
 
   viewport()->update();
-}
-
-Palette ShapeView::palette()
-{
-  static Palette pal = Settings().getPalette("palettes/vga");
-  return pal;
-}
-
-Materials ShapeView::materials()
-{
-  static Materials mat = Settings().getMaterials();
-  return mat;
 }

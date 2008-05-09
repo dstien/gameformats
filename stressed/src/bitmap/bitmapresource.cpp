@@ -20,6 +20,7 @@
 #include <QImageWriter>
 #include <QMessageBox>
 
+#include "app/settings.h"
 #include "bitmapresource.h"
 
 QString BitmapResource::currentFilePath;
@@ -89,7 +90,7 @@ void BitmapResource::parse(QDataStream* in)
 
     // Process data.
     image = new QImage(width, height, QImage::Format_Indexed8);
-    image->setColorTable(palette());
+    image->setColorTable(Settings::PALETTE);
 
     int ry = 0;
     for (int y = 0; y < height; y++) {
@@ -259,7 +260,7 @@ void BitmapResource::importFile()
       delete oldImage;
       oldImage = 0;
 
-      image = new QImage(newImage->convertToFormat(QImage::Format_Indexed8, palette()));
+      image = new QImage(newImage->convertToFormat(QImage::Format_Indexed8, Settings::PALETTE));
 
       delete newImage;
       newImage = 0;
@@ -286,12 +287,6 @@ void BitmapResource::importFile()
           tr("Error importing bitmap resource \"%1\" from image file \"%2\":\n%3").arg(id(), inFileName, msg));
     }
   }
-}
-
-Palette BitmapResource::palette()
-{
-  static Palette pal = Settings().getPalette("palettes/vga");
-  return pal;
 }
 
 // Get directory from currentFilePath.

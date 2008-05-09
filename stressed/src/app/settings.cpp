@@ -19,7 +19,9 @@
 
 #include "settings.h"
 
-const char Settings::DEFAULTS[] = ":/conf/defaults.conf";
+const char      Settings::DEFAULTS[] = ":/conf/defaults.conf";
+const Palette   Settings::PALETTE    = Settings().getPalette("palettes/vga");
+const Materials Settings::MATERIALS  = Settings().getMaterials();
 
 StringMap Settings::getStringMap(const QString& path)
 {

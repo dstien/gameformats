@@ -49,7 +49,9 @@ public:
   void              setMaterials(const Materials& materials);
   Materials         restoreMaterials();
 
-  static const char DEFAULTS[];
+  static const char       DEFAULTS[];
+  static const Palette    PALETTE;
+  static const Materials  MATERIALS;
 
 private:
   Palette           parsePalette(const QStringList& colorList);

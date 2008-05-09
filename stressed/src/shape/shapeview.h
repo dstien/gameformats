@@ -20,7 +20,6 @@
 
 #include <QAbstractItemView>
 
-#include "app/settings.h"
 #include "matrix.h"
 
 class ShapeModel;
@@ -64,9 +63,6 @@ protected:
   void              mousePressEvent(QMouseEvent* event);
 
 private:
-  Palette             palette();
-  Materials           materials();
-
   QGLWidget*          glWidget;
   ShapeModel*         shapeModel;
   QPoint              lastMousePosition;

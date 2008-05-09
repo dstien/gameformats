@@ -19,7 +19,6 @@
 #define BITMAPRESOURCE_H
 
 #include "app/resource.h"
-#include "app/settings.h"
 
 #include "ui_bitmapresource.h"
 
@@ -44,8 +43,6 @@ private slots:
   void                 importFile();
 
 private:
-  Palette              palette();
-
   QString              currentDir();
 
   Ui::BitmapResource   ui;
