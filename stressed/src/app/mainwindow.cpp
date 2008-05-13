@@ -21,9 +21,6 @@
 
 #include "mainwindow.h"
 
-const char MainWindow::APP_NAME[] = "stressed";
-const char MainWindow::ORG_NAME[] = "stuntstools";
-
 MainWindow::MainWindow(QWidget* parent, Qt::WFlags flags)
 : QMainWindow(parent, flags)
 {
@@ -45,7 +42,7 @@ void MainWindow::loadFile(const QString& fileName)
   catch (QString msg) {
     QMessageBox::critical(
         this,
-        APP_NAME,
+        QCoreApplication::applicationName(),
         tr("Error loading \"%1\":\n%2").arg(fileName, msg));
 
     reset();
@@ -62,7 +59,7 @@ void MainWindow::saveFile(const QString& fileName)
   catch (QString msg) {
     QMessageBox::critical(
         this,
-        APP_NAME,
+        QCoreApplication::applicationName(),
         tr("Error saving \"%1\":\n%2").arg(fileName, msg));
   }
 
@@ -88,7 +85,7 @@ bool MainWindow::reset()
     QMessageBox::StandardButton ret;
     ret = QMessageBox::warning(
         this,
-        APP_NAME,
+        QCoreApplication::applicationName(),
         tr("The file has been modified.\n"
           "Do you want to save your changes?"),
         QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
@@ -196,5 +193,5 @@ void MainWindow::updateWindowTitle()
       (modified ? "*" : "") +
       (currentFileName.isEmpty() ? tr("New file") : currentFileName) +
       " - " +
-      APP_NAME);
+      QCoreApplication::applicationName());
 }

@@ -82,8 +82,6 @@ ShapeView::ShapeView(QWidget* parent)
 {
   shapeModel = 0;
   currentPaintJob = 0;
-  translation = Matrix();
-  rotation = Matrix();
 
   glWidget = new QGLWidget(this);
   glWidget->makeCurrent();
@@ -104,6 +102,9 @@ void ShapeView::setModel(QAbstractItemModel* model)
 
 void ShapeView::reset()
 {
+  translation.reset();
+  rotation.reset();
+
   if (shapeModel) {
     Vertex* bound = shapeModel->boundBox();
     translation.move(-((bound[4].y + bound[0].y) / 2), Matrix::AXIS_Y);

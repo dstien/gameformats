@@ -15,17 +15,33 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+#include <QFileDialog>
 #include <QHeaderView>
 #include <QMenu>
+#include <QMessageBox>
+#include <QTextStream>
 
+#include "app/settings.h"
 #include "materialsmodel.h"
 #include "shapemodel.h"
 #include "shaperesource.h"
 #include "typedelegate.h"
-#include "verticesmodel.h"
 
-ShapeResource::ShapeResource(const QString& fileName, QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags) :
-  Resource(fileName, id, parent, flags)
+QFileInfo     ShapeResource::currentFile;
+QString       ShapeResource::currentFileFilter;
+
+const int     ShapeResource::MAX_VERTICES;
+
+const char    ShapeResource::FILE_FILTERS[]        = "Wavefront OBJ (*.obj);;All files (*)";
+const char    ShapeResource::MTL_SRC[]             = ":/shape/materials.mtl";
+const char    ShapeResource::MTL_DST[]             = "stunts.mtl";
+
+const QRegExp ShapeResource::OBJ_REGEXP_WHITESPACE = QRegExp("\\s+");
+const QRegExp ShapeResource::OBJ_REGEXP_VERTEX     = QRegExp("^v(\\s+([+-]?\\d*\\.\\d+)(?![-+0-9\\.])){3}\\s*$");
+const QRegExp ShapeResource::OBJ_REGEXP_FACE       = QRegExp("^[flp](\\s+(\\d+)){1,10}\\s*$");
+
+ShapeResource::ShapeResource(const QString& fileName, QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags)
+: Resource(fileName, id, parent, flags)
 {
   ui.setupUi(this);
 
@@ -52,7 +68,7 @@ ShapeResource::ShapeResource(const QString& fileName, QString id, QDataStream* i
 
 void ShapeResource::parse(QDataStream* in)
 {
-  PrimitivesList primitives = PrimitivesList();
+  PrimitivesList primitives;
 
   quint8 numVertices, numPrimitives, numPaintJobs, reserved;
   Vertex* vertices = 0;
@@ -160,27 +176,9 @@ void ShapeResource::parse(QDataStream* in)
 
 void ShapeResource::write(QDataStream* out) const
 {
-  VerticesList vertices;
-
-  // Bound box for all shapes but explosion debris.
-  if (!id().contains(QRegExp("exp[0-3]{1,1}$"))) {
-    Vertex* bound = shapeModel->boundBox();
-    for (int i = 0; i < 8; i++) {
-      vertices.append(bound[i]);
-    }
-  }
-
-  // Generate list of unique vertices.
-  foreach (Primitive primitive, *(shapeModel->primitivesList())) {
-    foreach (Vertex vertex, *(primitive.verticesModel->verticesList())) {
-      if (!vertices.contains(vertex)) {
-        vertices.append(vertex);
-      }
-      if (vertices.size() > 256) {
-        throw tr("Number of vertices (%1) exceeds limit of 256.").arg(vertices.size());
-      }
-    }
-  }
+  // Generate list of unique vertices, include bound box for all shapes but
+  // explosion debris.
+  VerticesList vertices = buildVerticesList(!id().contains(QRegExp("exp[0-3]{1,1}$")));
 
   // Write header.
   *out << (quint8)vertices.size() << (quint8)shapeModel->rowCount() << (quint8)ui.paintJobSpinBox->maximum() << (quint8)0;
@@ -263,6 +261,38 @@ void ShapeResource::setNumPaintJobs()
   }
 }
 
+void ShapeResource::moveFirstPrimitives()
+{
+  if (ui.primitivesView->selectionModel()->hasSelection()) {
+    shapeModel->moveRows(ui.primitivesView->selectionModel(), -256);
+    isModified();
+  }
+}
+
+void ShapeResource::moveUpPrimitives()
+{
+  if (ui.primitivesView->selectionModel()->hasSelection()) {
+    shapeModel->moveRows(ui.primitivesView->selectionModel(), -1);
+    isModified();
+  }
+}
+
+void ShapeResource::moveDownPrimitives()
+{
+  if (ui.primitivesView->selectionModel()->hasSelection()) {
+    shapeModel->moveRows(ui.primitivesView->selectionModel(), 1);
+    isModified();
+  }
+}
+
+void ShapeResource::moveLastPrimitives()
+{
+  if (ui.primitivesView->selectionModel()->hasSelection()) {
+    shapeModel->moveRows(ui.primitivesView->selectionModel(), 256);
+    isModified();
+  }
+}
+
 void ShapeResource::insertPrimitive()
 {
   int row;
@@ -275,7 +305,23 @@ void ShapeResource::insertPrimitive()
   }
 
   shapeModel->insertRows(row, 1);
+
+  // Select the new row.
+  ui.primitivesView->selectionModel()->reset();
+  ui.primitivesView->setCurrentIndex(shapeModel->index((row < 256 ? row : shapeModel->rowCount() - 1), 0));
+
   isModified();
+}
+
+void ShapeResource::duplicatePrimitive()
+{
+  if (ui.primitivesView->selectionModel()->hasSelection()) {
+    int row = ui.primitivesView->currentIndex().row();
+    shapeModel->duplicateRow(row);
+
+    ui.primitivesView->setCurrentIndex(shapeModel->index(row, 0));
+    isModified();
+  }
 }
 
 void ShapeResource::removePrimitives()
@@ -293,20 +339,263 @@ void ShapeResource::removePrimitives()
 void ShapeResource::primitivesContextMenu(const QPoint& /*pos*/)
 {
   if (ui.primitivesView->selectionModel()->hasSelection()) {
+    ui.moveFirstPrimitivesAction->setEnabled(true);
+    ui.moveUpPrimitivesAction->setEnabled(true);
+    ui.moveDownPrimitivesAction->setEnabled(true);
+    ui.moveLastPrimitivesAction->setEnabled(true);
+
+    ui.duplicatePrimitiveAction->setEnabled(true);
     ui.removePrimitivesAction->setEnabled(true);
   }
   else {
+    ui.moveFirstPrimitivesAction->setEnabled(false);
+    ui.moveUpPrimitivesAction->setEnabled(false);
+    ui.moveDownPrimitivesAction->setEnabled(false);
+    ui.moveLastPrimitivesAction->setEnabled(false);
+
+    ui.duplicatePrimitiveAction->setEnabled(false);
     ui.removePrimitivesAction->setEnabled(false);
   }
 
   if (shapeModel->rowCount() >= 255) {
     ui.insertPrimitiveAction->setEnabled(false);
+    ui.duplicatePrimitiveAction->setEnabled(false);
   }
   else {
     ui.insertPrimitiveAction->setEnabled(true);
   }
 
   ui.primitivesMenu->exec(QCursor::pos());
+}
+
+void ShapeResource::exportFile()
+{
+  QString genName = QString("%1-%2.obj").arg(QString(fileName()).replace('.', '_'), id());
+
+  if (currentFile.absolutePath().isEmpty()) {
+    currentFile.setFile(QDir::home(), genName);
+  }
+  else {
+    currentFile.setFile(currentFile.absolutePath() + QDir::separator() + genName);
+  }
+
+  QString outFileName = QFileDialog::getSaveFileName(
+      this,
+      tr("Export shape"),
+      currentFile.absoluteFilePath(),
+      FILE_FILTERS,
+      &currentFileFilter);
+
+  if (!outFileName.isEmpty()) {
+    currentFile.setFile(outFileName);
+
+    try {
+      QFile objFile(currentFile.absoluteFilePath());
+      if (objFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        QTextStream out(&objFile);
+        out << "# " << Settings::APP_NAME << " - " << Settings::APP_DESC << endl;
+        out << "# " << Settings::ORG_URL << endl;
+        out << tr("# Shape \"%1\" exported from file \"%2\"").arg(id(), fileName()) << endl << endl;
+
+        out << "mtllib " << MTL_DST << endl << endl;
+
+        VerticesList vertices = buildVerticesList();
+        foreach (Vertex vertex, vertices) {
+          out << "v" << qSetFieldWidth(10) << right << fixed << qSetRealNumberPrecision(1)
+              << (float)vertex.x << (float)vertex.y << (float)vertex.z << reset << endl;
+        }
+
+        out << endl;
+
+        int prevMat = -1, curMat;
+        foreach (Primitive primitive, *(shapeModel->primitivesList())) {
+          curMat = primitive.materialsModel->materialsList()->at(ui.paintJobSpinBox->value() - 1);
+          if (curMat != prevMat) {
+            prevMat = curMat;
+            out << QString("usemtl Stunts%1").arg(curMat, 3, 10, QChar('0')) << endl;
+          }
+
+          switch (primitive.type) {
+            case 1:
+              out << "p";
+              break;
+
+            case 2:
+            case 11:
+            case 12:
+              out << "l";
+              break;
+
+            default:
+              out << "f";
+          }
+
+          out << qSetFieldWidth(4) << right;
+          foreach (Vertex vertex, *(primitive.verticesModel->verticesList())) {
+            out << vertices.indexOf(vertex) + 1;
+          }
+          out << reset << endl;
+        }
+
+        objFile.close();
+
+        QFile::copy(MTL_SRC, currentFile.absolutePath() + QDir::separator() + MTL_DST);
+      }
+      else {
+        throw tr("Couldn't open file for writing.");
+      }
+    }
+    catch (QString msg) {
+      QMessageBox::critical(
+          this,
+          QCoreApplication::applicationName(),
+          tr("Error exporting shape resource \"%1\" to Wavefront OBJ file \"%2\": %3").arg(id(), currentFile.absoluteFilePath(), msg));
+    }
+  }
+}
+
+void ShapeResource::importFile()
+{
+  if (currentFile.absolutePath().isEmpty()) {
+    currentFile.setFile(QDir::home(), "");
+  }
+
+  QString inFileName = QFileDialog::getOpenFileName(
+      this,
+      tr("Import shape"),
+      currentFile.absolutePath(),
+      FILE_FILTERS,
+      &currentFileFilter);
+
+  if (!inFileName.isEmpty()) {
+    currentFile.setFile(inFileName);
+
+    try {
+      QFile objFile(currentFile.absoluteFilePath());
+      if (objFile.open(QIODevice::ReadOnly)) {
+        QTextStream in(&objFile);
+
+        PrimitivesList primitives;
+        VerticesList vertices;
+        quint8 material = 0;
+
+        int lineNum = 0;
+        try {
+          QString line;
+          while (!(line = in.readLine()).isNull()) {
+            lineNum++;
+
+            switch (line[0].toAscii()) {
+              case 'v':
+                if (line.contains(OBJ_REGEXP_VERTEX)) {
+                  QStringList tokens = line.split(OBJ_REGEXP_WHITESPACE);
+
+                  Vertex vertex;
+                  vertex.x = (qint16)tokens[1].toFloat();
+                  vertex.y = (qint16)tokens[2].toFloat();
+                  vertex.z = (qint16)tokens[3].toFloat();
+                  vertices.append(vertex);
+                }
+                break;
+
+              case 'f':
+              case 'l':
+              case 'p':
+                if (line.contains(OBJ_REGEXP_FACE)) {
+                  QStringList tokens = line.split(OBJ_REGEXP_WHITESPACE);
+
+                  Primitive primitive;
+                  int numVertices = tokens.size() - 1;
+
+                  if (line[0].toAscii() == 'l' && numVertices == 6) {
+                    primitive.type = 12; // Wheel.
+                  }
+                  else {
+                    primitive.type = numVertices;
+                  }
+                  primitive.depthIndex = 0;
+
+                  VerticesList faceVertices;
+                  for (int i = 0; i < numVertices; i++) {
+                    int index = tokens[i + 1].toInt() - 1;
+                    if (index < 0 || index >= vertices.size()) {
+                      throw tr("Vertex index %1 out of bounds (1-%2).").arg(index + 1).arg(vertices.size());
+                    }
+                    faceVertices.append(vertices[index]);
+                  }
+
+                  primitive.verticesModel = new VerticesModel(faceVertices, shapeModel);
+                  primitive.materialsModel = new MaterialsModel(material, shapeModel);
+                  primitive.unknown1 = 0xFFFFFFFF;
+                  primitive.unknown2 = 0xFFFFFFFF;
+                  primitives.append(primitive);
+                }
+                break;
+
+              case 'u':
+                if (line.startsWith("usemtl")) {
+                  material = line.trimmed().right(3).toUInt();
+                }
+                break;
+            }
+          }
+        }
+        catch (QString msg) {
+          // Clean-up.
+          foreach (Primitive primitive, primitives) {
+            delete primitive.verticesModel;
+            delete primitive.materialsModel;
+          }
+
+          throw tr("Parsing error at line %1: %2").arg(lineNum).arg(msg);
+        }
+
+        objFile.close();
+
+        shapeModel->setShape(primitives);
+        ui.shapeView->reset();
+
+        ui.numPaintJobsSpinBox->setValue(1);
+        ui.paintJobSpinBox->setMaximum(1);
+
+        isModified();
+      }
+      else {
+        throw tr("Couldn't open file for reading.");
+      }
+    }
+    catch (QString msg) {
+      QMessageBox::critical(
+          this,
+          QCoreApplication::applicationName(),
+          tr("Error importing Wavefront OBJ file \"%1\" to shape resource \"%2\": %3").arg(currentFile.absoluteFilePath(), id(), msg));
+    }
+  }
+}
+
+VerticesList ShapeResource::buildVerticesList(bool boundBox) const
+{
+  VerticesList vertices;
+
+  if (boundBox) {
+    Vertex* bound = shapeModel->boundBox();
+    for (int i = 0; i < 8; i++) {
+      vertices.append(bound[i]);
+    }
+  }
+
+  foreach (Primitive primitive, *(shapeModel->primitivesList())) {
+    foreach (Vertex vertex, *(primitive.verticesModel->verticesList())) {
+      if (!vertices.contains(vertex)) {
+        vertices.append(vertex);
+      }
+      if (vertices.size() > MAX_VERTICES) {
+        throw tr("Number of vertices (%1) exceeds limit of %2.").arg(vertices.size()).arg(MAX_VERTICES);
+      }
+    }
+  }
+
+  return vertices;
 }
 
 void ShapeResource::isModified()

@@ -49,6 +49,11 @@ public:
   void              setMaterials(const Materials& materials);
   Materials         restoreMaterials();
 
+  static const char APP_NAME[];
+  static const char APP_DESC[];
+  static const char ORG_NAME[];
+  static const char ORG_URL[];
+
   static const char       DEFAULTS[];
   static const Palette    PALETTE;
   static const Materials  MATERIALS;

@@ -2,5 +2,6 @@
 <RCC version="1.0">
  <qresource>
   <file>conf/defaults.conf</file>
+  <file>shape/materials.mtl</file>
  </qresource>
 </RCC>

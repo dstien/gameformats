@@ -32,9 +32,6 @@ public:
 
   void              loadFile(const QString& fileName);
 
-  static const char APP_NAME[];
-  static const char ORG_NAME[];
-
 protected:
   void              closeEvent(QCloseEvent* event);
 

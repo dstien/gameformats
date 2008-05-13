@@ -23,6 +23,7 @@
 #include "verticesmodel.h"
 
 class MaterialsModel;
+class QItemSelectionModel;
 
 typedef struct {
   quint8            type;
@@ -50,6 +51,8 @@ public:
   bool              insertRows(int position, int rows, const QModelIndex& index = QModelIndex());
   bool              removeRows(int position, int rows, const QModelIndex& index = QModelIndex());
   void              removeRows(const QModelIndexList& rows);
+  void              moveRows(QItemSelectionModel* selectionModel, int direction);
+  void              duplicateRow(int position);
 
   int               rowCount(const QModelIndex& /*parent*/ = QModelIndex()) const    { return m_primitives.size(); }
   int               columnCount(const QModelIndex& /*parent*/ = QModelIndex()) const { return 4; }

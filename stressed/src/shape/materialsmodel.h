@@ -28,6 +28,7 @@ class MaterialsModel : public QAbstractTableModel
 
 public:
   MaterialsModel(const MaterialsList& vertices, QObject* parent = 0);
+  MaterialsModel(quint8 material, QObject* parent = 0);
   MaterialsModel(int num, QObject* parent = 0);
 
   Qt::ItemFlags     flags(const QModelIndex& index) const;

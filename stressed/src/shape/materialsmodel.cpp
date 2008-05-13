@@ -29,6 +29,13 @@ MaterialsModel::MaterialsModel(const MaterialsList& materials, QObject* parent)
   setup();
 }
 
+MaterialsModel::MaterialsModel(quint8 material, QObject* parent)
+: QAbstractTableModel(parent)
+{
+  setup();
+  m_materials.append(material);
+}
+
 MaterialsModel::MaterialsModel(int num, QObject* parent)
 : QAbstractTableModel(parent)
 {

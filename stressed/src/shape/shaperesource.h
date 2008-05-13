@@ -18,7 +18,10 @@
 #ifndef SHAPERESOURCE_H
 #define SHAPERESOURCE_H
 
+#include <QFileInfo>
+
 #include "app/resource.h"
+#include "verticesmodel.h"
 
 #include "ui_shaperesource.h"
 
@@ -42,16 +45,40 @@ private slots:
   void              setModels(const QModelIndex& index);
   void              setNumPaintJobs();
 
+  void              moveFirstPrimitives();
+  void              moveUpPrimitives();
+  void              moveDownPrimitives();
+  void              moveLastPrimitives();
+
   void              insertPrimitive();
+  void              duplicatePrimitive();
   void              removePrimitives();
   void              primitivesContextMenu(const QPoint& pos);
+
+  void              exportFile();
+  void              importFile();
 
   void              isModified();
 
 private:
+  VerticesList      buildVerticesList(bool boundBox = false) const;
+
   Ui::ShapeResource ui;
 
   ShapeModel*       shapeModel;
+
+  static QFileInfo  currentFile;
+  static QString    currentFileFilter;
+
+  static const int  MAX_VERTICES = 256;
+
+  static const char FILE_FILTERS[];
+  static const char MTL_SRC[];
+  static const char MTL_DST[];
+
+  static const QRegExp OBJ_REGEXP_WHITESPACE;
+  static const QRegExp OBJ_REGEXP_VERTEX;
+  static const QRegExp OBJ_REGEXP_FACE;
 };
 
 #endif

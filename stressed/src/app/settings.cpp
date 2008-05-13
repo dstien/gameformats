@@ -19,6 +19,11 @@
 
 #include "settings.h"
 
+const char      Settings::APP_NAME[] = "stressed";
+const char      Settings::APP_DESC[] = "Stunts/4D [Sports] Driving resource editor";
+const char      Settings::ORG_NAME[] = "stuntstools";
+const char      Settings::ORG_URL[]  = "http://stuntstools.googlecode.com/";
+
 const char      Settings::DEFAULTS[] = ":/conf/defaults.conf";
 const Palette   Settings::PALETTE    = Settings().getPalette("palettes/vga");
 const Materials Settings::MATERIALS  = Settings().getMaterials();

@@ -18,12 +18,13 @@
 #include <QApplication>
 
 #include "mainwindow.h"
+#include "settings.h"
 
 int main(int argc, char** argv)
 {
   QApplication app(argc, argv);
-  app.setOrganizationName(MainWindow::ORG_NAME);
-  app.setApplicationName(MainWindow::APP_NAME);
+  app.setOrganizationName(Settings::ORG_NAME);
+  app.setApplicationName(Settings::APP_NAME);
 
   // Scan argument list for filename.
   QString fileName;

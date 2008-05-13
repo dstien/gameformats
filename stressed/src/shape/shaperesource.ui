@@ -87,9 +87,6 @@
          </item>
          <item>
           <widget class="QPushButton" name="exportButton" >
-           <property name="enabled" >
-            <bool>false</bool>
-           </property>
            <property name="text" >
             <string>&amp;Export...</string>
            </property>
@@ -97,9 +94,6 @@
          </item>
          <item>
           <widget class="QPushButton" name="importButton" >
-           <property name="enabled" >
-            <bool>false</bool>
-           </property>
            <property name="text" >
             <string>&amp;Import...</string>
            </property>
@@ -177,18 +171,50 @@
     </widget>
    </item>
   </layout>
+  <action name="moveFirstPrimitivesAction" >
+   <property name="text" >
+    <string>Move &amp;first</string>
+   </property>
+  </action>
+  <action name="moveUpPrimitivesAction" >
+   <property name="text" >
+    <string>Move &amp;up</string>
+   </property>
+  </action>
+  <action name="moveDownPrimitivesAction" >
+   <property name="text" >
+    <string>Move &amp;down</string>
+   </property>
+  </action>
+  <action name="moveLastPrimitivesAction" >
+   <property name="text" >
+    <string>Move &amp;last</string>
+   </property>
+  </action>
   <action name="insertPrimitiveAction" >
    <property name="text" >
     <string>&amp;Insert</string>
    </property>
   </action>
+  <action name="duplicatePrimitiveAction" >
+   <property name="text" >
+    <string>Du&amp;plicate</string>
+   </property>
+  </action>
   <action name="removePrimitivesAction" >
    <property name="text" >
-    <string>&amp;Remove selected</string>
+    <string>&amp;Remove</string>
    </property>
   </action>
   <widget class="QMenu" name="primitivesMenu" >
+   <addaction name="moveFirstPrimitivesAction" />
+   <addaction name="moveUpPrimitivesAction" />
+   <addaction name="moveDownPrimitivesAction" />
+   <addaction name="moveLastPrimitivesAction" />
+   <addaction name="separator" />
    <addaction name="insertPrimitiveAction" />
+   <addaction name="duplicatePrimitiveAction" />
+   <addaction name="separator" />
    <addaction name="removePrimitivesAction" />
   </widget>
  </widget>
@@ -232,16 +258,58 @@
    <slot>setNumPaintJobs()</slot>
   </connection>
   <connection>
+   <sender>exportButton</sender>
+   <signal>clicked()</signal>
+   <receiver>ShapeResource</receiver>
+   <slot>exportFile()</slot>
+  </connection>
+  <connection>
+   <sender>importButton</sender>
+   <signal>clicked()</signal>
+   <receiver>ShapeResource</receiver>
+   <slot>importFile()</slot>
+  </connection>
+  <connection>
    <sender>primitivesView</sender>
    <signal>customContextMenuRequested(QPoint)</signal>
    <receiver>ShapeResource</receiver>
    <slot>primitivesContextMenu(QPoint)</slot>
   </connection>
   <connection>
+   <sender>moveFirstPrimitivesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>ShapeResource</receiver>
+   <slot>moveFirstPrimitives()</slot>
+  </connection>
+  <connection>
+   <sender>moveUpPrimitivesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>ShapeResource</receiver>
+   <slot>moveUpPrimitives()</slot>
+  </connection>
+  <connection>
+   <sender>moveDownPrimitivesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>ShapeResource</receiver>
+   <slot>moveDownPrimitives()</slot>
+  </connection>
+  <connection>
+   <sender>moveLastPrimitivesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>ShapeResource</receiver>
+   <slot>moveLastPrimitives()</slot>
+  </connection>
+  <connection>
    <sender>insertPrimitiveAction</sender>
    <signal>triggered()</signal>
    <receiver>ShapeResource</receiver>
    <slot>insertPrimitive()</slot>
+  </connection>
+  <connection>
+   <sender>duplicatePrimitiveAction</sender>
+   <signal>triggered()</signal>
+   <receiver>ShapeResource</receiver>
+   <slot>duplicatePrimitive()</slot>
   </connection>
   <connection>
    <sender>removePrimitivesAction</sender>

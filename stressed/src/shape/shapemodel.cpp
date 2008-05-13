@@ -15,6 +15,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+#include <QItemSelectionModel>
 #include <QStringList>
 
 #include "materialsmodel.h"
@@ -199,6 +200,8 @@ bool ShapeModel::removeRows(int position, int rows, const QModelIndex& index)
   beginRemoveRows(index, position, position + rows - 1);
 
   for (int row = 0; row < rows; row++) {
+    delete m_primitives[position].verticesModel;
+    delete m_primitives[position].materialsModel;
     m_primitives.removeAt(position);
   }
 
@@ -220,22 +223,94 @@ void ShapeModel::removeRows(const QModelIndexList& rows)
   }
 }
 
-void ShapeModel::setShape(PrimitivesList& primitives)
+void ShapeModel::moveRows(QItemSelectionModel* selectionModel, int direction)
 {
-  if (!primitives.isEmpty()) {
-    m_primitives = primitives;
+  // Using persistent indices since row removal/insertion will invalidate current selection.
+  QList<QPersistentModelIndex> newPersistentRows;
+  QList<QPersistentModelIndex> curPersistentRows;
+  foreach (QModelIndex row, selectionModel->selectedRows()) {
+    if (direction < 0) {
+      curPersistentRows.append(QPersistentModelIndex(row));
+    }
+    else {
+      curPersistentRows.prepend(QPersistentModelIndex(row));
+    }
+  }
 
-    beginInsertRows(QModelIndex(), 0, m_primitives.size() - 1);
+  QModelIndex parent;
 
-    foreach (Primitive primitive, m_primitives) {
-      primitive.verticesModel->setParent(this);
-      primitive.materialsModel->setParent(this);
+  foreach (QPersistentModelIndex row, curPersistentRows) {
+    int curRow = row.row();
+    int newRow = qBound(0, curRow + direction, 256);
+
+    if (curRow != newRow) {
+      Primitive primitive = m_primitives[curRow];
+
+      beginRemoveRows(parent, curRow, curRow);
+      m_primitives.removeAt(curRow);
+      endRemoveRows();
+
+      beginInsertRows(parent, newRow, newRow);
+      m_primitives.insert(newRow, primitive);
+      endInsertRows();
     }
 
-    endInsertRows();
-
-    m_numPaintJobs = m_primitives[0].materialsModel->rowCount();
+    newPersistentRows.append(QPersistentModelIndex(index((newRow < 256 ? newRow : rowCount() - 1), 0)));
   }
+
+  selectionModel->reset();
+  foreach (QPersistentModelIndex row, newPersistentRows) {
+    selectionModel->select(row, (QItemSelectionModel::Select | QItemSelectionModel::Rows));
+  }
+}
+
+void ShapeModel::duplicateRow(int position)
+{
+  beginInsertRows(QModelIndex(), position, position);
+
+  Primitive primitive;
+  primitive.type = m_primitives[position].type;
+  primitive.depthIndex = m_primitives[position].depthIndex;
+  primitive.verticesModel = new VerticesModel(*(m_primitives[position].verticesModel->verticesList()), this);
+  primitive.materialsModel = new MaterialsModel(*(m_primitives[position].materialsModel->materialsList()), this);
+  primitive.unknown1 = m_primitives[position].unknown1;
+  primitive.unknown2 = m_primitives[position].unknown2;
+
+  m_primitives.insert(position, primitive);
+
+  endInsertRows();
+}
+
+void ShapeModel::setShape(PrimitivesList& primitives)
+{
+  if (primitives.isEmpty()) {
+    return;
+  }
+
+  if (!m_primitives.isEmpty()) {
+    beginRemoveRows(QModelIndex(), 0, qMax(0, rowCount() - 1));
+
+    foreach (Primitive primitive, m_primitives) {
+      delete primitive.verticesModel;
+      delete primitive.materialsModel;
+    }
+    m_primitives.clear();
+
+    endRemoveRows();
+  }
+
+  m_primitives = primitives;
+
+  beginInsertRows(QModelIndex(), 0, m_primitives.size() - 1);
+
+  foreach (Primitive primitive, m_primitives) {
+    primitive.verticesModel->setParent(this);
+    primitive.materialsModel->setParent(this);
+  }
+
+  endInsertRows();
+
+  m_numPaintJobs = m_primitives[0].materialsModel->rowCount();
 }
 
 Vertex* ShapeModel::boundBox()
