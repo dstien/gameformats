@@ -55,6 +55,9 @@ private slots:
   void              removePrimitives();
   void              primitivesContextMenu(const QPoint& pos);
 
+  void              replaceMaterials();
+  void              materialsContextMenu(const QPoint& pos);
+
   void              exportFile();
   void              importFile();
 

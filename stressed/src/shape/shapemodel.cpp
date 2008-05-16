@@ -365,6 +365,17 @@ bool ShapeModel::setNumPaintJobs(int& num)
   return true;
 }
 
+void ShapeModel::replaceMaterials(quint8 paintJob, quint8 curMaterial, quint8 newMaterial)
+{
+  foreach (Primitive primitive, m_primitives) {
+    MaterialsList* materials = primitive.materialsModel->materialsList();
+
+    if (materials->at(paintJob) == curMaterial) {
+      materials->replace(paintJob, newMaterial);
+    }
+  }
+}
+
 void ShapeModel::isModified()
 {
   emit dataChanged(QModelIndex(), QModelIndex());

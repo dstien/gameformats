@@ -17,6 +17,7 @@
 
 #include <QFileDialog>
 #include <QHeaderView>
+#include <QInputDialog>
 #include <QMenu>
 #include <QMessageBox>
 #include <QTextStream>
@@ -368,6 +369,36 @@ void ShapeResource::primitivesContextMenu(const QPoint& /*pos*/)
   ui.primitivesMenu->exec(QCursor::pos());
 }
 
+void ShapeResource::replaceMaterials()
+{
+  if (ui.materialsView->model() && ui.materialsView->selectionModel()->hasSelection()) {
+    bool success;
+    int curMaterial = ui.materialsView->model()->data(ui.materialsView->currentIndex()).toUInt();
+    int newMaterial = QInputDialog::getInteger(
+        this,
+        tr("Replace material"),
+        tr("New material (0 - 255):"),
+        curMaterial, 0, 255, 1, &success);
+
+    if (success && (newMaterial != curMaterial)) {
+      shapeModel->replaceMaterials(ui.materialsView->currentIndex().row(), curMaterial, newMaterial);
+      isModified();
+    }
+  }
+}
+
+void ShapeResource::materialsContextMenu(const QPoint& /*pos*/)
+{
+  if (ui.materialsView->model() && ui.materialsView->selectionModel()->hasSelection()) {
+    ui.replaceMaterialsAction->setEnabled(true);
+  }
+  else {
+    ui.replaceMaterialsAction->setEnabled(false);
+  }
+
+  ui.materialsMenu->exec(QCursor::pos());
+}
+
 void ShapeResource::exportFile()
 {
   QString genName = QString("%1-%2.obj").arg(QString(fileName()).replace('.', '_'), id());
@@ -457,7 +488,7 @@ void ShapeResource::exportFile()
 void ShapeResource::importFile()
 {
   if (currentFile.absolutePath().isEmpty()) {
-    currentFile.setFile(QDir::home(), "");
+    currentFile.setFile(QDir::homePath() + QDir::separator());
   }
 
   QString inFileName = QFileDialog::getOpenFileName(

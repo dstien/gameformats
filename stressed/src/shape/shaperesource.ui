@@ -130,6 +130,9 @@
           <layout class="QVBoxLayout" >
            <item>
             <widget class="QTableView" name="materialsView" >
+             <property name="contextMenuPolicy" >
+              <enum>Qt::CustomContextMenu</enum>
+             </property>
              <property name="selectionBehavior" >
               <enum>QAbstractItemView::SelectRows</enum>
              </property>
@@ -216,6 +219,14 @@
    <addaction name="duplicatePrimitiveAction" />
    <addaction name="separator" />
    <addaction name="removePrimitivesAction" />
+  </widget>
+  <action name="replaceMaterialsAction" >
+   <property name="text" >
+    <string>&amp;Replace all...</string>
+   </property>
+  </action>
+  <widget class="QMenu" name="materialsMenu" >
+   <addaction name="replaceMaterialsAction" />
   </widget>
  </widget>
  <customwidgets>
@@ -316,6 +327,18 @@
    <signal>triggered()</signal>
    <receiver>ShapeResource</receiver>
    <slot>removePrimitives()</slot>
+  </connection>
+  <connection>
+   <sender>materialsView</sender>
+   <signal>customContextMenuRequested(QPoint)</signal>
+   <receiver>ShapeResource</receiver>
+   <slot>materialsContextMenu(QPoint)</slot>
+  </connection>
+  <connection>
+   <sender>replaceMaterialsAction</sender>
+   <signal>triggered()</signal>
+   <receiver>ShapeResource</receiver>
+   <slot>replaceMaterials()</slot>
   </connection>
  </connections>
 </ui>
