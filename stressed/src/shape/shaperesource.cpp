@@ -39,7 +39,7 @@ const char    ShapeResource::MTL_DST[]             = "stunts.mtl";
 
 const QRegExp ShapeResource::OBJ_REGEXP_WHITESPACE = QRegExp("\\s+");
 const QRegExp ShapeResource::OBJ_REGEXP_VERTEX     = QRegExp("^v(\\s+([+-]?\\d*\\.\\d+)(?![-+0-9\\.])){3}\\s*$");
-const QRegExp ShapeResource::OBJ_REGEXP_FACE       = QRegExp("^[flp](\\s+(\\d+)){1,10}\\s*$");
+const QRegExp ShapeResource::OBJ_REGEXP_FACE       = QRegExp("^(fo?|[lp])((\\s+-?\\d+)(/-?\\d*){,2}){1,10}\\s*$");
 
 ShapeResource::ShapeResource(const QString& fileName, QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags)
 : Resource(fileName, id, parent, flags)
@@ -466,6 +466,10 @@ void ShapeResource::exportFile()
             out << vertices.indexOf(vertex) + 1;
           }
           out << reset << endl;
+
+          if (out.status()) {
+            throw tr("Couldn't write to file.");
+          }
         }
 
         objFile.close();
@@ -533,7 +537,11 @@ void ShapeResource::importFile()
               case 'l':
               case 'p':
                 if (line.contains(OBJ_REGEXP_FACE)) {
-                  QStringList tokens = line.split(OBJ_REGEXP_WHITESPACE);
+                  if (vertices.isEmpty()) {
+                    throw tr("Found primitive before any vertices.");
+                  }
+
+                  QStringList tokens = line.split(OBJ_REGEXP_WHITESPACE, QString::SkipEmptyParts);
 
                   Primitive primitive;
                   int numVertices = tokens.size() - 1;
@@ -548,11 +556,15 @@ void ShapeResource::importFile()
 
                   VerticesList faceVertices;
                   for (int i = 0; i < numVertices; i++) {
-                    int index = tokens[i + 1].toInt() - 1;
-                    if (index < 0 || index >= vertices.size()) {
-                      throw tr("Vertex index %1 out of bounds (1-%2).").arg(index + 1).arg(vertices.size());
+                    int index = tokens[i + 1].section('/', 0, 0).toInt();
+
+                    if (index == 0 || index > vertices.size()) {
+                      throw tr("Vertex index %1 out of bounds (1 - %2).").arg(index).arg(vertices.size());
                     }
-                    faceVertices.append(vertices[index]);
+                    else if (index < 0) {
+                      throw tr("Negative vertex indices not supported (got %1).").arg(index);
+                    }
+                    faceVertices.append(vertices[index - 1]);
                   }
 
                   primitive.verticesModel = new VerticesModel(faceVertices, shapeModel);
@@ -570,6 +582,10 @@ void ShapeResource::importFile()
                 break;
             }
           }
+
+          if (in.status()) {
+            throw tr("Couldn't read from file.");
+          }
         }
         catch (QString msg) {
           // Clean-up.
@@ -582,6 +598,10 @@ void ShapeResource::importFile()
         }
 
         objFile.close();
+
+        if (primitives.isEmpty()) {
+          throw tr("No faces found in file.");
+        }
 
         shapeModel->setShape(primitives);
         ui.shapeView->reset();
