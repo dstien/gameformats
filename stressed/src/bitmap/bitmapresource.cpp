@@ -26,6 +26,7 @@
 QString BitmapResource::currentFilePath;
 QString BitmapResource::currentFileFilter;
 
+const char BitmapResource::FILE_SETTINGS_PATH[] = "paths/bitmap";
 const char BitmapResource::FILE_FILTERS[] =
     "Image files (*.png *.bmp *.gif *.jpg *.jpeg);;"
     "Portable Network Graphics (*.png);;"
@@ -33,12 +34,10 @@ const char BitmapResource::FILE_FILTERS[] =
     "Joint Photographic Experts Group (*.jpg *.jpeg);;"
     "All files (*)";
 
-BitmapResource::BitmapResource(const QString& fileName, QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags)
-: Resource(fileName, id, parent, flags)
+BitmapResource::BitmapResource(QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags)
+: Resource(id, parent, flags)
 {
   ui.setupUi(this);
-
-  currentFilePath = fileName;
 
   image = 0;
   parse(in);
@@ -193,10 +192,17 @@ void BitmapResource::scale()
 
 void BitmapResource::exportFile()
 {
-  currentFilePath = QString("%1%2-%3.png").
-      arg(currentDir()).
-      arg(QString(fileName()).replace('.', '_')).
-      arg(id());
+  if (currentFilePath.isEmpty()) {
+    currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
+  }
+
+  QFileInfo fileInfo(currentFilePath);
+  fileInfo.setFile(
+      fileInfo.absolutePath() +
+      QDir::separator() +
+      QString("%1-%2").arg(QString(fileName()).replace('.', '_'), id()) +
+      ".png");
+  currentFilePath = fileInfo.absoluteFilePath();
 
   QString outFileName = QFileDialog::getSaveFileName(
       this,
@@ -206,36 +212,40 @@ void BitmapResource::exportFile()
       &currentFileFilter);
 
   if (!outFileName.isEmpty()) {
-    currentFilePath = outFileName;
+    Settings().setFilePath(FILE_SETTINGS_PATH, currentFilePath = outFileName);
 
-    QImageWriter writer(outFileName);
+    QImageWriter writer(currentFilePath);
     writer.setText("Comment", QString("Stunts bitmap \"%1\" (%2)").arg(id(), fileName()));
 
     if (!writer.write(*image)) {
       QMessageBox::critical(
           this,
           QCoreApplication::applicationName(),
-          tr("Error exporting bitmap resource \"%1\" to image file \"%2\":\n%3").arg(id(), outFileName, writer.errorString()));
+          tr("Error exporting bitmap resource \"%1\" to image file \"%2\":\n%3").arg(id(), currentFilePath, writer.errorString()));
     }
   }
 }
 
 void BitmapResource::importFile()
 {
+  if (currentFilePath.isEmpty()) {
+    currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
+  }
+
   QString inFileName = QFileDialog::getOpenFileName(
       this,
       tr("Import bitmap"),
-      currentDir(),
+      currentFilePath,
       FILE_FILTERS,
       &currentFileFilter);
 
   if (!inFileName.isEmpty()) {
-    currentFilePath = inFileName;
+    Settings().setFilePath(FILE_SETTINGS_PATH, currentFilePath = inFileName);
 
     QImage* newImage = new QImage();
     QImage* oldImage = image;
 
-    QImageReader reader(inFileName);
+    QImageReader reader(currentFilePath);
 
     try {
       QSize size = reader.size();
@@ -284,13 +294,7 @@ void BitmapResource::importFile()
       QMessageBox::critical(
           this,
           QCoreApplication::applicationName(),
-          tr("Error importing bitmap resource \"%1\" from image file \"%2\":\n%3").arg(id(), inFileName, msg));
+          tr("Error importing bitmap resource \"%1\" from image file \"%2\":\n%3").arg(id(), currentFilePath, msg));
     }
   }
-}
-
-// Get directory from currentFilePath.
-QString BitmapResource::currentDir()
-{
-  return QString(currentFilePath).remove(currentFilePath.lastIndexOf("/") + 1, currentFilePath.length());
 }

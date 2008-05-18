@@ -32,13 +32,13 @@ class Resource : public QWidget
   Q_OBJECT
 
 public:
-  Resource(const QString& fileName, QString id, QWidget* parent = 0, Qt::WFlags flags = 0);
+  Resource(QString id, QWidget* parent = 0, Qt::WFlags flags = 0);
   virtual ~Resource() {};
 
   static ResMap     parse(const QString& fileName, QListWidget* idsList);
   static void       write(const QString& fileName, const QListWidget* idsList, const ResMap& resources);
 
-  QString           fileName() const  { return m_fileName; }
+  static QString    fileName()        { return m_fileName; }
   QString           id() const        { return m_id; }
   virtual QString   type() const = 0;
 
@@ -54,8 +54,9 @@ protected:
   virtual void      write(QDataStream* out) const = 0;
 
 private:
-  QString           m_fileName;
   QString           m_id;
+
+  static QString    m_fileName;
 };
 
 #endif

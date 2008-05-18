@@ -17,7 +17,7 @@
 
 #include <QBuffer>
 #include <QDataStream>
-#include <QFile>
+#include <QFileInfo>
 #include <QListWidget>
 
 #include "bitmap/bitmapresource.h"
@@ -27,11 +27,12 @@
 #include "settings.h"
 #include "stunpack.h"
 
-Resource::Resource(const QString& fileName, QString id, QWidget* parent, Qt::WFlags flags)
+QString Resource::m_fileName;
+
+Resource::Resource(QString id, QWidget* parent, Qt::WFlags flags)
 : QWidget(parent, flags),
   m_id(id)
 {
-  m_fileName = QString(fileName).remove(0, fileName.lastIndexOf("/") + 1); // Strip path.
 }
 
 ResMap Resource::parse(const QString& fileName, QListWidget* idsList)
@@ -157,13 +158,13 @@ ResMap Resource::parse(const QString& fileName, QListWidget* idsList)
         }
 
         if (type == "text") {
-          resources.insert(ids[i], new TextResource(fileName, ids[i], &in));
+          resources.insert(ids[i], new TextResource(ids[i], &in));
         }
         else if (type == "shape") {
-          resources.insert(ids[i], new ShapeResource(fileName, ids[i], &in));
+          resources.insert(ids[i], new ShapeResource(ids[i], &in));
         }
         else if (type == "bitmap") {
-          resources.insert(ids[i], new BitmapResource(fileName, ids[i], &in));
+          resources.insert(ids[i], new BitmapResource(ids[i], &in));
         }
         else {
           throw tr("Unknown type.");
@@ -196,6 +197,9 @@ ResMap Resource::parse(const QString& fileName, QListWidget* idsList)
 
     throw msg;
   }
+
+  QFileInfo fileInfo(fileName);
+  m_fileName = fileInfo.fileName();
 
   return resources;
 }
@@ -259,6 +263,9 @@ void Resource::write(const QString& fileName, const QListWidget* idsList, const 
 
   out.unsetDevice();
   file.close();
+
+  QFileInfo fileInfo(fileName);
+  m_fileName = fileInfo.fileName();
 }
 
 void Resource::isModified()

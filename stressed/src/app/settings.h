@@ -37,6 +37,12 @@ class Settings : public QSettings
   Q_OBJECT
 
 public:
+  Settings();
+
+  QString           getFilePath(const QString& path);
+  void              setFilePath(const QString& path, const QString& filePath);
+  QString           restoreFilePath(const QString& path);
+
   StringMap         getStringMap(const QString& path);
   void              setStringMap(const QString& path, const StringMap& map);
   void              restoreStringMap(const QString& path);

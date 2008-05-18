@@ -18,8 +18,6 @@
 #ifndef SHAPERESOURCE_H
 #define SHAPERESOURCE_H
 
-#include <QFileInfo>
-
 #include "app/resource.h"
 #include "verticesmodel.h"
 
@@ -32,7 +30,7 @@ class ShapeResource : public Resource
   Q_OBJECT
 
 public:
-  ShapeResource(const QString& fileName, QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
+  ShapeResource(QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
 
   QString           type() const { return "shape"; }
 
@@ -70,11 +68,12 @@ private:
 
   ShapeModel*       shapeModel;
 
-  static QFileInfo  currentFile;
+  static QString    currentFilePath;
   static QString    currentFileFilter;
 
   static const int  MAX_VERTICES = 256;
 
+  static const char FILE_SETTINGS_PATH[];
   static const char FILE_FILTERS[];
   static const char MTL_SRC[];
   static const char MTL_DST[];

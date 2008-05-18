@@ -17,8 +17,8 @@
 
 #include "textresource.h"
 
-TextResource::TextResource(const QString& fileName, QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags)
-: Resource(fileName, id, parent, flags)
+TextResource::TextResource(QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags)
+: Resource(id, parent, flags)
 {
   ui.setupUi(this);
 

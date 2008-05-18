@@ -20,6 +20,19 @@
 #include <QMessageBox>
 
 #include "mainwindow.h"
+#include "settings.h"
+
+const char MainWindow::FILE_SETTINGS_PATH[] = "paths/resource";
+const char MainWindow::FILE_FILTERS[] =
+    "All known resource files (*.vsh *.pvs *.esh *.pes *.3sh *.p3s *.vce *.pvc *.kms *.pkm *.sfx *.psf *.res *.pre);;"
+    "Bitmaps (*.vsh *.pvs);;"
+    "Icons (*.esh *.pes);;"
+    "3d shapes (*.3sh *.p3s);;"
+    "Voices (*.vce *.pvc);;"
+    "Music (*.kms *.pkm);;"
+    "Sound effects (*.sfx *.psf);;"
+    "Misc (*.res *.pre);;"
+    "All files (*)";
 
 MainWindow::MainWindow(QWidget* parent, Qt::WFlags flags)
 : QMainWindow(parent, flags)
@@ -33,6 +46,8 @@ MainWindow::MainWindow(QWidget* parent, Qt::WFlags flags)
 
 void MainWindow::loadFile(const QString& fileName)
 {
+  Settings().setFilePath(FILE_SETTINGS_PATH, currentFilePath = fileName);
+
   try {
     resources = Resource::parse(fileName, ui.idsList);
 
@@ -47,8 +62,6 @@ void MainWindow::loadFile(const QString& fileName)
 
     reset();
   }
-
-  currentFilePath = fileName;
 }
 
 void MainWindow::saveFile(const QString& fileName)
@@ -64,7 +77,6 @@ void MainWindow::saveFile(const QString& fileName)
   }
 
   currentFileName = fileName;
-  currentFilePath = fileName;
   modified = false;
   updateWindowTitle();
 }
@@ -125,11 +137,15 @@ void MainWindow::open()
     return;
   }
 
+  if (currentFilePath.isEmpty()) {
+    currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
+  }
+
   QString fileName = QFileDialog::getOpenFileName(
       this,
       tr("Open file"),
       currentFilePath,
-      tr("All files (*)"),
+      FILE_FILTERS,
       &currentFileFilter);
 
   if (!fileName.isEmpty()) {
@@ -149,14 +165,17 @@ void MainWindow::save()
 
 void MainWindow::saveAs()
 {
+  currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
+
   QString fileName = QFileDialog::getSaveFileName(
       this,
       tr("Save file"),
       currentFilePath,
-      tr("All files (*)"),
+      FILE_FILTERS,
       &currentFileFilter);
 
   if (!fileName.isEmpty()) {
+    Settings().setFilePath(FILE_SETTINGS_PATH, currentFilePath = fileName);
     saveFile(fileName);
   }
 }

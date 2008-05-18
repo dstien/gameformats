@@ -27,7 +27,7 @@ class TextResource : public Resource
   Q_OBJECT
 
 public:
-  TextResource(const QString& fileName, QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
+  TextResource(QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
 
   QString           type() const { return "text"; }
 

@@ -57,6 +57,9 @@ private:
   QString           currentFileFilter;
 
   bool              modified;
+
+  static const char FILE_SETTINGS_PATH[];
+  static const char FILE_FILTERS[];
 };
 
 #endif

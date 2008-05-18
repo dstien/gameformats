@@ -28,11 +28,12 @@
 #include "shaperesource.h"
 #include "typedelegate.h"
 
-QFileInfo     ShapeResource::currentFile;
+QString       ShapeResource::currentFilePath;
 QString       ShapeResource::currentFileFilter;
 
 const int     ShapeResource::MAX_VERTICES;
 
+const char    ShapeResource::FILE_SETTINGS_PATH[]  = "paths/shape";
 const char    ShapeResource::FILE_FILTERS[]        = "Wavefront OBJ (*.obj);;All files (*)";
 const char    ShapeResource::MTL_SRC[]             = ":/shape/materials.mtl";
 const char    ShapeResource::MTL_DST[]             = "stunts.mtl";
@@ -41,8 +42,8 @@ const QRegExp ShapeResource::OBJ_REGEXP_WHITESPACE = QRegExp("\\s+");
 const QRegExp ShapeResource::OBJ_REGEXP_VERTEX     = QRegExp("^v(\\s+([+-]?\\d*\\.\\d+)(?![-+0-9\\.])){3}\\s*$");
 const QRegExp ShapeResource::OBJ_REGEXP_FACE       = QRegExp("^(fo?|[lp])((\\s+-?\\d+)(/-?\\d*){,2}){1,10}\\s*$");
 
-ShapeResource::ShapeResource(const QString& fileName, QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags)
-: Resource(fileName, id, parent, flags)
+ShapeResource::ShapeResource(QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags)
+: Resource(id, parent, flags)
 {
   ui.setupUi(this);
 
@@ -401,27 +402,29 @@ void ShapeResource::materialsContextMenu(const QPoint& /*pos*/)
 
 void ShapeResource::exportFile()
 {
-  QString genName = QString("%1-%2.obj").arg(QString(fileName()).replace('.', '_'), id());
+  if (currentFilePath.isEmpty()) {
+    currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
+  }
 
-  if (currentFile.absolutePath().isEmpty()) {
-    currentFile.setFile(QDir::home(), genName);
-  }
-  else {
-    currentFile.setFile(currentFile.absolutePath() + QDir::separator() + genName);
-  }
+  QFileInfo fileInfo(currentFilePath);
+  fileInfo.setFile(
+      fileInfo.absolutePath() +
+      QDir::separator() +
+      QString("%1-%2.obj").arg(QString(fileName()).replace('.', '_'), id()));
+  currentFilePath = fileInfo.absoluteFilePath();
 
   QString outFileName = QFileDialog::getSaveFileName(
       this,
       tr("Export shape"),
-      currentFile.absoluteFilePath(),
+      currentFilePath,
       FILE_FILTERS,
       &currentFileFilter);
 
   if (!outFileName.isEmpty()) {
-    currentFile.setFile(outFileName);
+    Settings().setFilePath(FILE_SETTINGS_PATH, currentFilePath = outFileName);
 
     try {
-      QFile objFile(currentFile.absoluteFilePath());
+      QFile objFile(currentFilePath);
       if (objFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
         QTextStream out(&objFile);
         out << "# " << Settings::APP_NAME << " - " << Settings::APP_DESC << endl;
@@ -474,7 +477,9 @@ void ShapeResource::exportFile()
 
         objFile.close();
 
-        QFile::copy(MTL_SRC, currentFile.absolutePath() + QDir::separator() + MTL_DST);
+        QFileInfo mtlFileInfo(currentFilePath);
+        mtlFileInfo.setFile(MTL_DST);
+        QFile::copy(MTL_SRC, mtlFileInfo.absolutePath());
       }
       else {
         throw tr("Couldn't open file for writing.");
@@ -484,29 +489,29 @@ void ShapeResource::exportFile()
       QMessageBox::critical(
           this,
           QCoreApplication::applicationName(),
-          tr("Error exporting shape resource \"%1\" to Wavefront OBJ file \"%2\": %3").arg(id(), currentFile.absoluteFilePath(), msg));
+          tr("Error exporting shape resource \"%1\" to Wavefront OBJ file \"%2\": %3").arg(id(), currentFilePath, msg));
     }
   }
 }
 
 void ShapeResource::importFile()
 {
-  if (currentFile.absolutePath().isEmpty()) {
-    currentFile.setFile(QDir::homePath() + QDir::separator());
+  if (currentFilePath.isEmpty()) {
+    currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
   }
 
   QString inFileName = QFileDialog::getOpenFileName(
       this,
       tr("Import shape"),
-      currentFile.absolutePath(),
+      currentFilePath,
       FILE_FILTERS,
       &currentFileFilter);
 
   if (!inFileName.isEmpty()) {
-    currentFile.setFile(inFileName);
+    Settings().setFilePath(FILE_SETTINGS_PATH, currentFilePath = inFileName);
 
     try {
-      QFile objFile(currentFile.absoluteFilePath());
+      QFile objFile(currentFilePath);
       if (objFile.open(QIODevice::ReadOnly)) {
         QTextStream in(&objFile);
 
@@ -619,7 +624,7 @@ void ShapeResource::importFile()
       QMessageBox::critical(
           this,
           QCoreApplication::applicationName(),
-          tr("Error importing Wavefront OBJ file \"%1\" to shape resource \"%2\": %3").arg(currentFile.absoluteFilePath(), id(), msg));
+          tr("Error importing Wavefront OBJ file \"%1\" to shape resource \"%2\": %3").arg(currentFilePath, id(), msg));
     }
   }
 }

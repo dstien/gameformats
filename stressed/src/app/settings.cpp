@@ -15,6 +15,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+#include <QDir>
 #include <QStringList>
 
 #include "settings.h"
@@ -27,6 +28,34 @@ const char      Settings::ORG_URL[]  = "http://stuntstools.googlecode.com/";
 const char      Settings::DEFAULTS[] = ":/conf/defaults.conf";
 const Palette   Settings::PALETTE    = Settings().getPalette("palettes/vga");
 const Materials Settings::MATERIALS  = Settings().getMaterials();
+
+Settings::Settings()
+: QSettings(IniFormat, UserScope, ORG_NAME, APP_NAME)
+{
+}
+
+QString Settings::getFilePath(const QString& path)
+{
+  QString filePath = value(path).toString();
+  if (filePath.isEmpty()) {
+    filePath = restoreFilePath(path);
+  }
+
+  return filePath;
+}
+
+void Settings::setFilePath(const QString& path, const QString& filePath)
+{
+  setValue(path, filePath);
+}
+
+QString Settings::restoreFilePath(const QString& path)
+{
+  QString filePath = QDir::homePath() + QDir::separator();
+  setFilePath(path, filePath);
+
+  return filePath;
+}
 
 StringMap Settings::getStringMap(const QString& path)
 {
