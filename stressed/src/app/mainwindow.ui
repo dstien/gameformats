@@ -15,7 +15,7 @@
   <widget class="QWidget" name="centralwidget" >
    <layout class="QHBoxLayout" >
     <item>
-     <widget class="QListWidget" name="idsList" >
+     <widget class="QListView" name="resourcesView" >
       <property name="sizePolicy" >
        <sizepolicy vsizetype="Expanding" hsizetype="Fixed" >
         <horstretch>0</horstretch>
@@ -143,12 +143,6 @@
    <signal>triggered()</signal>
    <receiver>MainWindow</receiver>
    <slot>close()</slot>
-  </connection>
-  <connection>
-   <sender>idsList</sender>
-   <signal>itemSelectionChanged()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>selectionChanged()</slot>
   </connection>
  </connections>
 </ui>

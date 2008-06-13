@@ -24,6 +24,7 @@
 #include "shape/shaperesource.h"
 #include "text/textresource.h"
 #include "resource.h"
+#include "resourcesmodel.h"
 #include "settings.h"
 #include "stunpack.h"
 
@@ -35,10 +36,8 @@ Resource::Resource(QString id, QWidget* parent, Qt::WFlags flags)
 {
 }
 
-ResMap Resource::parse(const QString& fileName, QListWidget* idsList)
+bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel)
 {
-  ResMap resources;
-
   stpk_Buffer compSrc, compDst;
   compSrc.data = compDst.data = NULL;
   QBuffer buf;
@@ -116,7 +115,7 @@ ResMap Resource::parse(const QString& fileName, QListWidget* idsList)
     in >> reportedSize;
 
     if (reportedSize != actualSize) {
-       throw tr("Invalid file. Reported size (%1) doesn't match actual file size (%2).").arg(reportedSize).arg(file.size());
+      throw tr("Invalid file. Reported size (%1) doesn't match actual file size (%2).").arg(reportedSize).arg(file.size());
     }
 
     quint16 numResources;
@@ -146,6 +145,7 @@ ResMap Resource::parse(const QString& fileName, QListWidget* idsList)
     baseOffset = in.device()->pos();
 
     StringMap types = Settings().getStringMap("types");
+    Resource* resource;
 
     for (int i = 0; i < numResources; i++) {
       in.device()->seek(baseOffset + offsets[i]);
@@ -153,18 +153,20 @@ ResMap Resource::parse(const QString& fileName, QListWidget* idsList)
       QString type = types[ids[i]];
 
       try {
-        if (resources.count(ids[i])) {
-          throw tr("Id name not unique.");
+        for (int j = 0; j < resourcesModel->rowCount(); j++) {
+          if (ids[i] == resourcesModel->at(j)->id()) {
+            throw tr("Id name not unique.");
+          }
         }
 
         if (type == "text") {
-          resources.insert(ids[i], new TextResource(ids[i], &in));
+          resource = new TextResource(ids[i], &in);
         }
         else if (type == "shape") {
-          resources.insert(ids[i], new ShapeResource(ids[i], &in));
+          resource = new ShapeResource(ids[i], &in);
         }
         else if (type == "bitmap") {
-          resources.insert(ids[i], new BitmapResource(ids[i], &in));
+          resource = new BitmapResource(ids[i], &in);
         }
         else {
           throw tr("Unknown type.");
@@ -174,9 +176,7 @@ ResMap Resource::parse(const QString& fileName, QListWidget* idsList)
         throw tr("Parsing %1 resource \"%2\" failed: %3").arg(type).arg(ids[i]).arg(msg);
       }
 
-      // QHash entries are arbitrarily sorted, we're adding the id to the
-      // list now to get the order matching the source file.
-      idsList->addItem(ids[i]);
+      resourcesModel->append(resource);
     }
 
     delete[] ids;
@@ -201,10 +201,10 @@ ResMap Resource::parse(const QString& fileName, QListWidget* idsList)
   QFileInfo fileInfo(fileName);
   m_fileName = fileInfo.fileName();
 
-  return resources;
+  return true;
 }
 
-void Resource::write(const QString& fileName, const QListWidget* idsList, const ResMap& resources)
+void Resource::write(const QString& fileName, const ResourcesModel* resourcesModel)
 {
   QFile file(fileName);
 
@@ -215,14 +215,14 @@ void Resource::write(const QString& fileName, const QListWidget* idsList, const 
   QDataStream out(&file);
   out.setByteOrder(QDataStream::LittleEndian);
 
-  quint16 numResources = idsList->count();
+  quint16 numResources = resourcesModel->rowCount();
 
   out << (quint32)0 << numResources;
 
   checkError(&out, tr("header"), true);
 
   for (int i = 0; i < numResources; i++) {
-    QByteArray id = (QString("%1").arg(idsList->item(i)->text().left(4), 4, '\0')).toAscii();
+    QByteArray id = (QString("%1").arg(resourcesModel->at(i)->id().left(4), 4, '\0')).toAscii();
     out << (qint8)id[0] << (qint8)id[1] << (qint8)id[2] << (qint8)id[3];
   }
 
@@ -244,7 +244,7 @@ void Resource::write(const QString& fileName, const QListWidget* idsList, const 
     out << curOffset;
     out.device()->seek(baseOffset + curOffset);
 
-    Resource* resource = resources[idsList->item(i)->text()];
+    Resource* resource = resourcesModel->at(i);
 
     // Write content.
     try {

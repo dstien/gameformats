@@ -23,11 +23,13 @@ FORMS   += mainwindow.ui \
 
 HEADERS += mainwindow.h \
            resource.h \
+           resourcesmodel.h \
            settings.h \
            stunpack.h
 
 SOURCES += main.cpp \
            mainwindow.cpp \
            resource.cpp \
+           resourcesmodel.cpp \
            settings.cpp \
            stunpack.c

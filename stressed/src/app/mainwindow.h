@@ -23,6 +23,8 @@
 #include "resource.h"
 #include "ui_mainwindow.h"
 
+class ResourcesModel;
+
 class MainWindow : public QMainWindow
 {
   Q_OBJECT
@@ -40,23 +42,23 @@ private slots:
   void              open();
   void              save();
   void              saveAs();
-  void              selectionChanged();
+  void              setCurrent(const QModelIndex& index);
   void              isModified();
 
 private:
   void              saveFile(const QString& fileName);
   void              updateWindowTitle();
 
-  Ui::MainWindow    ui;
+  Ui::MainWindow    m_ui;
 
-  ResMap            resources;
-  Resource*         currentResource;
+  ResourcesModel*   m_resourcesModel;
+  Resource*         m_currentResource;
 
-  QString           currentFileName;
-  QString           currentFilePath;
-  QString           currentFileFilter;
+  QString           m_currentFileName;
+  QString           m_currentFilePath;
+  QString           m_currentFileFilter;
 
-  bool              modified;
+  bool              m_modified;
 
   static const char FILE_SETTINGS_PATH[];
   static const char FILE_FILTERS[];

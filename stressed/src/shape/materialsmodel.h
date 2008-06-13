@@ -27,7 +27,7 @@ class MaterialsModel : public QAbstractTableModel
   Q_OBJECT
 
 public:
-  MaterialsModel(const MaterialsList& vertices, QObject* parent = 0);
+  MaterialsModel(const MaterialsList& materials, QObject* parent = 0);
   MaterialsModel(quint8 material, QObject* parent = 0);
   MaterialsModel(int num, QObject* parent = 0);
 

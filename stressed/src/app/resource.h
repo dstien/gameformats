@@ -18,14 +18,11 @@
 #ifndef RESOURCE_H
 #define RESOURCE_H
 
-#include <QHash>
 #include <QWidget>
 
 class QDataStream;
 class QListWidget;
-class Resource;
-
-typedef QHash<QString, Resource*> ResMap;
+class ResourcesModel;
 
 class Resource : public QWidget
 {
@@ -35,8 +32,8 @@ public:
   Resource(QString id, QWidget* parent = 0, Qt::WFlags flags = 0);
   virtual ~Resource() {};
 
-  static ResMap     parse(const QString& fileName, QListWidget* idsList);
-  static void       write(const QString& fileName, const QListWidget* idsList, const ResMap& resources);
+  static bool       parse(const QString& fileName, ResourcesModel* resourcesModel);
+  static void       write(const QString& fileName, const ResourcesModel* resourcesModel);
 
   static QString    fileName()        { return m_fileName; }
   QString           id() const        { return m_id; }

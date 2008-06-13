@@ -20,6 +20,7 @@
 #include <QMessageBox>
 
 #include "mainwindow.h"
+#include "resourcesmodel.h"
 #include "settings.h"
 
 const char MainWindow::FILE_SETTINGS_PATH[] = "paths/resource";
@@ -37,21 +38,29 @@ const char MainWindow::FILE_FILTERS[] =
 MainWindow::MainWindow(QWidget* parent, Qt::WFlags flags)
 : QMainWindow(parent, flags)
 {
-  ui.setupUi(this);
+  m_ui.setupUi(this);
 
-  currentResource = NULL;
-  modified = false;
+  m_resourcesModel = new ResourcesModel(this);
+  m_ui.resourcesView->setModel(m_resourcesModel);
+
+  connect(m_ui.resourcesView->selectionModel(), SIGNAL(currentChanged(QModelIndex, QModelIndex)),
+      this, SLOT(setCurrent(QModelIndex)));
+
+  m_currentResource = NULL;
+  m_modified = false;
   updateWindowTitle();
 }
 
 void MainWindow::loadFile(const QString& fileName)
 {
-  Settings().setFilePath(FILE_SETTINGS_PATH, currentFilePath = fileName);
+  Settings().setFilePath(FILE_SETTINGS_PATH, m_currentFilePath = fileName);
 
   try {
-    resources = Resource::parse(fileName, ui.idsList);
+    if (!Resource::parse(fileName, m_resourcesModel)) {
+      m_modified = false;
+    }
 
-    currentFileName = fileName;
+    m_currentFileName = fileName;
     updateWindowTitle();
   }
   catch (QString msg) {
@@ -67,7 +76,7 @@ void MainWindow::loadFile(const QString& fileName)
 void MainWindow::saveFile(const QString& fileName)
 {
   try {
-    Resource::write(fileName, ui.idsList, resources);
+    Resource::write(fileName, m_resourcesModel);
   }
   catch (QString msg) {
     QMessageBox::critical(
@@ -76,8 +85,8 @@ void MainWindow::saveFile(const QString& fileName)
         tr("Error saving \"%1\":\n%2").arg(fileName, msg));
   }
 
-  currentFileName = fileName;
-  modified = false;
+  m_currentFileName = fileName;
+  m_modified = false;
   updateWindowTitle();
 }
 
@@ -93,7 +102,7 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
 bool MainWindow::reset()
 {
-  if (modified) {
+  if (m_modified) {
     QMessageBox::StandardButton ret;
     ret = QMessageBox::warning(
         this,
@@ -110,22 +119,16 @@ bool MainWindow::reset()
     }
   }
 
-  ui.idsList->clear();
-
-  if (currentResource != NULL) {
-    ui.hboxLayout->removeWidget(currentResource);
-    currentResource->setParent(0);
-    currentResource = NULL;
+  if (m_currentResource != NULL) {
+    m_ui.hboxLayout->removeWidget(m_currentResource);
+    m_currentResource->setParent(0);
+    m_currentResource = NULL;
   }
 
-  foreach (QString key, resources.keys()) {
-    delete resources[key];
-  }
+  m_resourcesModel->clear();
 
-  resources.clear();
-
-  modified = false;
-  currentFileName.clear();
+  m_modified = false;
+  m_currentFileName.clear();
   updateWindowTitle();
 
   return true;
@@ -137,16 +140,16 @@ void MainWindow::open()
     return;
   }
 
-  if (currentFilePath.isEmpty()) {
-    currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
+  if (m_currentFilePath.isEmpty()) {
+    m_currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
   }
 
   QString fileName = QFileDialog::getOpenFileName(
       this,
       tr("Open file"),
-      currentFilePath,
+      m_currentFilePath,
       FILE_FILTERS,
-      &currentFileFilter);
+      &m_currentFileFilter);
 
   if (!fileName.isEmpty()) {
     loadFile(fileName);
@@ -155,53 +158,53 @@ void MainWindow::open()
 
 void MainWindow::save()
 {
-  if (currentFileName.isEmpty()) {
+  if (m_currentFileName.isEmpty()) {
     saveAs();
   }
   else {
-    saveFile(currentFileName);
+    saveFile(m_currentFileName);
   }
 }
 
 void MainWindow::saveAs()
 {
-  currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
+  m_currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
 
   QString fileName = QFileDialog::getSaveFileName(
       this,
       tr("Save file"),
-      currentFilePath,
+      m_currentFilePath,
       FILE_FILTERS,
-      &currentFileFilter);
+      &m_currentFileFilter);
 
   if (!fileName.isEmpty()) {
-    Settings().setFilePath(FILE_SETTINGS_PATH, currentFilePath = fileName);
+    Settings().setFilePath(FILE_SETTINGS_PATH, m_currentFilePath = fileName);
     saveFile(fileName);
   }
 }
 
-void MainWindow::selectionChanged()
+void MainWindow::setCurrent(const QModelIndex& index)
 {
-  if (currentResource != NULL) {
-    disconnect(currentResource, SIGNAL(dataChanged()), this, SLOT(isModified()));
+  if (m_currentResource != NULL) {
+    disconnect(m_currentResource, SIGNAL(dataChanged()), this, SLOT(isModified()));
 
-    ui.vboxLayout->removeWidget(currentResource);
-    currentResource->hide();
-    currentResource->setParent(0);
+    m_ui.vboxLayout->removeWidget(m_currentResource);
+    m_currentResource->hide();
+    m_currentResource->setParent(0);
   }
 
-  currentResource = resources[ui.idsList->currentItem()->text()];
-  currentResource->setParent(ui.container);
-  currentResource->show();
-  ui.vboxLayout->addWidget(currentResource);
+  m_currentResource = m_resourcesModel->at(index);
+  m_currentResource->setParent(m_ui.container);
+  m_currentResource->show();
+  m_ui.vboxLayout->addWidget(m_currentResource);
 
-  connect(currentResource, SIGNAL(dataChanged()), this, SLOT(isModified()));
+  connect(m_currentResource, SIGNAL(dataChanged()), this, SLOT(isModified()));
 }
 
 void MainWindow::isModified()
 {
-  if (!modified) {
-    modified = true;
+  if (!m_modified) {
+    m_modified = true;
     updateWindowTitle();
   }
 }
@@ -209,8 +212,8 @@ void MainWindow::isModified()
 void MainWindow::updateWindowTitle()
 {
   setWindowTitle(
-      (modified ? "*" : "") +
-      (currentFileName.isEmpty() ? tr("New file") : currentFileName) +
+      (m_modified ? "*" : "") +
+      (m_currentFileName.isEmpty() ? tr("New file") : m_currentFileName) +
       " - " +
       QCoreApplication::applicationName());
 }
