@@ -96,11 +96,6 @@ void ShapeResource::parse(QDataStream* in)
     in->readRawData(reinterpret_cast<char*>(vertices), numVertices * sizeof(Vertex));
     checkError(in, tr("vertices"));
 
-    // Flip Z-axis.
-    for (int i = 0; i < numVertices; i++) {
-      vertices[i].z = -vertices[i].z;
-    }
-
     try {
       unknowns1 = new quint32[numPrimitives];
       unknowns2 = new quint32[numPrimitives];
@@ -188,7 +183,7 @@ void ShapeResource::write(QDataStream* out) const
 
   // Write vertex data.
   foreach (Vertex vertex, vertices) {
-    *out << vertex.x << vertex.y << (qint16)-vertex.z;
+    *out << vertex.x << vertex.y << vertex.z;
   }
   checkError(out, tr("vertices"), true);
 

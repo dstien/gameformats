@@ -228,9 +228,7 @@ void ShapeView::paintEvent(QPaintEvent* event)
     // Polygon.
     else if (primitive.type > 2 && primitive.type < 11) {
       glBegin(GL_POLYGON);
-      // Draw polygons backwards due to the flipped Z-axis.
-      for (int i = verticesList->size(); i > 0; i--) {
-        Vertex vertex = verticesList->at(i - 1);
+      foreach (Vertex vertex, *verticesList) {
         glVertex3s(vertex.x, vertex.y, vertex.z);
       }
       glEnd();
