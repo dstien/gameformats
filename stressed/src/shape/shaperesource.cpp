@@ -422,6 +422,7 @@ void ShapeResource::exportFile()
 
   if (!outFileName.isEmpty()) {
     Settings().setFilePath(FILE_SETTINGS_PATH, currentFilePath = outFileName);
+    fileInfo.setFile(currentFilePath);
 
     try {
       QFile objFile(currentFilePath);
@@ -477,9 +478,8 @@ void ShapeResource::exportFile()
 
         objFile.close();
 
-        QFileInfo mtlFileInfo(currentFilePath);
-        mtlFileInfo.setFile(MTL_DST);
-        QFile::copy(MTL_SRC, mtlFileInfo.absolutePath());
+        QFileInfo mtlFileInfo(fileInfo.dir(), MTL_DST);
+        QFile::copy(MTL_SRC, mtlFileInfo.absoluteFilePath());
       }
       else {
         throw tr("Couldn't open file for writing.");
