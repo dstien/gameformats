@@ -6,16 +6,29 @@ QT += opengl
 
 TARGET = stressed
 
-QMAKE_CLEAN += $(TARGET)
-
 DEPENDPATH  += ..
 INCLUDEPATH += $$DEPENDPATH
 
-PRE_TARGETDEPS += ../bitmap/libbitmap.a \
-                  ../shape/libshape.a \
-                  ../text/libtext.a
+win32 {
+  CONFIG(release, debug|release) {
+    PRE_TARGETDEPS += ../bitmap/release/libbitmap.a \
+                      ../shape/release/libshape.a \
+                      ../text/release/libtext.a
+  }
+  else {
+    PRE_TARGETDEPS += ../bitmap/debug/libbitmap.a \
+                      ../shape/debug/libshape.a \
+                      ../text/debug/libtext.a
+  }
+  LIBS += $$PRE_TARGETDEPS -lopengl32 -lglu32
+}
+else {
+  PRE_TARGETDEPS += ../bitmap/libbitmap.a \
+                    ../shape/libshape.a \
+                    ../text/libtext.a
 
-LIBS += $$PRE_TARGETDEPS
+  LIBS += $$PRE_TARGETDEPS
+}
 
 RESOURCES +=  ../../resources/resources.qrc
 

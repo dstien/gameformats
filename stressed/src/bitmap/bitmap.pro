@@ -2,8 +2,6 @@ TEMPLATE = lib
 
 CONFIG += staticlib warn_on qt
 
-QMAKE_CLEAN += $(TARGET)
-
 DEPENDPATH  += ..
 INCLUDEPATH += $$DEPENDPATH
 

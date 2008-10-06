@@ -4,8 +4,6 @@ CONFIG += staticlib warn_on qt
 
 QT += opengl
 
-QMAKE_CLEAN += $(TARGET)
-
 DEPENDPATH  += ..
 INCLUDEPATH += $$DEPENDPATH
 
