@@ -153,12 +153,6 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel)
       QString type = types[ids[i]];
 
       try {
-        for (int j = 0; j < resourcesModel->rowCount(); j++) {
-          if (ids[i] == resourcesModel->at(j)->id()) {
-            throw tr("Id name not unique.");
-          }
-        }
-
         if (type == "text") {
           resource = new TextResource(ids[i], &in);
         }

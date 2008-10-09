@@ -22,6 +22,8 @@
 #include "shapemodel.h"
 #include "verticesmodel.h"
 
+const int ShapeModel::ROWS_MAX;
+
 const int ShapeModel::TYPE_MIN;
 const int ShapeModel::TYPE_MAX;
 
@@ -40,6 +42,24 @@ ShapeModel::ShapeModel(QObject* parent)
 : QAbstractTableModel(parent)
 {
   m_numPaintJobs = 1;
+}
+
+ShapeModel::ShapeModel(const ShapeModel& mod, QObject* parent)
+: QAbstractTableModel(parent)
+{
+  if (!mod.m_primitives.empty()) {
+    m_primitives = mod.m_primitives;
+    beginInsertRows(QModelIndex(), 0, m_primitives.size() - 1);
+
+    for (int i = 0; i < m_primitives.size(); i++) {
+      m_primitives[i].verticesModel = new VerticesModel(*(m_primitives[i].verticesModel->verticesList()), this);
+      m_primitives[i].materialsModel = new MaterialsModel(*(m_primitives[i].materialsModel->materialsList()), this);
+    }
+
+    endInsertRows();
+  }
+
+  m_numPaintJobs = mod.m_numPaintJobs;
 }
 
 Qt::ItemFlags ShapeModel::flags(const QModelIndex& index) const
@@ -229,21 +249,29 @@ void ShapeModel::moveRows(QItemSelectionModel* selectionModel, int direction)
   QList<QPersistentModelIndex> newPersistentRows;
   QList<QPersistentModelIndex> curPersistentRows;
   foreach (QModelIndex row, selectionModel->selectedRows()) {
-    if (direction < 0) {
-      curPersistentRows.append(QPersistentModelIndex(row));
-    }
-    else {
-      curPersistentRows.prepend(QPersistentModelIndex(row));
-    }
+    curPersistentRows.append(QPersistentModelIndex(row));
   }
 
-  QModelIndex parent;
+  // Sort by direction to prevent overwriting.
+  if (direction < 0) {
+    qSort(curPersistentRows);
+  }
+  else {
+    qSort(curPersistentRows.begin(), curPersistentRows.end(), qGreater<QPersistentModelIndex>());
+  }
+
+  QPersistentModelIndex persistentCurrent = selectionModel->currentIndex();
+  QModelIndex parent, current = persistentCurrent;
 
   foreach (QPersistentModelIndex row, curPersistentRows) {
     int curRow = row.row();
-    int newRow = qBound(0, curRow + direction, 256);
+    int newRow = qBound(0, curRow + direction, rowCount() - 1);
 
     if (curRow != newRow) {
+      if (persistentCurrent.row() == curRow) {
+        current = index(newRow < ROWS_MAX ? newRow : rowCount() - 1, 0);
+      }
+
       Primitive primitive = m_primitives[curRow];
 
       beginRemoveRows(parent, curRow, curRow);
@@ -255,10 +283,12 @@ void ShapeModel::moveRows(QItemSelectionModel* selectionModel, int direction)
       endInsertRows();
     }
 
-    newPersistentRows.append(QPersistentModelIndex(index((newRow < 256 ? newRow : rowCount() - 1), 0)));
+    newPersistentRows.append(QPersistentModelIndex(index((newRow < ROWS_MAX ? newRow : rowCount() - 1), 0)));
   }
 
   selectionModel->reset();
+  selectionModel->setCurrentIndex(current, QItemSelectionModel::Current);
+
   foreach (QPersistentModelIndex row, newPersistentRows) {
     selectionModel->select(row, (QItemSelectionModel::Select | QItemSelectionModel::Rows));
   }

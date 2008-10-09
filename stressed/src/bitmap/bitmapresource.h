@@ -27,10 +27,12 @@ class BitmapResource : public Resource
   Q_OBJECT
 
 public:
+  BitmapResource(const BitmapResource& res);
   BitmapResource(QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
   ~BitmapResource();
 
-  QString              type() const { return "bitmap"; }
+  QString              type() const  { return "bitmap"; }
+  Resource*            clone() const { return new BitmapResource(*this); }
 
 protected:
   void                 parse(QDataStream* in);
@@ -43,12 +45,12 @@ private slots:
   void                 importFile();
 
 private:
-  Ui::BitmapResource   ui;
+  Ui::BitmapResource   m_ui;
 
-  QImage*              image;
+  QImage*              m_image;
 
-  static QString       currentFilePath;
-  static QString       currentFileFilter;
+  static QString       m_currentFilePath;
+  static QString       m_currentFileFilter;
 
   static const char    FILE_SETTINGS_PATH[];
   static const char    FILE_FILTERS[];

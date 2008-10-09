@@ -30,9 +30,11 @@ class ShapeResource : public Resource
   Q_OBJECT
 
 public:
+  ShapeResource(const ShapeResource& res);
   ShapeResource(QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
 
-  QString           type() const { return "shape"; }
+  QString           type() const  { return "shape"; }
+  Resource*         clone() const { return new ShapeResource(*this); }
 
 protected:
   void              parse(QDataStream* in);
@@ -43,6 +45,7 @@ private slots:
   void              setModels(const QModelIndex& index);
   void              setNumPaintJobs();
 
+  void              movePrimitives(int direction);
   void              moveFirstPrimitives();
   void              moveUpPrimitives();
   void              moveDownPrimitives();
@@ -62,14 +65,15 @@ private slots:
   void              isModified();
 
 private:
+  void              setup();
   VerticesList      buildVerticesList(bool boundBox = false) const;
 
-  Ui::ShapeResource ui;
+  Ui::ShapeResource m_ui;
 
-  ShapeModel*       shapeModel;
+  ShapeModel*       m_shapeModel;
 
-  static QString    currentFilePath;
-  static QString    currentFileFilter;
+  static QString    m_currentFilePath;
+  static QString    m_currentFileFilter;
 
   static const int  MAX_VERTICES = 256;
 

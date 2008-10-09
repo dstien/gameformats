@@ -43,6 +43,8 @@ MainWindow::MainWindow(QWidget* parent, Qt::WFlags flags)
   m_resourcesModel = new ResourcesModel(this);
   m_ui.resourcesView->setModel(m_resourcesModel);
 
+  connect(m_resourcesModel, SIGNAL(dataChanged(QModelIndex, QModelIndex)),
+      this, SLOT(isModified()));
   connect(m_ui.resourcesView->selectionModel(), SIGNAL(currentChanged(QModelIndex, QModelIndex)),
       this, SLOT(setCurrent(QModelIndex)));
 
@@ -125,6 +127,7 @@ bool MainWindow::reset()
     m_currentResource = NULL;
   }
 
+  m_ui.resourcesView->clearSelection();
   m_resourcesModel->clear();
 
   m_modified = false;
@@ -193,12 +196,126 @@ void MainWindow::setCurrent(const QModelIndex& index)
     m_currentResource->setParent(0);
   }
 
-  m_currentResource = m_resourcesModel->at(index);
-  m_currentResource->setParent(m_ui.container);
-  m_currentResource->show();
-  m_ui.vboxLayout->addWidget(m_currentResource);
+  if (index.isValid())
+  {
+    m_currentResource = m_resourcesModel->at(index);
+    m_currentResource->setParent(m_ui.container);
+    m_currentResource->show();
+    m_ui.vboxLayout->addWidget(m_currentResource);
 
-  connect(m_currentResource, SIGNAL(dataChanged()), this, SLOT(isModified()));
+    connect(m_currentResource, SIGNAL(dataChanged()), this, SLOT(isModified()));
+  }
+}
+
+void MainWindow::moveResources(int direction)
+{
+  if (m_ui.resourcesView->selectionModel()->hasSelection()) {
+    disconnect(m_ui.resourcesView->selectionModel(), SIGNAL(currentChanged(QModelIndex, QModelIndex)), this, SLOT(setCurrent(QModelIndex)));
+    m_resourcesModel->moveRows(m_ui.resourcesView->selectionModel(), direction);
+    connect(m_ui.resourcesView->selectionModel(), SIGNAL(currentChanged(QModelIndex, QModelIndex)), this, SLOT(setCurrent(QModelIndex)));
+    isModified();
+  }
+}
+
+void MainWindow::moveFirstResources()
+{
+  moveResources(-ResourcesModel::ROWS_MAX);
+}
+
+void MainWindow::moveUpResources()
+{
+  moveResources(-1);
+}
+
+void MainWindow::moveDownResources()
+{
+  moveResources(1);
+}
+
+void MainWindow::moveLastResources()
+{
+  moveResources(ResourcesModel::ROWS_MAX);
+}
+
+void MainWindow::sortResources()
+{
+  m_resourcesModel->sort();
+  isModified();
+}
+
+void MainWindow::insertResource()
+{
+  // TODO
+}
+
+void MainWindow::duplicateResource()
+{
+  if (m_ui.resourcesView->currentIndex().isValid()) {
+    int row = m_ui.resourcesView->currentIndex().row();
+    m_resourcesModel->duplicateRow(row);
+
+    m_ui.resourcesView->setCurrentIndex(m_resourcesModel->index(row));
+    isModified();
+
+    renameResource();
+  }
+}
+
+void MainWindow::renameResource()
+{
+  m_ui.resourcesView->edit(m_ui.resourcesView->currentIndex());
+}
+
+void MainWindow::removeResources()
+{
+  if (m_ui.resourcesView->selectionModel()->selectedRows().size() >= m_resourcesModel->rowCount()) {
+    setCurrent(QModelIndex());
+  }
+
+  m_resourcesModel->removeRows(m_ui.resourcesView->selectionModel()->selectedRows());
+  isModified();
+}
+
+void MainWindow::resourcesContextMenu(const QPoint& /*pos*/)
+{
+  if (m_ui.resourcesView->selectionModel()->hasSelection()) {
+    m_ui.moveFirstResourcesAction->setEnabled(true);
+    m_ui.moveUpResourcesAction->setEnabled(true);
+    m_ui.moveDownResourcesAction->setEnabled(true);
+    m_ui.moveLastResourcesAction->setEnabled(true);
+
+    m_ui.duplicateResourceAction->setEnabled(true);
+    m_ui.renameResourceAction->setEnabled(true);
+    m_ui.removeResourcesAction->setEnabled(true);
+  }
+  else {
+    m_ui.moveFirstResourcesAction->setEnabled(false);
+    m_ui.moveUpResourcesAction->setEnabled(false);
+    m_ui.moveDownResourcesAction->setEnabled(false);
+    m_ui.moveLastResourcesAction->setEnabled(false);
+
+    m_ui.duplicateResourceAction->setEnabled(false);
+    m_ui.renameResourceAction->setEnabled(false);
+    m_ui.removeResourcesAction->setEnabled(false);
+  }
+
+  if (m_resourcesModel->rowCount() > 1) {
+    m_ui.sortResourcesAction->setEnabled(true);
+  }
+  else {
+    m_ui.sortResourcesAction->setEnabled(false);
+  }
+
+  if (m_resourcesModel->rowCount() >= 65535) {
+    m_ui.insertResourceAction->setEnabled(false);
+    m_ui.duplicateResourceAction->setEnabled(false);
+  }
+  else {
+    m_ui.insertResourceAction->setEnabled(true);
+    m_ui.duplicateResourceAction->setEnabled(true);
+  }
+
+  m_ui.resourcesMenu->exec(QCursor::pos());
 }
 
 void MainWindow::isModified()

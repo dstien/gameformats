@@ -42,6 +42,7 @@ class ShapeModel : public QAbstractTableModel
 
 public:
   ShapeModel(QObject* parent = 0);
+  ShapeModel(const ShapeModel& mod, QObject* parent = 0);
 
   Qt::ItemFlags     flags(const QModelIndex& index) const;
   QVariant          data(const QModelIndex& index, int role) const;
@@ -62,9 +63,12 @@ public:
   Vertex*           boundBox();
 
   bool              setNumPaintJobs(int& num);
+  int               numPaintJobs() const                                             { return m_numPaintJobs; }
   void              replaceMaterials(quint8 paintJob, quint8 curMaterial, quint8 newMaterial);
 
   static const QStringList TYPES;
+
+  static const int  ROWS_MAX = 256;
 
 public slots:
   void              isModified();

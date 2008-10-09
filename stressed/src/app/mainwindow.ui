@@ -33,6 +33,12 @@
         <family>Monospace</family>
        </font>
       </property>
+      <property name="contextMenuPolicy" >
+       <enum>Qt::CustomContextMenu</enum>
+      </property>
+      <property name="selectionMode" >
+       <enum>QAbstractItemView::ExtendedSelection</enum>
+      </property>
      </widget>
     </item>
     <item>
@@ -54,21 +60,6 @@
      </widget>
     </item>
    </layout>
-  </widget>
-  <widget class="QMenuBar" name="menubar" >
-   <widget class="QMenu" name="menu_File" >
-    <property name="title" >
-     <string>&amp;File</string>
-    </property>
-    <addaction name="action_New" />
-    <addaction name="action_Open" />
-    <addaction name="separator" />
-    <addaction name="action_Save" />
-    <addaction name="action_SaveAs" />
-    <addaction name="separator" />
-    <addaction name="action_Quit" />
-   </widget>
-   <addaction name="menu_File" />
   </widget>
   <widget class="QStatusBar" name="statusbar" />
   <action name="action_New" >
@@ -100,7 +91,7 @@
     <string>Save &amp;As...</string>
    </property>
    <property name="shortcut" >
-    <string>Shift+Ctrl+S</string>
+    <string>Ctrl+Shift+S</string>
    </property>
   </action>
   <action name="action_Quit" >
@@ -111,6 +102,79 @@
     <string>Ctrl+Q</string>
    </property>
   </action>
+  <widget class="QMenuBar" name="menubar" >
+   <widget class="QMenu" name="menu_File" >
+    <property name="title" >
+     <string>&amp;File</string>
+    </property>
+    <addaction name="action_New" />
+    <addaction name="action_Open" />
+    <addaction name="separator" />
+    <addaction name="action_Save" />
+    <addaction name="action_SaveAs" />
+    <addaction name="separator" />
+    <addaction name="action_Quit" />
+   </widget>
+   <addaction name="menu_File" />
+  </widget>
+  <action name="moveFirstResourcesAction" >
+   <property name="text" >
+    <string>Move &amp;first</string>
+   </property>
+  </action>
+  <action name="moveUpResourcesAction" >
+   <property name="text" >
+    <string>Move &amp;up</string>
+   </property>
+  </action>
+  <action name="moveDownResourcesAction" >
+   <property name="text" >
+    <string>Move &amp;down</string>
+   </property>
+  </action>
+  <action name="moveLastResourcesAction" >
+   <property name="text" >
+    <string>Move &amp;last</string>
+   </property>
+  </action>
+  <action name="sortResourcesAction" >
+   <property name="text" >
+    <string>&amp;Sort</string>
+   </property>
+  </action>
+  <action name="insertResourceAction" >
+   <property name="text" >
+    <string>&amp;Insert</string>
+   </property>
+  </action>
+  <action name="duplicateResourceAction" >
+   <property name="text" >
+    <string>Du&amp;plicate</string>
+   </property>
+  </action>
+  <action name="renameResourceAction" >
+   <property name="text" >
+    <string>Re&amp;name</string>
+   </property>
+  </action>
+  <action name="removeResourcesAction" >
+   <property name="text" >
+    <string>&amp;Remove</string>
+   </property>
+  </action>
+  <widget class="QMenu" name="resourcesMenu" >
+   <addaction name="moveFirstResourcesAction" />
+   <addaction name="moveUpResourcesAction" />
+   <addaction name="moveDownResourcesAction" />
+   <addaction name="moveLastResourcesAction" />
+   <addaction name="sortResourcesAction" />
+   <addaction name="separator" />
+   <addaction name="insertResourceAction" />
+   <addaction name="duplicateResourceAction" />
+   <addaction name="renameResourceAction" />
+   <addaction name="separator" />
+   <addaction name="removeResourcesAction" />
+  </widget>
  </widget>
  <resources/>
  <connections>
@@ -143,6 +207,66 @@
    <signal>triggered()</signal>
    <receiver>MainWindow</receiver>
    <slot>close()</slot>
+  </connection>
+  <connection>
+   <sender>resourcesView</sender>
+   <signal>customContextMenuRequested(QPoint)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>resourcesContextMenu(QPoint)</slot>
+  </connection>
+  <connection>
+   <sender>moveFirstResourcesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>moveFirstResources()</slot>
+  </connection>
+  <connection>
+   <sender>moveUpResourcesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>moveUpResources()</slot>
+  </connection>
+  <connection>
+   <sender>moveDownResourcesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>moveDownResources()</slot>
+  </connection>
+  <connection>
+   <sender>moveLastResourcesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>moveLastResources()</slot>
+  </connection>
+  <connection>
+   <sender>sortResourcesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>sortResources()</slot>
+  </connection>
+  <connection>
+   <sender>insertResourceAction</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>insertResource()</slot>
+  </connection>
+  <connection>
+   <sender>duplicateResourceAction</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>duplicateResource()</slot>
+  </connection>
+  <connection>
+   <sender>renameResourceAction</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>renameResource()</slot>
+  </connection>
+  <connection>
+   <sender>removeResourcesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>removeResources()</slot>
   </connection>
  </connections>
 </ui>

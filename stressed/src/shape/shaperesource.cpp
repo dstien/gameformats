@@ -28,8 +28,8 @@
 #include "shaperesource.h"
 #include "typedelegate.h"
 
-QString       ShapeResource::currentFilePath;
-QString       ShapeResource::currentFileFilter;
+QString       ShapeResource::m_currentFilePath;
+QString       ShapeResource::m_currentFileFilter;
 
 const int     ShapeResource::MAX_VERTICES;
 
@@ -42,29 +42,43 @@ const QRegExp ShapeResource::OBJ_REGEXP_WHITESPACE = QRegExp("\\s+");
 const QRegExp ShapeResource::OBJ_REGEXP_VERTEX     = QRegExp("^v(\\s+([+-]?\\d*\\.\\d+)(?![-+0-9\\.])){3}\\s*$");
 const QRegExp ShapeResource::OBJ_REGEXP_FACE       = QRegExp("^(fo?|[lp])((\\s+-?\\d+)(/-?\\d*){,2}){1,10}\\s*$");
 
+ShapeResource::ShapeResource(const ShapeResource& res)
+: Resource(res.id(), dynamic_cast<QWidget*>(res.parent()), res.windowFlags())
+{
+  m_shapeModel = new ShapeModel(*res.m_shapeModel, this);
+  setup();
+}
+
 ShapeResource::ShapeResource(QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags)
 : Resource(id, parent, flags)
 {
-  ui.setupUi(this);
-
-  ui.primitivesView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
-  ui.verticesView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
-  ui.materialsView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
-
-  ui.primitivesView->setItemDelegateForColumn(0, new TypeDelegate(ui.primitivesView));
-
-  shapeModel = new ShapeModel(this);
-
-  ui.primitivesView->setModel(shapeModel);
-  ui.shapeView->setModel(shapeModel);
-  ui.shapeView->setSelectionModel(ui.primitivesView->selectionModel());
-
+  m_shapeModel = new ShapeModel(this);
   parse(in);
-  ui.shapeView->reset();
+  setup();
+}
 
-  connect(shapeModel, SIGNAL(dataChanged(QModelIndex, QModelIndex)),
+void ShapeResource::setup()
+{
+  m_ui.setupUi(this);
+
+  m_ui.primitivesView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
+  m_ui.verticesView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
+  m_ui.materialsView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
+
+  m_ui.primitivesView->setItemDelegateForColumn(0, new TypeDelegate(m_ui.primitivesView));
+
+  m_ui.primitivesView->setModel(m_shapeModel);
+  m_ui.shapeView->setModel(m_shapeModel);
+  m_ui.shapeView->setSelectionModel(m_ui.primitivesView->selectionModel());
+
+  m_ui.shapeView->reset();
+
+  m_ui.numPaintJobsSpinBox->setValue(m_shapeModel->numPaintJobs());
+  m_ui.paintJobSpinBox->setMaximum(m_shapeModel->numPaintJobs());
+
+  connect(m_shapeModel, SIGNAL(dataChanged(QModelIndex, QModelIndex)),
       this, SLOT(isModified()));
-  connect(ui.primitivesView->selectionModel(), SIGNAL(currentChanged(QModelIndex, QModelIndex)),
+  connect(m_ui.primitivesView->selectionModel(), SIGNAL(currentChanged(QModelIndex, QModelIndex)),
       this, SLOT(setModels(QModelIndex)));
 }
 
@@ -138,8 +152,8 @@ void ShapeResource::parse(QDataStream* in)
       Primitive primitive;
       primitive.type = type;
       primitive.depthIndex = depthIndex;
-      primitive.verticesModel = new VerticesModel(verticesList, shapeModel);
-      primitive.materialsModel = new MaterialsModel(materialsList, shapeModel);
+      primitive.verticesModel = new VerticesModel(verticesList, m_shapeModel);
+      primitive.materialsModel = new MaterialsModel(materialsList, m_shapeModel);
 
       primitive.unknown1 = unknowns1[i];
       primitive.unknown2 = unknowns2[i];
@@ -165,10 +179,7 @@ void ShapeResource::parse(QDataStream* in)
   delete[] unknowns2;
   unknowns2 = 0;
 
-  shapeModel->setShape(primitives);
-
-  ui.numPaintJobsSpinBox->setValue(numPaintJobs);
-  ui.paintJobSpinBox->setMaximum(numPaintJobs);
+  m_shapeModel->setShape(primitives);
 }
 
 void ShapeResource::write(QDataStream* out) const
@@ -178,7 +189,7 @@ void ShapeResource::write(QDataStream* out) const
   VerticesList vertices = buildVerticesList(!id().contains(QRegExp("exp[0-3]{1,1}$")));
 
   // Write header.
-  *out << (quint8)vertices.size() << (quint8)shapeModel->rowCount() << (quint8)ui.paintJobSpinBox->maximum() << (quint8)0;
+  *out << (quint8)vertices.size() << (quint8)m_shapeModel->rowCount() << (quint8)m_ui.paintJobSpinBox->maximum() << (quint8)0;
   checkError(out, tr("header"), true);
 
   // Write vertex data.
@@ -188,19 +199,19 @@ void ShapeResource::write(QDataStream* out) const
   checkError(out, tr("vertices"), true);
 
   // Write unknowns.
-  foreach (Primitive primitive, *(shapeModel->primitivesList())) {
+  foreach (Primitive primitive, *(m_shapeModel->primitivesList())) {
     *out << primitive.unknown1;
   }
   checkError(out, tr("unknown primitive data 1"), true);
 
-  foreach (Primitive primitive, *(shapeModel->primitivesList())) {
+  foreach (Primitive primitive, *(m_shapeModel->primitivesList())) {
     *out << primitive.unknown2;
   }
   checkError(out, tr("unknown primitive data 2"), true);
 
   // Write primitives.
   int i = 0;
-  foreach (Primitive primitive, *(shapeModel->primitivesList())) {
+  foreach (Primitive primitive, *(m_shapeModel->primitivesList())) {
     // Primitive header.
     *out << primitive.type << primitive.depthIndex;
     checkError(out, tr("header for primitive %1").arg(i));
@@ -228,106 +239,102 @@ void ShapeResource::write(QDataStream* out) const
 
 void ShapeResource::deselectAll()
 {
-  ui.materialsView->clearSelection();
-  ui.verticesView->clearSelection();
-  ui.primitivesView->clearSelection();
+  m_ui.materialsView->clearSelection();
+  m_ui.verticesView->clearSelection();
+  m_ui.primitivesView->clearSelection();
 }
 
 void ShapeResource::setModels(const QModelIndex& index)
 {
   int row = index.row();
 
-  if (!index.isValid() || row >= shapeModel->rowCount()) {
+  if (!index.isValid() || row >= m_shapeModel->rowCount()) {
     return;
   }
 
-  Primitive currentPrimitive = shapeModel->primitivesList()->at(row);
+  Primitive currentPrimitive = m_shapeModel->primitivesList()->at(row);
 
-  ui.verticesView->setModel(currentPrimitive.verticesModel);
-  ui.materialsView->setModel(currentPrimitive.materialsModel);
+  m_ui.verticesView->setModel(currentPrimitive.verticesModel);
+  m_ui.materialsView->setModel(currentPrimitive.materialsModel);
 
-  ui.shapeView->setCurrentIndex(index);
+  m_ui.shapeView->setCurrentIndex(index);
 }
 
 void ShapeResource::setNumPaintJobs()
 {
-  int num = ui.numPaintJobsSpinBox->value();
-  if (shapeModel->setNumPaintJobs(num)) {
-    ui.paintJobSpinBox->setMaximum(num);
+  int num = m_ui.numPaintJobsSpinBox->value();
+  if (m_shapeModel->setNumPaintJobs(num)) {
+    m_ui.paintJobSpinBox->setMaximum(num);
+    isModified();
+  }
+}
+
+void ShapeResource::movePrimitives(int direction)
+{
+  if (m_ui.primitivesView->selectionModel()->hasSelection()) {
+    m_shapeModel->moveRows(m_ui.primitivesView->selectionModel(), direction);
     isModified();
   }
 }
 
 void ShapeResource::moveFirstPrimitives()
 {
-  if (ui.primitivesView->selectionModel()->hasSelection()) {
-    shapeModel->moveRows(ui.primitivesView->selectionModel(), -256);
-    isModified();
-  }
+  movePrimitives(-ShapeModel::ROWS_MAX);
 }
 
 void ShapeResource::moveUpPrimitives()
 {
-  if (ui.primitivesView->selectionModel()->hasSelection()) {
-    shapeModel->moveRows(ui.primitivesView->selectionModel(), -1);
-    isModified();
-  }
+  movePrimitives(-1);
 }
 
 void ShapeResource::moveDownPrimitives()
 {
-  if (ui.primitivesView->selectionModel()->hasSelection()) {
-    shapeModel->moveRows(ui.primitivesView->selectionModel(), 1);
-    isModified();
-  }
+  movePrimitives(1);
 }
 
 void ShapeResource::moveLastPrimitives()
 {
-  if (ui.primitivesView->selectionModel()->hasSelection()) {
-    shapeModel->moveRows(ui.primitivesView->selectionModel(), 256);
-    isModified();
-  }
+  movePrimitives(ShapeModel::ROWS_MAX);
 }
 
 void ShapeResource::insertPrimitive()
 {
   int row;
-  if (ui.primitivesView->selectionModel()->hasSelection()) {
-    row = ui.primitivesView->currentIndex().row();
+  if (m_ui.primitivesView->selectionModel()->hasSelection()) {
+    row = m_ui.primitivesView->currentIndex().row();
   }
   else {
     // Insert at end if no rows are selected.
-    row = 256;
+    row = ShapeModel::ROWS_MAX;
   }
 
-  shapeModel->insertRows(row, 1);
+  m_shapeModel->insertRows(row, 1);
 
   // Select the new row.
-  ui.primitivesView->selectionModel()->reset();
-  ui.primitivesView->setCurrentIndex(shapeModel->index((row < 256 ? row : shapeModel->rowCount() - 1), 0));
+  m_ui.primitivesView->selectionModel()->reset();
+  m_ui.primitivesView->setCurrentIndex(m_shapeModel->index((row < ShapeModel::ROWS_MAX ? row : m_shapeModel->rowCount() - 1), 0));
 
   isModified();
 }
 
 void ShapeResource::duplicatePrimitive()
 {
-  if (ui.primitivesView->selectionModel()->hasSelection()) {
-    int row = ui.primitivesView->currentIndex().row();
-    shapeModel->duplicateRow(row);
+  if (m_ui.primitivesView->selectionModel()->hasSelection()) {
+    int row = m_ui.primitivesView->currentIndex().row();
+    m_shapeModel->duplicateRow(row);
 
-    ui.primitivesView->setCurrentIndex(shapeModel->index(row, 0));
+    m_ui.primitivesView->setCurrentIndex(m_shapeModel->index(row, 0));
     isModified();
   }
 }
 
 void ShapeResource::removePrimitives()
 {
-  shapeModel->removeRows(ui.primitivesView->selectionModel()->selectedRows());
+  m_shapeModel->removeRows(m_ui.primitivesView->selectionModel()->selectedRows());
 
-  if (!shapeModel->rowCount()) {
-    ui.verticesView->setModel(0);
-    ui.materialsView->setModel(0);
+  if (!m_shapeModel->rowCount()) {
+    m_ui.verticesView->setModel(0);
+    m_ui.materialsView->setModel(0);
   }
 
   isModified();
@@ -335,41 +342,41 @@ void ShapeResource::removePrimitives()
 
 void ShapeResource::primitivesContextMenu(const QPoint& /*pos*/)
 {
-  if (ui.primitivesView->selectionModel()->hasSelection()) {
-    ui.moveFirstPrimitivesAction->setEnabled(true);
-    ui.moveUpPrimitivesAction->setEnabled(true);
-    ui.moveDownPrimitivesAction->setEnabled(true);
-    ui.moveLastPrimitivesAction->setEnabled(true);
+  if (m_ui.primitivesView->selectionModel()->hasSelection()) {
+    m_ui.moveFirstPrimitivesAction->setEnabled(true);
+    m_ui.moveUpPrimitivesAction->setEnabled(true);
+    m_ui.moveDownPrimitivesAction->setEnabled(true);
+    m_ui.moveLastPrimitivesAction->setEnabled(true);
 
-    ui.duplicatePrimitiveAction->setEnabled(true);
-    ui.removePrimitivesAction->setEnabled(true);
+    m_ui.duplicatePrimitiveAction->setEnabled(true);
+    m_ui.removePrimitivesAction->setEnabled(true);
   }
   else {
-    ui.moveFirstPrimitivesAction->setEnabled(false);
-    ui.moveUpPrimitivesAction->setEnabled(false);
-    ui.moveDownPrimitivesAction->setEnabled(false);
-    ui.moveLastPrimitivesAction->setEnabled(false);
+    m_ui.moveFirstPrimitivesAction->setEnabled(false);
+    m_ui.moveUpPrimitivesAction->setEnabled(false);
+    m_ui.moveDownPrimitivesAction->setEnabled(false);
+    m_ui.moveLastPrimitivesAction->setEnabled(false);
 
-    ui.duplicatePrimitiveAction->setEnabled(false);
-    ui.removePrimitivesAction->setEnabled(false);
+    m_ui.duplicatePrimitiveAction->setEnabled(false);
+    m_ui.removePrimitivesAction->setEnabled(false);
   }
 
-  if (shapeModel->rowCount() >= 255) {
-    ui.insertPrimitiveAction->setEnabled(false);
-    ui.duplicatePrimitiveAction->setEnabled(false);
+  if (m_shapeModel->rowCount() >= 255) {
+    m_ui.insertPrimitiveAction->setEnabled(false);
+    m_ui.duplicatePrimitiveAction->setEnabled(false);
   }
   else {
-    ui.insertPrimitiveAction->setEnabled(true);
+    m_ui.insertPrimitiveAction->setEnabled(true);
   }
 
-  ui.primitivesMenu->exec(QCursor::pos());
+  m_ui.primitivesMenu->exec(QCursor::pos());
 }
 
 void ShapeResource::replaceMaterials()
 {
-  if (ui.materialsView->model() && ui.materialsView->selectionModel()->hasSelection()) {
+  if (m_ui.materialsView->model() && m_ui.materialsView->selectionModel()->hasSelection()) {
     bool success;
-    int curMaterial = ui.materialsView->model()->data(ui.materialsView->currentIndex()).toUInt();
+    int curMaterial = m_ui.materialsView->model()->data(m_ui.materialsView->currentIndex()).toUInt();
     int newMaterial = QInputDialog::getInteger(
         this,
         tr("Replace material"),
@@ -377,7 +384,7 @@ void ShapeResource::replaceMaterials()
         curMaterial, 0, 255, 1, &success);
 
     if (success && (newMaterial != curMaterial)) {
-      shapeModel->replaceMaterials(ui.materialsView->currentIndex().row(), curMaterial, newMaterial);
+      m_shapeModel->replaceMaterials(m_ui.materialsView->currentIndex().row(), curMaterial, newMaterial);
       isModified();
     }
   }
@@ -385,42 +392,42 @@ void ShapeResource::replaceMaterials()
 
 void ShapeResource::materialsContextMenu(const QPoint& /*pos*/)
 {
-  if (ui.materialsView->model() && ui.materialsView->selectionModel()->hasSelection()) {
-    ui.replaceMaterialsAction->setEnabled(true);
+  if (m_ui.materialsView->model() && m_ui.materialsView->selectionModel()->hasSelection()) {
+    m_ui.replaceMaterialsAction->setEnabled(true);
   }
   else {
-    ui.replaceMaterialsAction->setEnabled(false);
+    m_ui.replaceMaterialsAction->setEnabled(false);
   }
 
-  ui.materialsMenu->exec(QCursor::pos());
+  m_ui.materialsMenu->exec(QCursor::pos());
 }
 
 void ShapeResource::exportFile()
 {
-  if (currentFilePath.isEmpty()) {
-    currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
+  if (m_currentFilePath.isEmpty()) {
+    m_currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
   }
 
-  QFileInfo fileInfo(currentFilePath);
+  QFileInfo fileInfo(m_currentFilePath);
   fileInfo.setFile(
       fileInfo.absolutePath() +
       QDir::separator() +
       QString("%1-%2.obj").arg(QString(fileName()).replace('.', '_'), id()));
-  currentFilePath = fileInfo.absoluteFilePath();
+  m_currentFilePath = fileInfo.absoluteFilePath();
 
   QString outFileName = QFileDialog::getSaveFileName(
       this,
       tr("Export shape"),
-      currentFilePath,
+      m_currentFilePath,
       FILE_FILTERS,
-      &currentFileFilter);
+      &m_currentFileFilter);
 
   if (!outFileName.isEmpty()) {
-    Settings().setFilePath(FILE_SETTINGS_PATH, currentFilePath = outFileName);
-    fileInfo.setFile(currentFilePath);
+    Settings().setFilePath(FILE_SETTINGS_PATH, m_currentFilePath = outFileName);
+    fileInfo.setFile(m_currentFilePath);
 
     try {
-      QFile objFile(currentFilePath);
+      QFile objFile(m_currentFilePath);
       if (objFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
         QTextStream out(&objFile);
         out << "# " << Settings::APP_NAME << " - " << Settings::APP_DESC << endl;
@@ -438,8 +445,8 @@ void ShapeResource::exportFile()
         out << endl;
 
         int prevMat = -1, curMat;
-        foreach (Primitive primitive, *(shapeModel->primitivesList())) {
-          curMat = primitive.materialsModel->materialsList()->at(ui.paintJobSpinBox->value() - 1);
+        foreach (Primitive primitive, *(m_shapeModel->primitivesList())) {
+          curMat = primitive.materialsModel->materialsList()->at(m_ui.paintJobSpinBox->value() - 1);
           if (curMat != prevMat) {
             prevMat = curMat;
             out << QString("usemtl Stunts%1").arg(curMat, 3, 10, QChar('0')) << endl;
@@ -484,29 +491,29 @@ void ShapeResource::exportFile()
       QMessageBox::critical(
           this,
           QCoreApplication::applicationName(),
-          tr("Error exporting shape resource \"%1\" to Wavefront OBJ file \"%2\": %3").arg(id(), currentFilePath, msg));
+          tr("Error exporting shape resource \"%1\" to Wavefront OBJ file \"%2\": %3").arg(id(), m_currentFilePath, msg));
     }
   }
 }
 
 void ShapeResource::importFile()
 {
-  if (currentFilePath.isEmpty()) {
-    currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
+  if (m_currentFilePath.isEmpty()) {
+    m_currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
   }
 
   QString inFileName = QFileDialog::getOpenFileName(
       this,
       tr("Import shape"),
-      currentFilePath,
+      m_currentFilePath,
       FILE_FILTERS,
-      &currentFileFilter);
+      &m_currentFileFilter);
 
   if (!inFileName.isEmpty()) {
-    Settings().setFilePath(FILE_SETTINGS_PATH, currentFilePath = inFileName);
+    Settings().setFilePath(FILE_SETTINGS_PATH, m_currentFilePath = inFileName);
 
     try {
-      QFile objFile(currentFilePath);
+      QFile objFile(m_currentFilePath);
       if (objFile.open(QIODevice::ReadOnly)) {
         QTextStream in(&objFile);
 
@@ -567,8 +574,8 @@ void ShapeResource::importFile()
                     faceVertices.append(vertices[index - 1]);
                   }
 
-                  primitive.verticesModel = new VerticesModel(faceVertices, shapeModel);
-                  primitive.materialsModel = new MaterialsModel(material, shapeModel);
+                  primitive.verticesModel = new VerticesModel(faceVertices, m_shapeModel);
+                  primitive.materialsModel = new MaterialsModel(material, m_shapeModel);
                   primitive.unknown1 = 0xFFFFFFFF;
                   primitive.unknown2 = 0xFFFFFFFF;
                   primitives.append(primitive);
@@ -603,11 +610,11 @@ void ShapeResource::importFile()
           throw tr("No faces found in file.");
         }
 
-        shapeModel->setShape(primitives);
-        ui.shapeView->reset();
+        m_shapeModel->setShape(primitives);
+        m_ui.shapeView->reset();
 
-        ui.numPaintJobsSpinBox->setValue(1);
-        ui.paintJobSpinBox->setMaximum(1);
+        m_ui.numPaintJobsSpinBox->setValue(1);
+        m_ui.paintJobSpinBox->setMaximum(1);
 
         isModified();
       }
@@ -619,7 +626,7 @@ void ShapeResource::importFile()
       QMessageBox::critical(
           this,
           QCoreApplication::applicationName(),
-          tr("Error importing Wavefront OBJ file \"%1\" to shape resource \"%2\": %3").arg(currentFilePath, id(), msg));
+          tr("Error importing Wavefront OBJ file \"%1\" to shape resource \"%2\": %3").arg(m_currentFilePath, id(), msg));
     }
   }
 }
@@ -629,13 +636,13 @@ VerticesList ShapeResource::buildVerticesList(bool boundBox) const
   VerticesList vertices;
 
   if (boundBox) {
-    Vertex* bound = shapeModel->boundBox();
+    Vertex* bound = m_shapeModel->boundBox();
     for (int i = 0; i < 8; i++) {
       vertices.append(bound[i]);
     }
   }
 
-  foreach (Primitive primitive, *(shapeModel->primitivesList())) {
+  foreach (Primitive primitive, *(m_shapeModel->primitivesList())) {
     foreach (Vertex vertex, *(primitive.verticesModel->verticesList())) {
       if (!vertices.contains(vertex)) {
         vertices.append(vertex);
@@ -651,6 +658,6 @@ VerticesList ShapeResource::buildVerticesList(bool boundBox) const
 
 void ShapeResource::isModified()
 {
-  ui.shapeView->viewport()->update();
+  m_ui.shapeView->viewport()->update();
   Resource::isModified();
 }

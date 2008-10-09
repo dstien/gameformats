@@ -27,16 +27,18 @@ class TextResource : public Resource
   Q_OBJECT
 
 public:
+  TextResource(const TextResource& res);
   TextResource(QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
 
-  QString           type() const { return "text"; }
+  QString           type() const  { return "text"; }
+  Resource*         clone() const { return new TextResource(*this); }
 
 protected:
   void              parse(QDataStream* in);
   void              write(QDataStream* out) const;
 
 private:
-  Ui::TextResource  ui;
+  Ui::TextResource  m_ui;
 };
 
 #endif

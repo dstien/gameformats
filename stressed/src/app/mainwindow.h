@@ -42,7 +42,22 @@ private slots:
   void              open();
   void              save();
   void              saveAs();
+
   void              setCurrent(const QModelIndex& index);
+
+  void              moveResources(int direction);
+  void              moveFirstResources();
+  void              moveUpResources();
+  void              moveDownResources();
+  void              moveLastResources();
+  void              sortResources();
+
+  void              insertResource();
+  void              duplicateResource();
+  void              renameResource();
+  void              removeResources();
+  void              resourcesContextMenu(const QPoint& pos);
+
   void              isModified();
 
 private:

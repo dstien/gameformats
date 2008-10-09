@@ -23,8 +23,8 @@
 #include "app/settings.h"
 #include "bitmapresource.h"
 
-QString BitmapResource::currentFilePath;
-QString BitmapResource::currentFileFilter;
+QString BitmapResource::m_currentFilePath;
+QString BitmapResource::m_currentFileFilter;
 
 const char BitmapResource::FILE_SETTINGS_PATH[] = "paths/bitmap";
 const char BitmapResource::FILE_FILTERS[] =
@@ -34,18 +34,45 @@ const char BitmapResource::FILE_FILTERS[] =
     "Joint Photographic Experts Group (*.jpg *.jpeg);;"
     "All files (*)";
 
+BitmapResource::BitmapResource(const BitmapResource& res)
+: Resource(res.id(), dynamic_cast<QWidget*>(res.parent()), res.windowFlags())
+{
+  m_ui.setupUi(this);
+
+  m_ui.editWidth->setText(res.m_ui.editWidth->text());
+  m_ui.editHeight->setText(res.m_ui.editHeight->text());
+
+  m_ui.editUnk1->setText(res.m_ui.editUnk1->text());
+  m_ui.editUnk2->setText(res.m_ui.editUnk2->text());
+  m_ui.editUnk3->setText(res.m_ui.editUnk3->text());
+  m_ui.editUnk4->setText(res.m_ui.editUnk4->text());
+  m_ui.editUnk5->setText(res.m_ui.editUnk5->text());
+  m_ui.editUnk6->setText(res.m_ui.editUnk6->text());
+  m_ui.editUnk7->setText(res.m_ui.editUnk7->text());
+  m_ui.editUnk8->setText(res.m_ui.editUnk8->text());
+
+  m_image = new QImage(*res.m_image);
+  m_ui.scrollArea->setWidget(new QLabel());
+
+  m_ui.radioScale1->setChecked(res.m_ui.radioScale1->isChecked());
+  m_ui.radioScale2->setChecked(res.m_ui.radioScale2->isChecked());
+  m_ui.radioScale4->setChecked(res.m_ui.radioScale4->isChecked());
+  m_ui.checkAlpha->setChecked(res.m_ui.checkAlpha->isChecked());
+  toggleAlpha(m_ui.checkAlpha->isChecked());
+}
+
 BitmapResource::BitmapResource(QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags)
 : Resource(id, parent, flags)
 {
-  ui.setupUi(this);
+  m_ui.setupUi(this);
 
-  image = 0;
+  m_image = 0;
   parse(in);
 }
 
 BitmapResource::~BitmapResource()
 {
-  delete image;
+  delete m_image;
 }
 
 void BitmapResource::parse(QDataStream* in)
@@ -59,17 +86,17 @@ void BitmapResource::parse(QDataStream* in)
   *in >> unk5 >> unk6 >> unk7 >> unk8;
   checkError(in, tr("header"));
 
-  ui.editWidth->setText(QString::number(width));
-  ui.editHeight->setText(QString::number(height));
+  m_ui.editWidth->setText(QString::number(width));
+  m_ui.editHeight->setText(QString::number(height));
 
-  ui.editUnk1->setText(QString("%1").arg(unk1, 4, 16, QChar('0')).toUpper());
-  ui.editUnk2->setText(QString("%1").arg(unk2, 4, 16, QChar('0')).toUpper());
-  ui.editUnk3->setText(QString("%1").arg(unk3, 4, 16, QChar('0')).toUpper());
-  ui.editUnk4->setText(QString("%1").arg(unk4, 4, 16, QChar('0')).toUpper());
-  ui.editUnk5->setText(QString("%1").arg(unk5, 2, 16, QChar('0')).toUpper());
-  ui.editUnk6->setText(QString("%1").arg(unk6, 2, 16, QChar('0')).toUpper());
-  ui.editUnk7->setText(QString("%1").arg(unk7, 2, 16, QChar('0')).toUpper());
-  ui.editUnk8->setText(QString("%1").arg(unk8, 2, 16, QChar('0')).toUpper());
+  m_ui.editUnk1->setText(QString("%1").arg(unk1, 4, 16, QChar('0')).toUpper());
+  m_ui.editUnk2->setText(QString("%1").arg(unk2, 4, 16, QChar('0')).toUpper());
+  m_ui.editUnk3->setText(QString("%1").arg(unk3, 4, 16, QChar('0')).toUpper());
+  m_ui.editUnk4->setText(QString("%1").arg(unk4, 4, 16, QChar('0')).toUpper());
+  m_ui.editUnk5->setText(QString("%1").arg(unk5, 2, 16, QChar('0')).toUpper());
+  m_ui.editUnk6->setText(QString("%1").arg(unk6, 2, 16, QChar('0')).toUpper());
+  m_ui.editUnk7->setText(QString("%1").arg(unk7, 2, 16, QChar('0')).toUpper());
+  m_ui.editUnk8->setText(QString("%1").arg(unk8, 2, 16, QChar('0')).toUpper());
 
   // Image data.
   int length = width * height;
@@ -88,25 +115,25 @@ void BitmapResource::parse(QDataStream* in)
     }
 
     // Process data.
-    image = new QImage(width, height, QImage::Format_Indexed8);
-    image->setColorTable(Settings::PALETTE);
+    m_image = new QImage(width, height, QImage::Format_Indexed8);
+    m_image->setColorTable(Settings::PALETTE);
 
     int ry = 0;
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
         if ((unk7 & 0x10) == 0x10) {
-          image->setPixel(x, y, data[(x * height) + y]);
+          m_image->setPixel(x, y, data[(x * height) + y]);
         }
         else if ((unk7 & 0x20) == 0x20) {
           if ((y % 2) == 0) {
-            image->setPixel(x, y, data[(x * height) + ry]);
+            m_image->setPixel(x, y, data[(x * height) + ry]);
           }
           else {
-            image->setPixel(x, y, data[(height / 2) + (x * height) + ry]);
+            m_image->setPixel(x, y, data[(height / 2) + (x * height) + ry]);
           }
         }
         else {
-          image->setPixel(x, y, data[(y * width) + x]);
+          m_image->setPixel(x, y, data[(y * width) + x]);
         }
       }
 
@@ -119,8 +146,8 @@ void BitmapResource::parse(QDataStream* in)
     delete[] data;
     data = 0;
 
-    delete image;
-    image = 0;
+    delete m_image;
+    m_image = 0;
 
     throw msg;
   }
@@ -128,9 +155,9 @@ void BitmapResource::parse(QDataStream* in)
   delete[] data;
   data = 0;
 
-  ui.scrollArea->setWidget(new QLabel());
+  m_ui.scrollArea->setWidget(new QLabel());
 
-  toggleAlpha(ui.checkAlpha->isChecked());
+  toggleAlpha(m_ui.checkAlpha->isChecked());
 }
 
 void BitmapResource::write(QDataStream* out) const
@@ -138,53 +165,53 @@ void BitmapResource::write(QDataStream* out) const
   quint16 unk1, unk2, unk3, unk4;
   quint8  unk5, unk6, unk7, unk8;
 
-  *out << (quint16)image->width() << (quint16)image->height();
+  *out << (quint16)m_image->width() << (quint16)m_image->height();
 
-  unk1 = ui.editUnk1->text().toUShort(0, 16);
-  unk2 = ui.editUnk2->text().toUShort(0, 16);
-  unk3 = ui.editUnk3->text().toUShort(0, 16);
-  unk4 = ui.editUnk4->text().toUShort(0, 16);
+  unk1 = m_ui.editUnk1->text().toUShort(0, 16);
+  unk2 = m_ui.editUnk2->text().toUShort(0, 16);
+  unk3 = m_ui.editUnk3->text().toUShort(0, 16);
+  unk4 = m_ui.editUnk4->text().toUShort(0, 16);
   *out << unk1 << unk2 << unk3 << unk4;
 
-  unk5 = ui.editUnk5->text().toUShort(0, 16);
-  unk6 = ui.editUnk6->text().toUShort(0, 16);
-  unk7 = ui.editUnk7->text().toUShort(0, 16) & 0xCF;
-  unk8 = ui.editUnk8->text().toUShort(0, 16);
+  unk5 = m_ui.editUnk5->text().toUShort(0, 16);
+  unk6 = m_ui.editUnk6->text().toUShort(0, 16);
+  unk7 = m_ui.editUnk7->text().toUShort(0, 16) & 0xCF;
+  unk8 = m_ui.editUnk8->text().toUShort(0, 16);
   *out << unk5 << unk6 << unk7 << unk8;
 
   checkError(out, tr("header"), true);
 
-  int length = image->width() * image->height();
-  if (out->writeRawData((char*)image->bits(), length) != length) {
+  int length = m_image->width() * m_image->height();
+  if (out->writeRawData((char*)m_image->bits(), length) != length) {
     throw tr("Couldn't write image data.");
   }
 }
 
 void BitmapResource::toggleAlpha(bool alpha)
 {
-  QColor color(image->color(ALPHA_INDEX));
+  QColor color(m_image->color(ALPHA_INDEX));
   color.setAlpha(alpha ? 0 : 255);
-  image->setColor(ALPHA_INDEX, color.rgba());
+  m_image->setColor(ALPHA_INDEX, color.rgba());
 
   scale(); // Repaint.
 }
 
 void BitmapResource::scale()
 {
-  QLabel* label = qobject_cast<QLabel*>(ui.scrollArea->widget());
+  QLabel* label = qobject_cast<QLabel*>(m_ui.scrollArea->widget());
 
   if (!label) {
     return;
   }
 
-  if (ui.radioScale1->isChecked()) {
-    label->setPixmap(QPixmap::fromImage(*image));
+  if (m_ui.radioScale1->isChecked()) {
+    label->setPixmap(QPixmap::fromImage(*m_image));
   }
-  else if (ui.radioScale2->isChecked()) {
-    label->setPixmap(QPixmap::fromImage(image->scaled(image->width() * 2, image->height() * 2)));
+  else if (m_ui.radioScale2->isChecked()) {
+    label->setPixmap(QPixmap::fromImage(m_image->scaled(m_image->width() * 2, m_image->height() * 2)));
   }
-  else if (ui.radioScale4->isChecked()) {
-    label->setPixmap(QPixmap::fromImage(image->scaled(image->width() * 4, image->height() * 4)));
+  else if (m_ui.radioScale4->isChecked()) {
+    label->setPixmap(QPixmap::fromImage(m_image->scaled(m_image->width() * 4, m_image->height() * 4)));
   }
 
   label->adjustSize();
@@ -192,60 +219,60 @@ void BitmapResource::scale()
 
 void BitmapResource::exportFile()
 {
-  if (currentFilePath.isEmpty()) {
-    currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
+  if (m_currentFilePath.isEmpty()) {
+    m_currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
   }
 
-  QFileInfo fileInfo(currentFilePath);
+  QFileInfo fileInfo(m_currentFilePath);
   fileInfo.setFile(
       fileInfo.absolutePath() +
       QDir::separator() +
       QString("%1-%2").arg(QString(fileName()).replace('.', '_'), id()) +
       ".png");
-  currentFilePath = fileInfo.absoluteFilePath();
+  m_currentFilePath = fileInfo.absoluteFilePath();
 
   QString outFileName = QFileDialog::getSaveFileName(
       this,
       tr("Export bitmap"),
-      currentFilePath,
+      m_currentFilePath,
       FILE_FILTERS,
-      &currentFileFilter);
+      &m_currentFileFilter);
 
   if (!outFileName.isEmpty()) {
-    Settings().setFilePath(FILE_SETTINGS_PATH, currentFilePath = outFileName);
+    Settings().setFilePath(FILE_SETTINGS_PATH, m_currentFilePath = outFileName);
 
-    QImageWriter writer(currentFilePath);
+    QImageWriter writer(m_currentFilePath);
     writer.setText("Comment", QString("Stunts bitmap \"%1\" (%2)").arg(id(), fileName()));
 
-    if (!writer.write(*image)) {
+    if (!writer.write(*m_image)) {
       QMessageBox::critical(
           this,
           QCoreApplication::applicationName(),
-          tr("Error exporting bitmap resource \"%1\" to image file \"%2\":\n%3").arg(id(), currentFilePath, writer.errorString()));
+          tr("Error exporting bitmap resource \"%1\" to image file \"%2\":\n%3").arg(id(), m_currentFilePath, writer.errorString()));
     }
   }
 }
 
 void BitmapResource::importFile()
 {
-  if (currentFilePath.isEmpty()) {
-    currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
+  if (m_currentFilePath.isEmpty()) {
+    m_currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
   }
 
   QString inFileName = QFileDialog::getOpenFileName(
       this,
       tr("Import bitmap"),
-      currentFilePath,
+      m_currentFilePath,
       FILE_FILTERS,
-      &currentFileFilter);
+      &m_currentFileFilter);
 
   if (!inFileName.isEmpty()) {
-    Settings().setFilePath(FILE_SETTINGS_PATH, currentFilePath = inFileName);
+    Settings().setFilePath(FILE_SETTINGS_PATH, m_currentFilePath = inFileName);
 
     QImage* newImage = new QImage();
-    QImage* oldImage = image;
+    QImage* oldImage = m_image;
 
-    QImageReader reader(currentFilePath);
+    QImageReader reader(m_currentFilePath);
 
     try {
       QSize size = reader.size();
@@ -270,17 +297,17 @@ void BitmapResource::importFile()
       delete oldImage;
       oldImage = 0;
 
-      image = new QImage(newImage->convertToFormat(QImage::Format_Indexed8, Settings::PALETTE));
+      m_image = new QImage(newImage->convertToFormat(QImage::Format_Indexed8, Settings::PALETTE));
 
       delete newImage;
       newImage = 0;
 
-      ui.editWidth->setText(QString::number(image->width()));
-      ui.editHeight->setText(QString::number(image->height()));
-      ui.editUnk5->setText(QString("%1").arg(1, 2, 16, QChar('0')));
-      ui.editUnk6->setText(QString("%1").arg(2, 2, 16, QChar('0')));
-      ui.editUnk7->setText(QString("%1").arg(4, 2, 16, QChar('0')));
-      ui.editUnk8->setText(QString("%1").arg(8, 2, 16, QChar('0')));
+      m_ui.editWidth->setText(QString::number(m_image->width()));
+      m_ui.editHeight->setText(QString::number(m_image->height()));
+      m_ui.editUnk5->setText(QString("%1").arg(1, 2, 16, QChar('0')));
+      m_ui.editUnk6->setText(QString("%1").arg(2, 2, 16, QChar('0')));
+      m_ui.editUnk7->setText(QString("%1").arg(4, 2, 16, QChar('0')));
+      m_ui.editUnk8->setText(QString("%1").arg(8, 2, 16, QChar('0')));
 
       scale(); // Repaint
       isModified();
@@ -289,12 +316,12 @@ void BitmapResource::importFile()
       delete newImage;
       newImage = 0;
 
-      image = oldImage;
+      m_image = oldImage;
 
       QMessageBox::critical(
           this,
           QCoreApplication::applicationName(),
-          tr("Error importing bitmap resource \"%1\" from image file \"%2\":\n%3").arg(id(), currentFilePath, msg));
+          tr("Error importing bitmap resource \"%1\" from image file \"%2\":\n%3").arg(id(), m_currentFilePath, msg));
     }
   }
 }

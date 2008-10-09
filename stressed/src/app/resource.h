@@ -37,7 +37,12 @@ public:
 
   static QString    fileName()        { return m_fileName; }
   QString           id() const        { return m_id; }
+  void              setId(QString id) { m_id = id; }
   virtual QString   type() const = 0;
+  virtual Resource* clone() const = 0;
+
+  static bool       lessThan(const Resource* lhv, const Resource* rhv)    { return lhv->id() < rhv->id(); }
+  static bool       greaterThan(const Resource* lhv, const Resource* rhv) { return lhv->id() > rhv->id(); }
 
 signals:
   void              dataChanged();
