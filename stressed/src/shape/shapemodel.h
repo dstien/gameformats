@@ -27,7 +27,8 @@ class QItemSelectionModel;
 
 typedef struct {
   quint8            type;
-  quint8            depthIndex;
+  bool              twoSided;
+  bool              zBias;
   VerticesModel*    verticesModel;
   MaterialsModel*   materialsModel;
   quint32           unknown1;
@@ -56,7 +57,7 @@ public:
   void              duplicateRow(int position);
 
   int               rowCount(const QModelIndex& /*parent*/ = QModelIndex()) const    { return m_primitives.size(); }
-  int               columnCount(const QModelIndex& /*parent*/ = QModelIndex()) const { return 4; }
+  int               columnCount(const QModelIndex& /*parent*/ = QModelIndex()) const { return 5; }
 
   void              setShape(PrimitivesList& primitives);
   PrimitivesList*   primitivesList()                                                 { return &m_primitives; }
@@ -80,9 +81,6 @@ private:
 
   static const int  TYPE_MIN = 1;
   static const int  TYPE_MAX = 12;
-
-  static const int  DEPTH_MIN = 0;
-  static const int  DEPTH_MAX = 255;
 
   static const int  PAINTJOBS_MIN = 1;
   static const int  PAINTJOBS_MAX = 127;

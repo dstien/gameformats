@@ -24,6 +24,10 @@
 #include "shapeview.h"
 #include "verticesmodel.h"
 
+// Convert 8-bit primitive index to unique RGB color used for picking.
+#define CODE2COLOR(i) QColor(i & 0xE0, (i & 0x1C) << 3, (i & 0x3) << 6)
+#define COLOR2CODE(c) (c[0] | c[1] >> 3 | c[2] >> 6)
+
 const quint8 ShapeView::PATTERNS[5][0x80] = {
   { // Grate
     0xCF, 0xCF, 0xCF, 0xCF, 0xCF, 0xCF, 0xCF, 0xCF, 0xFC, 0xFC, 0xFC, 0xFC, 0xFC, 0xFC, 0xFC, 0xFC,
@@ -80,36 +84,37 @@ const quint8 ShapeView::PATTERNS[5][0x80] = {
 ShapeView::ShapeView(QWidget* parent)
 : QAbstractItemView(parent)
 {
-  shapeModel = 0;
-  currentPaintJob = 0;
+  m_shapeModel = 0;
+  m_currentPaintJob = 0;
+  m_wireframe = false;
 
-  glWidget = new QGLWidget(this);
-  glWidget->makeCurrent();
-  glWidget->qglClearColor(Qt::white);
+  m_glWidget = new QGLWidget(this);
+  m_glWidget->makeCurrent();
+  m_glWidget->qglClearColor(Qt::white);
 
   glEnable(GL_DEPTH_TEST);
-  glDisable(GL_CULL_FACE);
+  glEnable(GL_CULL_FACE);
 
-  setViewport(glWidget);
+  setViewport(m_glWidget);
 }
 
 void ShapeView::setModel(QAbstractItemModel* model)
 {
-  shapeModel = qobject_cast<ShapeModel*>(model);
+  m_shapeModel = qobject_cast<ShapeModel*>(model);
 
   QAbstractItemView::setModel(model);
 }
 
 void ShapeView::reset()
 {
-  translation.reset();
-  rotation.reset();
+  m_translation.reset();
+  m_rotation.reset();
 
-  if (shapeModel) {
-    Vertex* bound = shapeModel->boundBox();
-    translation.move(-((bound[4].y + bound[0].y) / 2), Matrix::AXIS_Y);
-    translation.move(bound[2].z * 2, Matrix::AXIS_Z);
-    rotation.rotate(10.0f, Matrix::AXIS_X);
+  if (m_shapeModel) {
+    Vertex* bound = m_shapeModel->boundBox();
+    m_translation.move(-((bound[4].y + bound[0].y) / 2), Matrix::AXIS_Y);
+    m_translation.move(bound[2].z * 2, Matrix::AXIS_Z);
+    m_rotation.rotate(10.0f, Matrix::AXIS_X);
   }
 
   QAbstractItemView::reset();
@@ -117,25 +122,14 @@ void ShapeView::reset()
 
 void ShapeView::setCurrentPaintJob(int paintJob)
 {
-  currentPaintJob = qMax(0, paintJob - 1);
+  m_currentPaintJob = qMax(0, paintJob - 1);
   viewport()->update();
 }
 
 void ShapeView::toggleWireframe(bool enable)
 {
+  m_wireframe = enable;
   glPolygonMode(GL_FRONT_AND_BACK, (enable ? GL_LINE : GL_FILL));
-  viewport()->update();
-}
-
-void ShapeView::toggleCulling(bool enable)
-{
-  if (enable) {
-    glEnable(GL_CULL_FACE);
-  }
-  else {
-    glDisable(GL_CULL_FACE);
-  }
-
   viewport()->update();
 }
 
@@ -144,7 +138,7 @@ void ShapeView::updateGeometries()
   int width = viewport()->width();
   int height = qMax(1, viewport()->height());
 
-  glWidget->makeCurrent();
+  m_glWidget->makeCurrent();
   glViewport(0, 0, width, height);
 
   glMatrixMode(GL_PROJECTION);
@@ -158,7 +152,7 @@ void ShapeView::updateGeometries()
 
 void ShapeView::showEvent(QShowEvent* event)
 {
-  glWidget->makeCurrent();
+  m_glWidget->makeCurrent();
   QAbstractItemView::showEvent(event);
 }
 
@@ -166,7 +160,14 @@ void ShapeView::paintEvent(QPaintEvent* event)
 {
   event->accept();
 
-  if (!shapeModel) {
+  draw(false);
+
+  m_glWidget->swapBuffers();
+}
+
+void ShapeView::draw(bool pick)
+{
+  if (!m_shapeModel) {
     return;
   }
 
@@ -174,26 +175,33 @@ void ShapeView::paintEvent(QPaintEvent* event)
   glLoadIdentity();
 
   glPushMatrix();
-  translation.multMatrix();
-  rotation.multMatrix();
+  m_translation.multMatrix();
+  m_rotation.multMatrix();
 
   int i = 0;
   QItemSelectionModel* selections = selectionModel();
 
-  foreach (Primitive primitive, *shapeModel->primitivesList()) {
+  foreach (Primitive primitive, *m_shapeModel->primitivesList()) {
     VerticesList* verticesList = primitive.verticesModel->verticesList();
     MaterialsList* materialsList = primitive.materialsModel->materialsList();
 
-    int material = materialsList->at(currentPaintJob);
-    QColor color = Settings::PALETTE[Settings::MATERIALS[material].color];
+    int material = materialsList->at(m_currentPaintJob);
+    QColor color;
 
-    if (selections->isSelected(shapeModel->index(i, 0))) {
-      color.setRed(qMin(0xFF, color.red() + 0x7F));
-      color.setGreen(qMax(0, color.green() - 0x7F));
-      color.setBlue(qMax(0, color.blue() - 0x7F));
+    if (pick) {
+      color = CODE2COLOR(i);
+    }
+    else {
+      color = Settings::PALETTE[Settings::MATERIALS[material].color];
+
+      if (selections->isSelected(m_shapeModel->index(i, 0))) {
+        color.setRed(qMin(0xFF, color.red() + 0x7F));
+        color.setGreen(qMax(0, color.green() - 0x7F));
+        color.setBlue(qMax(0, color.blue() - 0x7F));
+      }
     }
 
-    glWidget->qglColor(color);
+    m_glWidget->qglColor(color);
 
     if (Settings::MATERIALS[material].pattern && (Settings::MATERIALS[material].pattern <= 6)) {
       if (Settings::MATERIALS[material].pattern == 1) { // Skip transparent primitives.
@@ -204,8 +212,12 @@ void ShapeView::paintEvent(QPaintEvent* event)
       glPolygonStipple(PATTERNS[Settings::MATERIALS[material].pattern - 2]);
     }
 
-    if (primitive.depthIndex) {
-      glPolygonOffset(-1.0f, -primitive.depthIndex);
+    if (primitive.twoSided | m_wireframe) {
+      glDisable(GL_CULL_FACE);
+    }
+
+    if (primitive.zBias) {
+      glPolygonOffset(-1.0f, -2.0f);
       glEnable(GL_POLYGON_OFFSET_POINT);
       glEnable(GL_POLYGON_OFFSET_LINE);
       glEnable(GL_POLYGON_OFFSET_FILL);
@@ -214,22 +226,22 @@ void ShapeView::paintEvent(QPaintEvent* event)
     // Particle.
     if (primitive.type == 1) {
       glBegin(GL_POINT);
-      glVertex3s(verticesList->at(0).x, verticesList->at(0).y, verticesList->at(0).z);
+      glVertex3s(verticesList->at(0).x, verticesList->at(0).y, -verticesList->at(0).z);
       glEnd();
     }
     // Line.
     else if (primitive.type == 2) {
       glBegin(GL_LINES);
       foreach (Vertex vertex, *verticesList) {
-        glVertex3s(vertex.x, vertex.y, vertex.z);
+        glVertex3s(vertex.x, vertex.y, -vertex.z);
       }
       glEnd();
     }
     // Polygon.
     else if (primitive.type > 2 && primitive.type < 11) {
       glBegin(GL_POLYGON);
-      foreach (Vertex vertex, *verticesList) {
-        glVertex3s(vertex.x, vertex.y, vertex.z);
+      for (int i = verticesList->size() - 1; i >= 0; i--) {
+        glVertex3s(verticesList->at(i).x, verticesList->at(i).y, -verticesList->at(i).z);
       }
       glEnd();
     }
@@ -237,7 +249,7 @@ void ShapeView::paintEvent(QPaintEvent* event)
     else if (primitive.type == 11 | primitive.type == 12) {
       glBegin(GL_LINE_STRIP);
       foreach (Vertex vertex, *verticesList) {
-        glVertex3s(vertex.x, vertex.y, vertex.z);
+        glVertex3s(vertex.x, vertex.y, -vertex.z);
       }
       glEnd();
     }
@@ -246,46 +258,66 @@ void ShapeView::paintEvent(QPaintEvent* event)
       glDisable(GL_POLYGON_STIPPLE);
     }
 
-    if (primitive.depthIndex) {
+    if (primitive.zBias) {
       glDisable(GL_POLYGON_OFFSET_POINT);
       glDisable(GL_POLYGON_OFFSET_LINE);
       glDisable(GL_POLYGON_OFFSET_FILL);
       glPolygonOffset(0.0f, 0.0f);
     }
 
+    if (primitive.twoSided | m_wireframe) {
+      glEnable(GL_CULL_FACE);
+    }
+
     i++;
   }
 
   glPopMatrix();
+}
 
-  glWidget->swapBuffers();
+int ShapeView::pick()
+{
+  draw(true);
+
+  GLubyte pixel[3];
+  glReadPixels(m_lastMousePosition.x(), viewport()->height() - m_lastMousePosition.y(),
+      1, 1, GL_RGB, GL_UNSIGNED_BYTE, (void*)pixel);
+
+  return COLOR2CODE(pixel);
 }
 
 void ShapeView::mousePressEvent(QMouseEvent* event)
 {
   event->accept();
-  lastMousePosition = event->pos();
+  m_lastMousePosition = event->pos();
+
+  int row = pick();
+
+  if (m_shapeModel && row < ShapeModel::ROWS_MAX) {
+    selectionModel()->setCurrentIndex(m_shapeModel->index(row, 0),
+        QItemSelectionModel::Toggle | QItemSelectionModel::Rows);
+  }
 }
 
 void ShapeView::mouseMoveEvent(QMouseEvent* event)
 {
   event->accept();
-  QPoint delta = event->pos() - lastMousePosition;
-  lastMousePosition = event->pos();
+  QPoint delta = event->pos() - m_lastMousePosition;
+  m_lastMousePosition = event->pos();
 
   if ((event->buttons() & Qt::LeftButton) && (event->buttons() & Qt::RightButton)) {
-    translation.move(delta.y() * 5.0f, Matrix::AXIS_Y);
+    m_translation.move(delta.y() * 5.0f, Matrix::AXIS_Y);
   }
   else if (event->buttons() & Qt::LeftButton) {
-    rotation.rotate(-delta.x() * 0.25f, Matrix::AXIS_Y);
-    rotation.rotate(-delta.y() * 0.25f, Matrix::AXIS_X);
+    m_rotation.rotate(-delta.x() * 0.25f, Matrix::AXIS_Y);
+    m_rotation.rotate(-delta.y() * 0.25f, Matrix::AXIS_X);
   }
   else if (event->buttons() & Qt::RightButton) {
-    rotation.rotate(delta.x() * 0.25f, Matrix::AXIS_Z);
+    m_rotation.rotate(delta.x() * 0.25f, Matrix::AXIS_Z);
   }
   else if (event->buttons() & Qt::MidButton) {
-    translation.move(delta.x() * 5.0f, Matrix::AXIS_X);
-    translation.move(-delta.y() * 5.0f, Matrix::AXIS_Z);
+    m_translation.move(delta.x() * 5.0f, Matrix::AXIS_X);
+    m_translation.move(-delta.y() * 5.0f, Matrix::AXIS_Z);
   }
 
   viewport()->update();

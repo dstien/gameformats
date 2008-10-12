@@ -59,13 +59,6 @@
           </widget>
          </item>
          <item>
-          <widget class="QCheckBox" name="cullingCheckBox" >
-           <property name="text" >
-            <string>&amp;Back-face culling</string>
-           </property>
-          </widget>
-         </item>
-         <item>
           <widget class="QPushButton" name="deselectButton" >
            <property name="text" >
             <string>&amp;Deselect all</string>
@@ -249,12 +242,6 @@
    <signal>toggled(bool)</signal>
    <receiver>shapeView</receiver>
    <slot>toggleWireframe(bool)</slot>
-  </connection>
-  <connection>
-   <sender>cullingCheckBox</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>shapeView</receiver>
-   <slot>toggleCulling(bool)</slot>
   </connection>
   <connection>
    <sender>deselectButton</sender>

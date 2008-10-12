@@ -27,9 +27,6 @@ const int ShapeModel::ROWS_MAX;
 const int ShapeModel::TYPE_MIN;
 const int ShapeModel::TYPE_MAX;
 
-const int ShapeModel::DEPTH_MIN;
-const int ShapeModel::DEPTH_MAX;
-
 const int ShapeModel::PAINTJOBS_MIN;
 const int ShapeModel::PAINTJOBS_MAX;
 
@@ -68,6 +65,10 @@ Qt::ItemFlags ShapeModel::flags(const QModelIndex& index) const
     return 0;
   }
 
+  if (index.column() == 1 | index.column() == 2) {
+    return QAbstractItemModel::flags(index) | Qt::ItemIsUserCheckable;
+  }
+
   return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
 }
 
@@ -85,12 +86,10 @@ QVariant ShapeModel::data(const QModelIndex& index, int role) const
     case Qt::TextAlignmentRole:
       return QVariant(Qt::AlignRight | Qt::AlignVCenter);
     case Qt::FontRole:
-      if (col > 1) {
+      if (col > 3) {
         return "Monospace";
       }
-      else {
-        return QVariant();
-      }
+      break;
     case Qt::DisplayRole:
       if (col == 0) {
         return TYPES[m_primitives[row].type - 1];
@@ -99,71 +98,80 @@ QVariant ShapeModel::data(const QModelIndex& index, int role) const
       if (col == 0) {
         return m_primitives[row].type;
       }
-      else if (col == 1) {
-        return m_primitives[row].depthIndex;
-      }
-      else if (col == 2) {
+      else if (col == 3) {
         return QString("%1").arg(m_primitives[row].unknown1, 8, 16, QChar('0')).toUpper();
       }
-      else if (col == 3) {
+      else if (col == 4) {
         return QString("%1").arg(m_primitives[row].unknown2, 8, 16, QChar('0')).toUpper();
       }
-    default:
-      return QVariant();
+      break;
+    case Qt::CheckStateRole:
+      if (col == 1) {
+        return m_primitives[row].twoSided ? Qt::Checked : Qt::Unchecked;
+      }
+      else if (col == 2) {
+        return m_primitives[row].zBias ? Qt::Checked : Qt::Unchecked;
+      }
   }
+
+  return QVariant();
 }
 
 bool ShapeModel::setData(const QModelIndex &index, const QVariant& value, int role)
 {
   int row = index.row(), col = index.column();
 
-  if (!index.isValid() || role != Qt::EditRole ||
+  if (!index.isValid() || (role != Qt::EditRole && role != Qt::CheckStateRole) ||
       row >= rowCount() || col >= columnCount()) {
     return false;
   }
 
   bool success;
 
-  if (col == 0) {
-    quint8 result = qBound(TYPE_MIN, value.toInt(&success), TYPE_MAX);
+  if (role == Qt::EditRole) {
+    if (col == 0) {
+      quint8 result = qBound(TYPE_MIN, value.toInt(&success), TYPE_MAX);
 
-    if (!success || (result == m_primitives[row].type)) {
-      return false;
-    }
-
-    m_primitives[row].verticesModel->resize(result);
-    m_primitives[row].type = result;
-  }
-  else if (col == 1) {
-    quint8 result = qBound(DEPTH_MIN, value.toInt(&success), DEPTH_MAX);
-
-    if (!success || (result == m_primitives[row].depthIndex)) {
-      return false;
-    }
-
-    m_primitives[row].depthIndex = result;
-  }
-  else {
-    quint32 result = value.toString().toUInt(&success, 16);
-
-    if (!success) {
-      return false;
-    }
-
-    if (col == 2) {
-      if (result == m_primitives[row].unknown1) {
+      if (!success || (result == m_primitives[row].type)) {
         return false;
       }
-      m_primitives[row].unknown1 = result;
+
+      m_primitives[row].verticesModel->resize(result);
+      m_primitives[row].type = result;
     }
-    else if (col == 3) {
-      if (result == m_primitives[row].unknown2) {
-        return false;
-      }
-      m_primitives[row].unknown2 = result;
+    else if (col == 1 || col == 2) {
+      return false;
     }
     else {
-      return false;
+      quint32 result = value.toString().toUInt(&success, 16);
+
+      if (!success) {
+        return false;
+      }
+
+      if (col == 3) {
+        if (result == m_primitives[row].unknown1) {
+          return false;
+        }
+        m_primitives[row].unknown1 = result;
+      }
+      else if (col == 4) {
+        if (result == m_primitives[row].unknown2) {
+          return false;
+        }
+        m_primitives[row].unknown2 = result;
+      }
+      else {
+        return false;
+      }
+    }
+  }
+  else if (Qt::CheckStateRole) {
+    if (col == 1) {
+      m_primitives[row].twoSided = value.toBool();
+    }
+    else if (col == 2) {
+      m_primitives[row].zBias = value.toBool();
     }
   }
 
@@ -182,10 +190,12 @@ QVariant ShapeModel::headerData(int section, Qt::Orientation orientation, int ro
       case 0:
         return "Type";
       case 1:
-        return "Depth";
+        return "2-sided";
       case 2:
-        return "Unknown 1";
+        return "Z-bias";
       case 3:
+        return "Unknown 1";
+      case 4:
       default:
         return "Unknown 2";
     }
@@ -202,7 +212,8 @@ bool ShapeModel::insertRows(int position, int rows, const QModelIndex& index)
   for (int row = 0; row < rows; row++) {
     Primitive primitive;
     primitive.type = 1;
-    primitive.depthIndex = 0;
+    primitive.twoSided = false;
+    primitive.zBias = false;
     primitive.verticesModel = new VerticesModel(primitive.type, this);
     primitive.materialsModel = new MaterialsModel(m_numPaintJobs, this);
     primitive.unknown1 = 0xFFFFFFFF;
@@ -298,13 +309,9 @@ void ShapeModel::duplicateRow(int position)
 {
   beginInsertRows(QModelIndex(), position, position);
 
-  Primitive primitive;
-  primitive.type = m_primitives[position].type;
-  primitive.depthIndex = m_primitives[position].depthIndex;
+  Primitive primitive = m_primitives[position];
   primitive.verticesModel = new VerticesModel(*(m_primitives[position].verticesModel->verticesList()), this);
   primitive.materialsModel = new MaterialsModel(*(m_primitives[position].materialsModel->materialsList()), this);
-  primitive.unknown1 = m_primitives[position].unknown1;
-  primitive.unknown2 = m_primitives[position].unknown2;
 
   m_primitives.insert(position, primitive);
 

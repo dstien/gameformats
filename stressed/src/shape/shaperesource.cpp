@@ -23,10 +23,14 @@
 #include <QTextStream>
 
 #include "app/settings.h"
+#include "flagdelegate.h"
 #include "materialsmodel.h"
 #include "shapemodel.h"
 #include "shaperesource.h"
 #include "typedelegate.h"
+
+#define PRIM_FLAG_TWOSIDED (1 << 0)
+#define PRIM_FLAG_ZBIAS    (1 << 1)
 
 QString       ShapeResource::m_currentFilePath;
 QString       ShapeResource::m_currentFileFilter;
@@ -66,6 +70,10 @@ void ShapeResource::setup()
   m_ui.materialsView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
 
   m_ui.primitivesView->setItemDelegateForColumn(0, new TypeDelegate(m_ui.primitivesView));
+
+  FlagDelegate* flagDelegate = new FlagDelegate(m_ui.primitivesView);
+  m_ui.primitivesView->setItemDelegateForColumn(1, flagDelegate);
+  m_ui.primitivesView->setItemDelegateForColumn(2, flagDelegate);
 
   m_ui.primitivesView->setModel(m_shapeModel);
   m_ui.shapeView->setModel(m_shapeModel);
@@ -124,14 +132,17 @@ void ShapeResource::parse(QDataStream* in)
     in->readRawData(reinterpret_cast<char*>(unknowns2), numPrimitives * sizeof(quint32));
     checkError(in, tr("unknown primitive data 2"));
 
-    quint8 type, depthIndex, material, vertexIndex;
+    quint8 type, flags, material, vertexIndex;
     for (int i = 0; i < numPrimitives; i++) {
       int verticesNeeded;
 
       MaterialsList materialsList;
       VerticesList verticesList;
 
-      *in >> type >> depthIndex;
+      *in >> type >> flags;
+      if (flags & ~(PRIM_FLAG_TWOSIDED | PRIM_FLAG_ZBIAS)) {
+        throw tr("Unknown flags (0x%1) in primitive %2.").arg(flags, 2, 16, QChar('0')).arg(i);
+      }
 
       for (int j = 0; j < numPaintJobs; j++) {
         *in >> material;
@@ -151,7 +162,8 @@ void ShapeResource::parse(QDataStream* in)
 
       Primitive primitive;
       primitive.type = type;
-      primitive.depthIndex = depthIndex;
+      primitive.twoSided = flags & PRIM_FLAG_TWOSIDED;
+      primitive.zBias = flags & PRIM_FLAG_ZBIAS;
       primitive.verticesModel = new VerticesModel(verticesList, m_shapeModel);
       primitive.materialsModel = new MaterialsModel(materialsList, m_shapeModel);
 
@@ -211,9 +223,12 @@ void ShapeResource::write(QDataStream* out) const
 
   // Write primitives.
   int i = 0;
+  quint8 flags;
   foreach (Primitive primitive, *(m_shapeModel->primitivesList())) {
+    flags = (primitive.twoSided ? PRIM_FLAG_TWOSIDED : 0) | (primitive.zBias ? PRIM_FLAG_ZBIAS : 0);
+
     // Primitive header.
-    *out << primitive.type << primitive.depthIndex;
+    *out << primitive.type << flags;
     checkError(out, tr("header for primitive %1").arg(i));
 
     // Material indices.
@@ -559,7 +574,8 @@ void ShapeResource::importFile()
                   else {
                     primitive.type = numVertices;
                   }
-                  primitive.depthIndex = 0;
+                  primitive.twoSided = false;
+                  primitive.zBias = false;
 
                   VerticesList faceVertices;
                   for (int i = 0; i < numVertices; i++) {

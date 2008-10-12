@@ -9,7 +9,8 @@ INCLUDEPATH += $$DEPENDPATH
 
 FORMS   += shaperesource.ui
 
-HEADERS += materialsmodel.h \
+HEADERS += flagdelegate.h \
+           materialsmodel.h \
            matrix.h \
            shapemodel.h \
            shaperesource.h \
@@ -17,7 +18,8 @@ HEADERS += materialsmodel.h \
            typedelegate.h \
            verticesmodel.h
 
-SOURCES += materialsmodel.cpp \
+SOURCES += flagdelegate.cpp \
+           materialsmodel.cpp \
            matrix.cpp \
            shapemodel.cpp \
            shaperesource.cpp \

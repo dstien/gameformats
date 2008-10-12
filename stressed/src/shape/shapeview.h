@@ -43,7 +43,6 @@ public slots:
 protected slots:
   void              setCurrentPaintJob(int paintJob);
   void              toggleWireframe(bool enable);
-  void              toggleCulling(bool enable);
 
 protected:
   QModelIndex       moveCursor(CursorAction /*cursorAction*/, Qt::KeyboardModifiers /*modifiers*/) { return QModelIndex(); }
@@ -63,12 +62,16 @@ protected:
   void              mousePressEvent(QMouseEvent* event);
 
 private:
-  QGLWidget*          glWidget;
-  ShapeModel*         shapeModel;
-  QPoint              lastMousePosition;
-  Matrix              rotation;
-  Matrix              translation;
-  int                 currentPaintJob;
+  void              draw(bool pick);
+  int               pick();
+
+  QGLWidget*        m_glWidget;
+  ShapeModel*       m_shapeModel;
+  QPoint            m_lastMousePosition;
+  Matrix            m_rotation;
+  Matrix            m_translation;
+  int               m_currentPaintJob;
+  bool              m_wireframe;
 
   static const quint8 PATTERNS[5][0x80];
 };
