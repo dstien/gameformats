@@ -30,6 +30,7 @@ class ShapeResource : public Resource
   Q_OBJECT
 
 public:
+  ShapeResource(QString id, QWidget* parent = 0, Qt::WFlags flags = 0);
   ShapeResource(const ShapeResource& res);
   ShapeResource(QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
 

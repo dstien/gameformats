@@ -37,7 +37,7 @@ public:
   QVariant          data(const QModelIndex& index, int role) const;
   bool              setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole);
 
-  void              append(Resource* resource);
+  void              insertRow(Resource* resource, int position = ROWS_MAX);
   bool              removeRows(int position, int rows, const QModelIndex& index = QModelIndex());
   void              removeRows(const QModelIndexList& rows);
   void              moveRows(QItemSelectionModel* selectionModel, int direction);

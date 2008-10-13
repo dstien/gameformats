@@ -90,10 +90,10 @@ Resource* ResourcesModel::at(const QModelIndex& index) const
   return m_resources[index.row()];
 }
 
-void ResourcesModel::append(Resource* resource)
+void ResourcesModel::insertRow(Resource* resource, int position)
 {
-  beginInsertRows(QModelIndex(), m_resources.size(), m_resources.size());
-  m_resources.append(resource);
+  beginInsertRows(QModelIndex(), position, position);
+  m_resources.insert(position, resource);
   endInsertRows();
 }
 

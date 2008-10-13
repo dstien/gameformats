@@ -58,9 +58,7 @@ void MainWindow::loadFile(const QString& fileName)
   Settings().setFilePath(FILE_SETTINGS_PATH, m_currentFilePath = fileName);
 
   try {
-    if (!Resource::parse(fileName, m_resourcesModel)) {
-      m_modified = false;
-    }
+    m_modified = (!Resource::parse(fileName, m_resourcesModel, this));
 
     m_currentFileName = fileName;
     updateWindowTitle();
@@ -245,7 +243,22 @@ void MainWindow::sortResources()
 
 void MainWindow::insertResource()
 {
-  // TODO
+  Resource* resource = Resource::typeDialog(this);
+
+  if (resource) {
+    int row;
+    if (m_ui.resourcesView->currentIndex().isValid()) {
+      row = m_ui.resourcesView->currentIndex().row();
+    }
+    else {
+      row = m_resourcesModel->rowCount();
+    }
+
+    m_resourcesModel->insertRow(resource, row);
+    m_ui.resourcesView->setCurrentIndex(m_resourcesModel->index(row));
+    isModified();
+    renameResource();
+  }
 }
 
 void MainWindow::duplicateResource()

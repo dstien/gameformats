@@ -86,7 +86,7 @@ QVariant ShapeModel::data(const QModelIndex& index, int role) const
     case Qt::TextAlignmentRole:
       return QVariant(Qt::AlignRight | Qt::AlignVCenter);
     case Qt::FontRole:
-      if (col > 3) {
+      if (col > 2) {
         return "Monospace";
       }
       break;

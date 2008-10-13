@@ -32,8 +32,9 @@ public:
   Resource(QString id, QWidget* parent = 0, Qt::WFlags flags = 0);
   virtual ~Resource() {};
 
-  static bool       parse(const QString& fileName, ResourcesModel* resourcesModel);
+  static bool       parse(const QString& fileName, ResourcesModel* resourcesModel, QWidget* parent = 0);
   static void       write(const QString& fileName, const ResourcesModel* resourcesModel);
+  static Resource*  typeDialog(QWidget* parent = 0);
 
   static QString    fileName()        { return m_fileName; }
   QString           id() const        { return m_id; }
@@ -43,6 +44,9 @@ public:
 
   static bool       lessThan(const Resource* lhv, const Resource* rhv)    { return lhv->id() < rhv->id(); }
   static bool       greaterThan(const Resource* lhv, const Resource* rhv) { return lhv->id() > rhv->id(); }
+
+  static const QStringList TYPES;
+  static const QStringList LOAD_TYPES;
 
 signals:
   void              dataChanged();

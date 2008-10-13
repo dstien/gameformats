@@ -34,6 +34,28 @@ const char BitmapResource::FILE_FILTERS[] =
     "Joint Photographic Experts Group (*.jpg *.jpeg);;"
     "All files (*)";
 
+BitmapResource::BitmapResource(QString id, QWidget* parent, Qt::WFlags flags)
+: Resource(id, parent, flags)
+{
+  m_ui.setupUi(this);
+
+  m_image = 0;
+  m_ui.scrollArea->setWidget(new QLabel());
+
+  // disable export
+  m_ui.editWidth->setText("0");
+  m_ui.editHeight->setText("0");
+
+  m_ui.editUnk1->setText("0000");
+  m_ui.editUnk2->setText("0000");
+  m_ui.editUnk3->setText("0000");
+  m_ui.editUnk4->setText("0000");
+  m_ui.editUnk5->setText("01");
+  m_ui.editUnk6->setText("02");
+  m_ui.editUnk7->setText("04");
+  m_ui.editUnk8->setText("08");
+}
+
 BitmapResource::BitmapResource(const BitmapResource& res)
 : Resource(res.id(), dynamic_cast<QWidget*>(res.parent()), res.windowFlags())
 {
@@ -67,6 +89,8 @@ BitmapResource::BitmapResource(QString id, QDataStream* in, QWidget* parent, Qt:
   m_ui.setupUi(this);
 
   m_image = 0;
+  m_ui.scrollArea->setWidget(new QLabel());
+
   parse(in);
 }
 
@@ -97,6 +121,10 @@ void BitmapResource::parse(QDataStream* in)
   m_ui.editUnk6->setText(QString("%1").arg(unk6, 2, 16, QChar('0')).toUpper());
   m_ui.editUnk7->setText(QString("%1").arg(unk7, 2, 16, QChar('0')).toUpper());
   m_ui.editUnk8->setText(QString("%1").arg(unk8, 2, 16, QChar('0')).toUpper());
+
+  if (width == 0 || height == 0) {
+    return;
+  }
 
   // Image data.
   int length = width * height;
@@ -155,8 +183,7 @@ void BitmapResource::parse(QDataStream* in)
   delete[] data;
   data = 0;
 
-  m_ui.scrollArea->setWidget(new QLabel());
-
+  m_ui.buttonExport->setEnabled(true);
   toggleAlpha(m_ui.checkAlpha->isChecked());
 }
 
@@ -165,7 +192,12 @@ void BitmapResource::write(QDataStream* out) const
   quint16 unk1, unk2, unk3, unk4;
   quint8  unk5, unk6, unk7, unk8;
 
-  *out << (quint16)m_image->width() << (quint16)m_image->height();
+  if (m_image) {
+    *out << (quint16)m_image->width() << (quint16)m_image->height();
+  }
+  else {
+    *out << (quint16)0 << (quint16)0;
+  }
 
   unk1 = m_ui.editUnk1->text().toUShort(0, 16);
   unk2 = m_ui.editUnk2->text().toUShort(0, 16);
@@ -181,14 +213,20 @@ void BitmapResource::write(QDataStream* out) const
 
   checkError(out, tr("header"), true);
 
-  int length = m_image->width() * m_image->height();
-  if (out->writeRawData((char*)m_image->bits(), length) != length) {
-    throw tr("Couldn't write image data.");
+  if (m_image) {
+    int length = m_image->width() * m_image->height();
+    if (out->writeRawData((char*)m_image->bits(), length) != length) {
+      throw tr("Couldn't write image data.");
+    }
   }
 }
 
 void BitmapResource::toggleAlpha(bool alpha)
 {
+  if (!m_image) {
+    return;
+  }
+
   QColor color(m_image->color(ALPHA_INDEX));
   color.setAlpha(alpha ? 0 : 255);
   m_image->setColor(ALPHA_INDEX, color.rgba());
@@ -200,7 +238,7 @@ void BitmapResource::scale()
 {
   QLabel* label = qobject_cast<QLabel*>(m_ui.scrollArea->widget());
 
-  if (!label) {
+  if (!label || !m_image) {
     return;
   }
 
@@ -308,6 +346,8 @@ void BitmapResource::importFile()
       m_ui.editUnk6->setText(QString("%1").arg(2, 2, 16, QChar('0')));
       m_ui.editUnk7->setText(QString("%1").arg(4, 2, 16, QChar('0')));
       m_ui.editUnk8->setText(QString("%1").arg(8, 2, 16, QChar('0')));
+
+      m_ui.buttonExport->setEnabled(true);
 
       scale(); // Repaint
       isModified();

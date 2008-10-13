@@ -27,6 +27,7 @@ class TextResource : public Resource
   Q_OBJECT
 
 public:
+  TextResource(QString id, QWidget* parent = 0, Qt::WFlags flags = 0);
   TextResource(const TextResource& res);
   TextResource(QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
 

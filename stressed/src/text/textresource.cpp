@@ -17,6 +17,12 @@
 
 #include "textresource.h"
 
+TextResource::TextResource(QString id, QWidget* parent, Qt::WFlags flags)
+: Resource(id, parent, flags)
+{
+  m_ui.setupUi(this);
+}
+
 TextResource::TextResource(const TextResource& res)
 : Resource(res.id(), qobject_cast<QWidget*>(res.parent()), res.windowFlags())
 {

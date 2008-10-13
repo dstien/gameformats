@@ -18,6 +18,7 @@
 #include <QBuffer>
 #include <QDataStream>
 #include <QFileInfo>
+#include <QInputDialog>
 #include <QListWidget>
 
 #include "bitmap/bitmapresource.h"
@@ -28,6 +29,9 @@
 #include "settings.h"
 #include "stunpack.h"
 
+const QStringList Resource::TYPES = (QStringList() << tr("Bitmap") << tr("Shape") << tr("Text"));
+const QStringList Resource::LOAD_TYPES = (QStringList() << tr("Ignore this resource") << Resource::TYPES);
+
 QString Resource::m_fileName;
 
 Resource::Resource(QString id, QWidget* parent, Qt::WFlags flags)
@@ -36,8 +40,10 @@ Resource::Resource(QString id, QWidget* parent, Qt::WFlags flags)
 {
 }
 
-bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel)
+bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel, QWidget* parent)
 {
+  bool modified = false;
+
   stpk_Buffer compSrc, compDst;
   compSrc.data = compDst.data = NULL;
   QBuffer buf;
@@ -146,11 +152,20 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel)
 
     StringMap types = Settings().getStringMap("types");
     Resource* resource;
+    QString type;
+    bool typeOverride = false;
 
     for (int i = 0; i < numResources; i++) {
       in.device()->seek(baseOffset + offsets[i]);
 
-      QString type = types[ids[i]];
+      if (!typeOverride) {
+        type = types[ids[i]];
+      }
+      else {
+        typeOverride = false;
+      }
+
+      resource = 0;
 
       try {
         if (type == "text") {
@@ -163,14 +178,44 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel)
           resource = new BitmapResource(ids[i], &in);
         }
         else {
+          type = tr("unknown");
           throw tr("Unknown type.");
         }
       }
+      // Let user cancel/ignore/retry if parsing failed.
       catch (QString msg) {
-        throw tr("Parsing %1 resource \"%2\" failed: %3").arg(type).arg(ids[i]).arg(msg);
+        bool ok;
+        QString item = QInputDialog::getItem(parent, tr("Error"),
+            tr("Parsing %1 resource \"%2\" failed: %3\n\nCancel, ignore or retry with another type:").arg(type).arg(ids[i]).arg(msg),
+            LOAD_TYPES, 0, false, &ok);
+
+        if (ok && !item.isEmpty()) {
+          if (item == tr("Bitmap")) {
+            type = "bitmap";
+          }
+          else if (item == tr("Shape")) {
+            type = "shape";
+          }
+          else if (item == tr("Text")) {
+            type = "text";
+          }
+
+          if (item != tr("Ignore this resource")) {
+            typeOverride = true;
+            i--;
+          }
+          else {
+            modified = true;
+          }
+        }
+        else {
+          return false;
+        }
       }
 
-      resourcesModel->append(resource);
+      if (resource) {
+        resourcesModel->insertRow(resource);
+      }
     }
 
     delete[] ids;
@@ -195,7 +240,7 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel)
   QFileInfo fileInfo(fileName);
   m_fileName = fileInfo.fileName();
 
-  return true;
+  return !modified;
 }
 
 void Resource::write(const QString& fileName, const ResourcesModel* resourcesModel)
@@ -260,6 +305,29 @@ void Resource::write(const QString& fileName, const ResourcesModel* resourcesMod
 
   QFileInfo fileInfo(fileName);
   m_fileName = fileInfo.fileName();
+}
+
+Resource* Resource::typeDialog(QWidget* parent)
+{
+  bool ok;
+  QString item = QInputDialog::getItem(parent, tr("Insert"),
+      tr("Select type for new resource:"), TYPES, 0, false, &ok);
+
+  Resource* resource = 0;
+
+  if (ok && !item.isEmpty()) {
+    if (item == tr("Bitmap")) {
+      resource = new BitmapResource("bmap");
+    }
+    else if (item == tr("Shape")) {
+      resource = new ShapeResource("shpe");
+    }
+    else if (item == tr("Text")) {
+      resource = new TextResource("text");
+    }
+  }
+
+  return resource;
 }
 
 void Resource::isModified()

@@ -396,6 +396,9 @@
      </item>
      <item>
       <widget class="QPushButton" name="buttonExport" >
+       <property name="enabled" >
+        <bool>false</bool>
+       </property>
        <property name="text" >
         <string>&amp;Export...</string>
        </property>

@@ -46,6 +46,13 @@ const QRegExp ShapeResource::OBJ_REGEXP_WHITESPACE = QRegExp("\\s+");
 const QRegExp ShapeResource::OBJ_REGEXP_VERTEX     = QRegExp("^v(\\s+([+-]?\\d*\\.\\d+)(?![-+0-9\\.])){3}\\s*$");
 const QRegExp ShapeResource::OBJ_REGEXP_FACE       = QRegExp("^(fo?|[lp])((\\s+-?\\d+)(/-?\\d*){,2}){1,10}\\s*$");
 
+ShapeResource::ShapeResource(QString id, QWidget* parent, Qt::WFlags flags)
+: Resource(id, parent, flags)
+{
+  m_shapeModel = new ShapeModel(this);
+  setup();
+}
+
 ShapeResource::ShapeResource(const ShapeResource& res)
 : Resource(res.id(), dynamic_cast<QWidget*>(res.parent()), res.windowFlags())
 {
