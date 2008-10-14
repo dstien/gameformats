@@ -84,10 +84,15 @@ QVariant ShapeModel::data(const QModelIndex& index, int role) const
 
   switch (role) {
     case Qt::TextAlignmentRole:
-      return QVariant(Qt::AlignRight | Qt::AlignVCenter);
+      if (col == 0) {
+        return QVariant(Qt::AlignLeft | Qt::AlignVCenter);
+      }
+      else {
+        return QVariant(Qt::AlignHCenter | Qt::AlignVCenter);
+      }
     case Qt::FontRole:
       if (col > 2) {
-        return "Monospace";
+        return "Monospace, Courier";
       }
       break;
     case Qt::DisplayRole:

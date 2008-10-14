@@ -43,7 +43,7 @@ const char    ShapeResource::MTL_SRC[]             = ":/shape/materials.mtl";
 const char    ShapeResource::MTL_DST[]             = "stunts.mtl";
 
 const QRegExp ShapeResource::OBJ_REGEXP_WHITESPACE = QRegExp("\\s+");
-const QRegExp ShapeResource::OBJ_REGEXP_VERTEX     = QRegExp("^v(\\s+([+-]?\\d*\\.\\d+)(?![-+0-9\\.])){3}\\s*$");
+const QRegExp ShapeResource::OBJ_REGEXP_VERTEX     = QRegExp("^v(\\s+([+-]?\\d*\\.?\\d*)){3,4}\\s*$");
 const QRegExp ShapeResource::OBJ_REGEXP_FACE       = QRegExp("^(fo?|[lp])((\\s+-?\\d+)(/-?\\d*){,2}){1,10}\\s*$");
 
 ShapeResource::ShapeResource(QString id, QWidget* parent, Qt::WFlags flags)
@@ -72,7 +72,10 @@ void ShapeResource::setup()
 {
   m_ui.setupUi(this);
 
-  m_ui.primitivesView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
+  m_ui.primitivesView->horizontalHeader()->setResizeMode(QHeaderView::ResizeToContents);
+  m_ui.primitivesView->verticalHeader()->setDefaultSectionSize(20);
+  m_ui.primitivesView->verticalHeader()->setResizeMode(QHeaderView::Fixed);
+
   m_ui.verticesView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
   m_ui.materialsView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
 

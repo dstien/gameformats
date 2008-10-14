@@ -35,6 +35,11 @@ void FlagDelegate::drawCheck(QPainter* painter, const QStyleOptionViewItem& opti
   QItemDelegate::drawCheck(painter, option, checkRect, state);
 }
 
+void FlagDelegate::drawFocus(QPainter* painter, const QStyleOptionViewItem& option, const QRect& /*rect*/) const
+{
+  QItemDelegate::drawFocus(painter, option, option.rect);
+}
+
 bool FlagDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option, const QModelIndex& index)
 {
   Qt::ItemFlags flags = model->flags(index);
@@ -67,9 +72,4 @@ bool FlagDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, const Q
 
   Qt::CheckState state = (static_cast<Qt::CheckState>(value.toInt()) == Qt::Checked ? Qt::Unchecked : Qt::Checked);
   return model->setData(index, state, Qt::CheckStateRole);
-}
-
-void FlagDelegate::drawFocus(QPainter* painter, const QStyleOptionViewItem& option, const QRect& /*rect*/) const
-{
-  QItemDelegate::drawFocus(painter, option, option.rect);
 }
