@@ -184,6 +184,20 @@ void MainWindow::saveAs()
   }
 }
 
+void MainWindow::about()
+{
+  QMessageBox::about(this, tr("About stressed"),
+      tr("<div align=\"center\"><h1>%1 %2</h1><br/>"
+         "%3<br/>"
+         "Using Qt "QT_VERSION_STR"/%5<br/>"
+         "<a href=\"%4\">%4</a><br/><br/>"
+         "<em>Thanks to the Stunts community<br>"
+         "for keeping the game alive!</em><br><br>"
+         "<small>&copy; 2008 <a href=\"mailto:%6\">%7</a><br>"
+         "Licensed under the terms of the <a href=\"http://www.gnu.org/licenses/gpl-2.0.html\">GNU GPL v2</a>."
+         "</small></div>").arg(Settings::APP_NAME, Settings::APP_VER, Settings::APP_DESC, Settings::ORG_URL, qVersion(), Settings::APP_CONTACT, Settings::APP_AUTHOR));
+}
+
 void MainWindow::setCurrent(const QModelIndex& index)
 {
   if (m_currentResource != NULL) {

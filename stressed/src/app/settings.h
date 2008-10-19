@@ -56,7 +56,10 @@ public:
   Materials         restoreMaterials();
 
   static const char APP_NAME[];
+  static const char APP_VER[];
   static const char APP_DESC[];
+  static const char APP_AUTHOR[];
+  static const char APP_CONTACT[];
   static const char ORG_NAME[];
   static const char ORG_URL[];
 

@@ -43,6 +43,8 @@ private slots:
   void              save();
   void              saveAs();
 
+  void              about();
+
   void              setCurrent(const QModelIndex& index);
 
   void              moveResources(int direction);

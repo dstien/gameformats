@@ -17,10 +17,10 @@
 
 #include <QGLWidget>
 #include <QPaintEvent>
+#include <cmath>
 
 #include "app/settings.h"
 #include "materialsmodel.h"
-#include "shapemodel.h"
 #include "shapeview.h"
 #include "verticesmodel.h"
 
@@ -87,6 +87,7 @@ ShapeView::ShapeView(QWidget* parent)
   m_shapeModel = 0;
   m_currentPaintJob = 0;
   m_wireframe = false;
+  m_showCullData = false;
 
   m_glWidget = new QGLWidget(this);
   m_glWidget->makeCurrent();
@@ -94,6 +95,7 @@ ShapeView::ShapeView(QWidget* parent)
 
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
+  glShadeModel(GL_FLAT);
 
   setViewport(m_glWidget);
 }
@@ -130,6 +132,12 @@ void ShapeView::toggleWireframe(bool enable)
 {
   m_wireframe = enable;
   glPolygonMode(GL_FRONT_AND_BACK, (enable ? GL_LINE : GL_FILL));
+  viewport()->update();
+}
+
+void ShapeView::toggleShowCullData(bool enable)
+{
+  m_showCullData = enable;
   viewport()->update();
 }
 
@@ -195,6 +203,10 @@ void ShapeView::draw(bool pick)
       color = Settings::PALETTE[Settings::MATERIALS[material].color];
 
       if (selections->isSelected(m_shapeModel->index(i, 0))) {
+        if (m_showCullData) {
+          drawCullData(primitive);
+        }
+
         color.setRed(qMin(0xFF, color.red() + 0x7F));
         color.setGreen(qMax(0, color.green() - 0x7F));
         color.setBlue(qMax(0, color.blue() - 0x7F));
@@ -223,30 +235,26 @@ void ShapeView::draw(bool pick)
       glEnable(GL_POLYGON_OFFSET_FILL);
     }
 
-    // Particle.
-    if (primitive.type == 1) {
+    if (primitive.type == PRIM_TYPE_PARTICLE) {
       glBegin(GL_POINT);
       glVertex3s(verticesList->at(0).x, verticesList->at(0).y, -verticesList->at(0).z);
       glEnd();
     }
-    // Line.
-    else if (primitive.type == 2) {
+    else if (primitive.type == PRIM_TYPE_LINE) {
       glBegin(GL_LINES);
       foreach (Vertex vertex, *verticesList) {
         glVertex3s(vertex.x, vertex.y, -vertex.z);
       }
       glEnd();
     }
-    // Polygon.
-    else if (primitive.type > 2 && primitive.type < 11) {
+    else if (primitive.type > PRIM_TYPE_LINE && primitive.type < PRIM_TYPE_SPHERE) { // Polygon
       glBegin(GL_POLYGON);
       for (int i = verticesList->size() - 1; i >= 0; i--) {
         glVertex3s(verticesList->at(i).x, verticesList->at(i).y, -verticesList->at(i).z);
       }
       glEnd();
     }
-    // Sphere/wheel.
-    else if (primitive.type == 11 | primitive.type == 12) {
+    else if (primitive.type == PRIM_TYPE_SPHERE || primitive.type == PRIM_TYPE_WHEEL) {
       glBegin(GL_LINE_STRIP);
       foreach (Vertex vertex, *verticesList) {
         glVertex3s(vertex.x, vertex.y, -vertex.z);
@@ -273,6 +281,137 @@ void ShapeView::draw(bool pick)
   }
 
   glPopMatrix();
+}
+
+void ShapeView::drawCullData(const Primitive& primitive) const
+{
+  float radius1 = 40.0f;
+  float radius2 = 60.0f;
+  float radius3 = 80.0f;
+  float x, z;
+  static const int steps = 15;
+  Vertex center = centroid(primitive);
+
+  if (m_wireframe) {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  }
+
+  // Horizontal, up
+  glBegin(GL_QUAD_STRIP);
+  glVertex3f(radius2 + center.x, center.y, -center.z);
+  glVertex3f(radius3 + center.x, center.y, -center.z);
+  for (int j = 0; j < steps; j++) {
+    if (primitive.cullHorizontal & (1 << (steps + steps - j + 1))) {
+      if (j % 2) m_glWidget->qglColor(Qt::darkRed);
+      else       m_glWidget->qglColor(Qt::red);
+    }
+    else {
+      if (j % 2) m_glWidget->qglColor(Qt::darkGreen);
+      else       m_glWidget->qglColor(Qt::green);
+    }
+    x = cos((2.0f * M_PI * (j + 1)) / steps);
+    z = -sin((2.0f * M_PI * (j + 1)) / steps);
+    glVertex3f(x * radius2 + center.x, center.y, z * radius2 + -center.z);
+    glVertex3f(x * radius3 + center.x, center.y, z * radius3 + -center.z);
+  }
+  glEnd();
+  // Horizontal, down
+  glBegin(GL_QUAD_STRIP);
+  glVertex3f(radius2 + center.x, center.y, -center.z);
+  glVertex3f(radius3 + center.x, center.y, -center.z);
+  for (int j = 0; j < steps; j++) {
+    if (primitive.cullHorizontal & (1 << (j + 2))) {
+      if (j % 2) m_glWidget->qglColor(Qt::darkRed);
+      else       m_glWidget->qglColor(Qt::red);
+    }
+    else {
+      if (j % 2) m_glWidget->qglColor(Qt::darkGreen);
+      else       m_glWidget->qglColor(Qt::green);
+    }
+    x = cos((2.0f * M_PI * (j + 1)) / steps);
+    z = sin((2.0f * M_PI * (j + 1)) / steps);
+    glVertex3f(x * radius2 + center.x, center.y, z * radius2 + -center.z);
+    glVertex3f(x * radius3 + center.x, center.y, z * radius3 + -center.z);
+  }
+  glEnd();
+  // Vertical, up
+  glBegin(GL_QUAD_STRIP);
+  glVertex3f(radius1 + center.x, center.y, -center.z);
+  glVertex3f(radius2 + center.x, center.y, -center.z);
+  for (int j = 0; j < steps; j++) {
+    if (primitive.cullVertical & (1 << (steps + steps - j + 1))) {
+      if (j % 2) m_glWidget->qglColor(Qt::darkMagenta);
+      else       m_glWidget->qglColor(Qt::magenta);
+    }
+    else {
+      if (j % 2) m_glWidget->qglColor(Qt::darkYellow);
+      else       m_glWidget->qglColor(Qt::yellow);
+    }
+    x = cos((2.0f * M_PI * (j + 1)) / steps);
+    z = -sin((2.0f * M_PI * (j + 1)) / steps);
+    glVertex3f(x * radius1 + center.x, center.y, z * radius1 + -center.z);
+    glVertex3f(x * radius2 + center.x, center.y, z * radius2 + -center.z);
+  }
+  glEnd();
+  // Vertical, down
+  glBegin(GL_QUAD_STRIP);
+  glVertex3f(radius1 + center.x, center.y, -center.z);
+  glVertex3f(radius2 + center.x, center.y, -center.z);
+  for (int j = 0; j < steps; j++) {
+    if (primitive.cullVertical & (1 << (j + 2))) {
+      if (j % 2) m_glWidget->qglColor(Qt::darkMagenta);
+      else       m_glWidget->qglColor(Qt::magenta);
+    }
+    else {
+      if (j % 2) m_glWidget->qglColor(Qt::darkYellow);
+      else       m_glWidget->qglColor(Qt::yellow);
+    }
+    x = cos((2.0f * M_PI * (j + 1)) / steps);
+    z = sin((2.0f * M_PI * (j + 1)) / steps);
+    glVertex3f(x * radius1 + center.x, center.y, z * radius1 + -center.z);
+    glVertex3f(x * radius2 + center.x, center.y, z * radius2 + -center.z);
+  }
+  glEnd();
+
+  if (m_wireframe) {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  }
+}
+
+Vertex ShapeView::centroid(const Primitive& primitive) const
+{
+  Vertex res; // TODO: Use float vertex.
+  res.x = res.y = res.z = 0;
+
+  if (primitive.type == PRIM_TYPE_PARTICLE || primitive.type == PRIM_TYPE_SPHERE) {
+    return primitive.verticesModel->verticesList()->at(0);
+  }
+  else if (primitive.type == PRIM_TYPE_LINE) {
+    Vertex v1 = primitive.verticesModel->verticesList()->at(0);
+    Vertex v2 = primitive.verticesModel->verticesList()->at(1);
+    res.x = (v1.x + v2.x) / 2;
+    res.y = (v1.y + v2.y) / 2;
+    res.z = (v1.z + v2.z) / 2;
+  }
+  else if (primitive.type > PRIM_TYPE_LINE && primitive.type < PRIM_TYPE_SPHERE) { // Polygon
+    foreach (Vertex vertex, *primitive.verticesModel->verticesList()) {
+      res.x += vertex.x;
+      res.y += vertex.y;
+      res.z += vertex.z;
+    }
+    res.x /= primitive.verticesModel->verticesList()->size();
+    res.y /= primitive.verticesModel->verticesList()->size();
+    res.z /= primitive.verticesModel->verticesList()->size();
+  }
+  else if (primitive.type == PRIM_TYPE_WHEEL) {
+    Vertex v1 = primitive.verticesModel->verticesList()->at(0);
+    Vertex v2 = primitive.verticesModel->verticesList()->at(3);
+    res.x = (v1.x + v2.x) / 2;
+    res.y = (v1.y + v2.y) / 2;
+    res.z = (v1.z + v2.z) / 2;
+  }
+
+  return res;
 }
 
 int ShapeView::pick()

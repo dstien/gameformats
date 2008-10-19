@@ -25,14 +25,22 @@
 class MaterialsModel;
 class QItemSelectionModel;
 
+#define PRIM_TYPE_PARTICLE 1
+#define PRIM_TYPE_LINE     2
+#define PRIM_TYPE_SPHERE   11
+#define PRIM_TYPE_WHEEL    12
+
+#define PRIM_FLAG_TWOSIDED (1 << 0)
+#define PRIM_FLAG_ZBIAS    (1 << 1)
+
 typedef struct {
   quint8            type;
   bool              twoSided;
   bool              zBias;
   VerticesModel*    verticesModel;
   MaterialsModel*   materialsModel;
-  quint32           unknown1;
-  quint32           unknown2;
+  quint32           cullHorizontal;
+  quint32           cullVertical;
 } Primitive;
 
 typedef QList<Primitive> PrimitivesList;

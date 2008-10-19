@@ -21,8 +21,8 @@
 #include <QAbstractItemView>
 
 #include "matrix.h"
+#include "shapemodel.h"
 
-class ShapeModel;
 class QGLWidget;
 
 class ShapeView : public QAbstractItemView
@@ -43,6 +43,7 @@ public slots:
 protected slots:
   void              setCurrentPaintJob(int paintJob);
   void              toggleWireframe(bool enable);
+  void              toggleShowCullData(bool enable);
 
 protected:
   QModelIndex       moveCursor(CursorAction /*cursorAction*/, Qt::KeyboardModifiers /*modifiers*/) { return QModelIndex(); }
@@ -63,6 +64,8 @@ protected:
 
 private:
   void              draw(bool pick);
+  void              drawCullData(const Primitive& primitive) const;
+  Vertex            centroid(const Primitive& primitive) const;
   int               pick();
 
   QGLWidget*        m_glWidget;
@@ -72,6 +75,7 @@ private:
   Matrix            m_translation;
   int               m_currentPaintJob;
   bool              m_wireframe;
+  bool              m_showCullData;
 
   static const quint8 PATTERNS[5][0x80];
 };

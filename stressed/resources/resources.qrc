@@ -3,5 +3,6 @@
  <qresource>
   <file>conf/defaults.conf</file>
   <file>shape/materials.mtl</file>
+  <file>stressed-icon.svg</file>
  </qresource>
 </RCC>

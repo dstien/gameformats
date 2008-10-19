@@ -187,14 +187,14 @@ void VerticesModel::resize(int type)
 
 bool VerticesModel::verticesNeeded(int type, int& num)
 {
-  if (type < 1 || type > 12) {
+  if (type < PRIM_TYPE_PARTICLE || type > PRIM_TYPE_WHEEL) {
     num = 0;
     return false;
   }
-  else if (type == 11) {
+  else if (type == PRIM_TYPE_SPHERE) {
     num = 2;
   }
-  else if (type == 12) {
+  else if (type == PRIM_TYPE_WHEEL) {
     num = 6;
   }
   else {

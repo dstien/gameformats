@@ -104,10 +104,10 @@ QVariant ShapeModel::data(const QModelIndex& index, int role) const
         return m_primitives[row].type;
       }
       else if (col == 3) {
-        return QString("%1").arg(m_primitives[row].unknown1, 8, 16, QChar('0')).toUpper();
+        return QString("%1").arg(m_primitives[row].cullHorizontal, 8, 16, QChar('0')).toUpper();
       }
       else if (col == 4) {
-        return QString("%1").arg(m_primitives[row].unknown2, 8, 16, QChar('0')).toUpper();
+        return QString("%1").arg(m_primitives[row].cullVertical, 8, 16, QChar('0')).toUpper();
       }
       break;
     case Qt::CheckStateRole:
@@ -155,16 +155,16 @@ bool ShapeModel::setData(const QModelIndex &index, const QVariant& value, int ro
       }
 
       if (col == 3) {
-        if (result == m_primitives[row].unknown1) {
+        if (result == m_primitives[row].cullHorizontal) {
           return false;
         }
-        m_primitives[row].unknown1 = result;
+        m_primitives[row].cullHorizontal = result;
       }
       else if (col == 4) {
-        if (result == m_primitives[row].unknown2) {
+        if (result == m_primitives[row].cullVertical) {
           return false;
         }
-        m_primitives[row].unknown2 = result;
+        m_primitives[row].cullVertical = result;
       }
       else {
         return false;
@@ -199,10 +199,10 @@ QVariant ShapeModel::headerData(int section, Qt::Orientation orientation, int ro
       case 2:
         return "Z-bias";
       case 3:
-        return "Unknown 1";
+        return "Cull H";
       case 4:
       default:
-        return "Unknown 2";
+        return "Cull V";
     }
   }
   else {
@@ -216,13 +216,13 @@ bool ShapeModel::insertRows(int position, int rows, const QModelIndex& index)
 
   for (int row = 0; row < rows; row++) {
     Primitive primitive;
-    primitive.type = 1;
+    primitive.type = PRIM_TYPE_PARTICLE;
     primitive.twoSided = false;
     primitive.zBias = false;
     primitive.verticesModel = new VerticesModel(primitive.type, this);
     primitive.materialsModel = new MaterialsModel(m_numPaintJobs, this);
-    primitive.unknown1 = 0xFFFFFFFF;
-    primitive.unknown2 = 0xFFFFFFFF;
+    primitive.cullHorizontal = 0xFFFFFFFF;
+    primitive.cullVertical   = 0xFFFFFFFF;
 
     m_primitives.insert(position, primitive);
   }

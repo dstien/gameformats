@@ -29,9 +29,6 @@
 #include "shaperesource.h"
 #include "typedelegate.h"
 
-#define PRIM_FLAG_TWOSIDED (1 << 0)
-#define PRIM_FLAG_ZBIAS    (1 << 1)
-
 QString       ShapeResource::m_currentFilePath;
 QString       ShapeResource::m_currentFileFilter;
 
@@ -106,8 +103,8 @@ void ShapeResource::parse(QDataStream* in)
 
   quint8 numVertices, numPrimitives, numPaintJobs, reserved;
   Vertex* vertices = 0;
-  quint32* unknowns1 = 0;
-  quint32* unknowns2 = 0;
+  quint32* cullHorizontal = 0;
+  quint32* cullVertical = 0;
 
   // Header.
   *in >> numVertices >> numPrimitives >> numPaintJobs >> reserved;
@@ -129,18 +126,18 @@ void ShapeResource::parse(QDataStream* in)
     checkError(in, tr("vertices"));
 
     try {
-      unknowns1 = new quint32[numPrimitives];
-      unknowns2 = new quint32[numPrimitives];
+      cullHorizontal = new quint32[numPrimitives];
+      cullVertical = new quint32[numPrimitives];
     }
     catch (std::bad_alloc& exc) {
-      throw tr("Couldn't allocate memory for unknown shape primitive data.");
+      throw tr("Couldn't allocate memory for shape primitive culling data.");
     }
 
-    in->readRawData(reinterpret_cast<char*>(unknowns1), numPrimitives * sizeof(quint32));
-    checkError(in, tr("unknown primitive data 1"));
+    in->readRawData(reinterpret_cast<char*>(cullHorizontal), numPrimitives * sizeof(quint32));
+    checkError(in, tr("horizontal primitive culling data"));
 
-    in->readRawData(reinterpret_cast<char*>(unknowns2), numPrimitives * sizeof(quint32));
-    checkError(in, tr("unknown primitive data 2"));
+    in->readRawData(reinterpret_cast<char*>(cullVertical), numPrimitives * sizeof(quint32));
+    checkError(in, tr("vertical primitive culling data"));
 
     quint8 type, flags, material, vertexIndex;
     for (int i = 0; i < numPrimitives; i++) {
@@ -177,8 +174,8 @@ void ShapeResource::parse(QDataStream* in)
       primitive.verticesModel = new VerticesModel(verticesList, m_shapeModel);
       primitive.materialsModel = new MaterialsModel(materialsList, m_shapeModel);
 
-      primitive.unknown1 = unknowns1[i];
-      primitive.unknown2 = unknowns2[i];
+      primitive.cullHorizontal = cullHorizontal[i];
+      primitive.cullVertical = cullVertical[i];
 
       primitives.append(primitive);
     }
@@ -186,20 +183,20 @@ void ShapeResource::parse(QDataStream* in)
   catch (QString msg) {
     delete[] vertices;
     vertices = 0;
-    delete[] unknowns1;
-    unknowns1 = 0;
-    delete[] unknowns2;
-    unknowns2 = 0;
+    delete[] cullHorizontal;
+    cullHorizontal = 0;
+    delete[] cullVertical;
+    cullVertical = 0;
 
     throw msg;
   }
 
   delete[] vertices;
   vertices = 0;
-  delete[] unknowns1;
-  unknowns1 = 0;
-  delete[] unknowns2;
-  unknowns2 = 0;
+  delete[] cullHorizontal;
+  cullHorizontal = 0;
+  delete[] cullVertical;
+  cullVertical = 0;
 
   m_shapeModel->setShape(primitives);
 }
@@ -220,16 +217,16 @@ void ShapeResource::write(QDataStream* out) const
   }
   checkError(out, tr("vertices"), true);
 
-  // Write unknowns.
+  // Write culling data.
   foreach (Primitive primitive, *(m_shapeModel->primitivesList())) {
-    *out << primitive.unknown1;
+    *out << primitive.cullHorizontal;
   }
-  checkError(out, tr("unknown primitive data 1"), true);
+  checkError(out, tr("horizontal primitive culling data"), true);
 
   foreach (Primitive primitive, *(m_shapeModel->primitivesList())) {
-    *out << primitive.unknown2;
+    *out << primitive.cullVertical;
   }
-  checkError(out, tr("unknown primitive data 2"), true);
+  checkError(out, tr("vertical primitive culling data"), true);
 
   // Write primitives.
   int i = 0;
@@ -478,13 +475,13 @@ void ShapeResource::exportFile()
           }
 
           switch (primitive.type) {
-            case 1:
+            case PRIM_TYPE_PARTICLE:
               out << "p";
               break;
 
-            case 2:
-            case 11:
-            case 12:
+            case PRIM_TYPE_LINE:
+            case PRIM_TYPE_SPHERE:
+            case PRIM_TYPE_WHEEL:
               out << "l";
               break;
 
@@ -579,7 +576,7 @@ void ShapeResource::importFile()
                   int numVertices = tokens.size() - 1;
 
                   if (line[0].toAscii() == 'l' && numVertices == 6) {
-                    primitive.type = 12; // Wheel.
+                    primitive.type = PRIM_TYPE_WHEEL;
                   }
                   else {
                     primitive.type = numVertices;
@@ -602,8 +599,8 @@ void ShapeResource::importFile()
 
                   primitive.verticesModel = new VerticesModel(faceVertices, m_shapeModel);
                   primitive.materialsModel = new MaterialsModel(material, m_shapeModel);
-                  primitive.unknown1 = 0xFFFFFFFF;
-                  primitive.unknown2 = 0xFFFFFFFF;
+                  primitive.cullHorizontal = 0xFFFFFFFF;
+                  primitive.cullVertical = 0xFFFFFFFF;
                   primitives.append(primitive);
                 }
                 break;

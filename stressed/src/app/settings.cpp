@@ -20,8 +20,12 @@
 
 #include "settings.h"
 
-const char      Settings::APP_NAME[] = "stressed";
-const char      Settings::APP_DESC[] = "Stunts/4D [Sports] Driving resource editor";
+const char      Settings::APP_NAME[]    = "stressed";
+const char      Settings::APP_VER[]     = "0.1.0";
+const char      Settings::APP_DESC[]    = "Stunts/4D [Sports] Driving resource editor";
+const char      Settings::APP_AUTHOR[]  = "Daniel Stien";
+const char      Settings::APP_CONTACT[] = "daniel@stien.org";
+
 const char      Settings::ORG_NAME[] = "stuntstools";
 const char      Settings::ORG_URL[]  = "http://stuntstools.googlecode.com/";
 

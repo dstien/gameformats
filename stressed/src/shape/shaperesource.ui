@@ -59,6 +59,13 @@
           </widget>
          </item>
          <item>
+          <widget class="QCheckBox" name="showCullDataCheckBox" >
+           <property name="text" >
+            <string>Show &amp;cull data</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QPushButton" name="deselectButton" >
            <property name="text" >
             <string>&amp;Deselect all</string>
@@ -242,6 +249,12 @@
    <signal>toggled(bool)</signal>
    <receiver>shapeView</receiver>
    <slot>toggleWireframe(bool)</slot>
+  </connection>
+  <connection>
+   <sender>showCullDataCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>shapeView</receiver>
+   <slot>toggleShowCullData(bool)</slot>
   </connection>
   <connection>
    <sender>deselectButton</sender>
