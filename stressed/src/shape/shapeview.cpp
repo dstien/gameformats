@@ -81,6 +81,8 @@ const quint8 ShapeView::PATTERNS[5][0x80] = {
   }
 };
 
+const float ShapeView::PI2 = M_PI * 2.0f;
+
 ShapeView::ShapeView(QWidget* parent)
 : QAbstractItemView(parent)
 {
@@ -249,17 +251,27 @@ void ShapeView::draw(bool pick)
     }
     else if (primitive.type > PRIM_TYPE_LINE && primitive.type < PRIM_TYPE_SPHERE) { // Polygon
       glBegin(GL_POLYGON);
-      for (int i = verticesList->size() - 1; i >= 0; i--) {
-        glVertex3s(verticesList->at(i).x, verticesList->at(i).y, -verticesList->at(i).z);
+      for (int j = verticesList->size() - 1; j >= 0; j--) {
+        glVertex3s(verticesList->at(j).x, verticesList->at(j).y, -verticesList->at(j).z);
       }
       glEnd();
     }
-    else if (primitive.type == PRIM_TYPE_SPHERE || primitive.type == PRIM_TYPE_WHEEL) {
+    else if (m_wireframe && (primitive.type == PRIM_TYPE_SPHERE || primitive.type == PRIM_TYPE_WHEEL)) {
       glBegin(GL_LINE_STRIP);
       foreach (Vertex vertex, *verticesList) {
         glVertex3s(vertex.x, vertex.y, -vertex.z);
       }
       glEnd();
+    }
+    else if (primitive.type == PRIM_TYPE_SPHERE) {
+      glBegin(GL_LINES);
+      foreach (Vertex vertex, *verticesList) {
+        glVertex3s(vertex.x, vertex.y, -vertex.z);
+      }
+      glEnd();
+    }
+    else if (primitive.type == PRIM_TYPE_WHEEL) {
+      drawWheel(verticesList, material, pick);
     }
 
     if (Settings::MATERIALS[material].pattern) {
@@ -283,7 +295,89 @@ void ShapeView::draw(bool pick)
   glPopMatrix();
 }
 
-void ShapeView::drawCullData(const Primitive& primitive) const
+void ShapeView::drawWheel(const VerticesList* vertices, int& material, const bool& pick)
+{
+  float radius2 = distance(vertices->at(0), vertices->at(1));
+  float radius1 = radius2 * 0.6f;
+
+  Vertex center = centroid(vertices->at(0), vertices->at(3));
+  float halfWidth = distance(vertices->at(0), center);
+  float x, y;
+
+  glPushMatrix();
+  glTranslatef(center.x, center.y, -center.z);
+
+  // TODO: Check actual rotation.
+  if (vertices->at(0).x - vertices->at(3).x) {
+    glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+  }
+
+  // Tyre tread
+  glBegin(GL_QUAD_STRIP);
+  glVertex3f(radius2, 0.0f, halfWidth);
+  glVertex3f(radius2, 0.0f, -halfWidth);
+  for (int i = 0; i < WHEEL_STEPS; i++) {
+    x = cos((PI2 * (i + 1)) / WHEEL_STEPS) * radius2;
+    y = sin((PI2 * (i + 1)) / WHEEL_STEPS) * radius2;
+    glVertex3f(x, y, halfWidth);
+    glVertex3f(x, y, -halfWidth);
+  }
+  glEnd();
+
+  if (!pick && material < MaterialsModel::VAL_MAX) {
+    m_glWidget->qglColor(Settings::PALETTE[Settings::MATERIALS[++material].color]);
+  }
+
+  // Inner tyre
+  glBegin(GL_QUAD_STRIP);
+  glVertex3f(radius1, 0.0f, -halfWidth);
+  glVertex3f(radius2, 0.0f, -halfWidth);
+  for (int i = 0; i < WHEEL_STEPS; i++) {
+    x = cos((PI2 * (i + 1)) / WHEEL_STEPS);
+    y = -sin((PI2 * (i + 1)) / WHEEL_STEPS);
+    glVertex3f(x * radius1, y * radius1, -halfWidth);
+    glVertex3f(x * radius2, y * radius2, -halfWidth);
+  }
+  glEnd();
+  // Outer tyre
+  glBegin(GL_QUAD_STRIP);
+  glVertex3f(radius1, 0.0f, halfWidth);
+  glVertex3f(radius2, 0.0f, halfWidth);
+  for (int i = 0; i < WHEEL_STEPS; i++) {
+    x = cos((PI2 * (i + 1)) / WHEEL_STEPS);
+    y = sin((PI2 * (i + 1)) / WHEEL_STEPS);
+    glVertex3f(x * radius1, y * radius1, halfWidth);
+    glVertex3f(x * radius2, y * radius2, halfWidth);
+  }
+  glEnd();
+
+  if (!pick && material < MaterialsModel::VAL_MAX) {
+    m_glWidget->qglColor(Settings::PALETTE[Settings::MATERIALS[++material].color]);
+  }
+
+  // Inner rim
+  glBegin(GL_TRIANGLE_FAN);
+  for (int i = 0; i < WHEEL_STEPS; i++) {
+    glVertex3f(
+        sin((PI2 * (i + 1)) / WHEEL_STEPS) * radius1,
+        cos((PI2 * (i + 1)) / WHEEL_STEPS) * radius1,
+        -halfWidth);
+  }
+  glEnd();
+  // Outer rim
+  glBegin(GL_TRIANGLE_FAN);
+  for (int i = 0; i < WHEEL_STEPS; i++) {
+    glVertex3f(
+        cos((PI2 * (i + 1)) / WHEEL_STEPS) * radius1,
+        sin((PI2 * (i + 1)) / WHEEL_STEPS) * radius1,
+        halfWidth);
+  }
+  glEnd();
+
+  glPopMatrix();
+}
+
+void ShapeView::drawCullData(const Primitive& primitive)
 {
   float radius1 = 40.0f;
   float radius2 = 60.0f;
@@ -309,8 +403,8 @@ void ShapeView::drawCullData(const Primitive& primitive) const
       if (j % 2) m_glWidget->qglColor(Qt::darkGreen);
       else       m_glWidget->qglColor(Qt::green);
     }
-    x = cos((2.0f * M_PI * (j + 1)) / steps);
-    z = -sin((2.0f * M_PI * (j + 1)) / steps);
+    x = cos((PI2 * (j + 1)) / steps);
+    z = -sin((PI2 * (j + 1)) / steps);
     glVertex3f(x * radius2 + center.x, center.y, z * radius2 + -center.z);
     glVertex3f(x * radius3 + center.x, center.y, z * radius3 + -center.z);
   }
@@ -328,8 +422,8 @@ void ShapeView::drawCullData(const Primitive& primitive) const
       if (j % 2) m_glWidget->qglColor(Qt::darkGreen);
       else       m_glWidget->qglColor(Qt::green);
     }
-    x = cos((2.0f * M_PI * (j + 1)) / steps);
-    z = sin((2.0f * M_PI * (j + 1)) / steps);
+    x = cos((PI2 * (j + 1)) / steps);
+    z = sin((PI2 * (j + 1)) / steps);
     glVertex3f(x * radius2 + center.x, center.y, z * radius2 + -center.z);
     glVertex3f(x * radius3 + center.x, center.y, z * radius3 + -center.z);
   }
@@ -347,8 +441,8 @@ void ShapeView::drawCullData(const Primitive& primitive) const
       if (j % 2) m_glWidget->qglColor(Qt::darkYellow);
       else       m_glWidget->qglColor(Qt::yellow);
     }
-    x = cos((2.0f * M_PI * (j + 1)) / steps);
-    z = -sin((2.0f * M_PI * (j + 1)) / steps);
+    x = cos((PI2 * (j + 1)) / steps);
+    z = -sin((PI2 * (j + 1)) / steps);
     glVertex3f(x * radius1 + center.x, center.y, z * radius1 + -center.z);
     glVertex3f(x * radius2 + center.x, center.y, z * radius2 + -center.z);
   }
@@ -366,8 +460,8 @@ void ShapeView::drawCullData(const Primitive& primitive) const
       if (j % 2) m_glWidget->qglColor(Qt::darkYellow);
       else       m_glWidget->qglColor(Qt::yellow);
     }
-    x = cos((2.0f * M_PI * (j + 1)) / steps);
-    z = sin((2.0f * M_PI * (j + 1)) / steps);
+    x = cos((PI2 * (j + 1)) / steps);
+    z = sin((PI2 * (j + 1)) / steps);
     glVertex3f(x * radius1 + center.x, center.y, z * radius1 + -center.z);
     glVertex3f(x * radius2 + center.x, center.y, z * radius2 + -center.z);
   }
@@ -376,42 +470,6 @@ void ShapeView::drawCullData(const Primitive& primitive) const
   if (m_wireframe) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   }
-}
-
-Vertex ShapeView::centroid(const Primitive& primitive) const
-{
-  Vertex res; // TODO: Use float vertex.
-  res.x = res.y = res.z = 0;
-
-  if (primitive.type == PRIM_TYPE_PARTICLE || primitive.type == PRIM_TYPE_SPHERE) {
-    return primitive.verticesModel->verticesList()->at(0);
-  }
-  else if (primitive.type == PRIM_TYPE_LINE) {
-    Vertex v1 = primitive.verticesModel->verticesList()->at(0);
-    Vertex v2 = primitive.verticesModel->verticesList()->at(1);
-    res.x = (v1.x + v2.x) / 2;
-    res.y = (v1.y + v2.y) / 2;
-    res.z = (v1.z + v2.z) / 2;
-  }
-  else if (primitive.type > PRIM_TYPE_LINE && primitive.type < PRIM_TYPE_SPHERE) { // Polygon
-    foreach (Vertex vertex, *primitive.verticesModel->verticesList()) {
-      res.x += vertex.x;
-      res.y += vertex.y;
-      res.z += vertex.z;
-    }
-    res.x /= primitive.verticesModel->verticesList()->size();
-    res.y /= primitive.verticesModel->verticesList()->size();
-    res.z /= primitive.verticesModel->verticesList()->size();
-  }
-  else if (primitive.type == PRIM_TYPE_WHEEL) {
-    Vertex v1 = primitive.verticesModel->verticesList()->at(0);
-    Vertex v2 = primitive.verticesModel->verticesList()->at(3);
-    res.x = (v1.x + v2.x) / 2;
-    res.y = (v1.y + v2.y) / 2;
-    res.z = (v1.z + v2.z) / 2;
-  }
-
-  return res;
 }
 
 int ShapeView::pick()
@@ -424,6 +482,55 @@ int ShapeView::pick()
 
   return COLOR2CODE(pixel);
 }
+
+Vertex ShapeView::centroid(const Primitive& primitive)
+{
+  Vertex res; // TODO: Use float vertex.
+  res.x = res.y = res.z = 0;
+
+  if (primitive.type == PRIM_TYPE_PARTICLE || primitive.type == PRIM_TYPE_SPHERE) {
+    return primitive.verticesModel->verticesList()->at(0);
+  }
+  else if (primitive.type == PRIM_TYPE_LINE) {
+    return centroid(primitive.verticesModel->verticesList()->at(0), primitive.verticesModel->verticesList()->at(1));
+  }
+  else if (primitive.type > PRIM_TYPE_LINE && primitive.type < PRIM_TYPE_SPHERE) { // Polygon
+    foreach (Vertex vertex, *primitive.verticesModel->verticesList()) {
+      res.x += vertex.x;
+      res.y += vertex.y;
+      res.z += vertex.z;
+    }
+    res.x /= primitive.verticesModel->verticesList()->size();
+    res.y /= primitive.verticesModel->verticesList()->size();
+    res.z /= primitive.verticesModel->verticesList()->size();
+  }
+  else if (primitive.type == PRIM_TYPE_WHEEL) {
+    return centroid(primitive.verticesModel->verticesList()->at(0), primitive.verticesModel->verticesList()->at(3));
+  }
+
+  return res;
+}
+
+Vertex ShapeView::centroid(const Vertex& v1, const Vertex& v2)
+{
+  Vertex res; // TODO: Use float vertex.
+  res.x = res.y = res.z = 0;
+
+  res.x = (v1.x + v2.x) / 2;
+  res.y = (v1.y + v2.y) / 2;
+  res.z = (v1.z + v2.z) / 2;
+
+  return res;
+}
+
+float ShapeView::distance(const Vertex& v1, const Vertex& v2)
+{
+  float dx = v2.x - v1.x;
+  float dy = v2.y - v1.y;
+  float dz = v2.z - v1.z;
+
+  return sqrt(dx * dx + dy * dy + dz * dz);
+} 
 
 void ShapeView::mousePressEvent(QMouseEvent* event)
 {

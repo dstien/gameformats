@@ -481,7 +481,6 @@ void ShapeResource::exportFile()
 
             case PRIM_TYPE_LINE:
             case PRIM_TYPE_SPHERE:
-            case PRIM_TYPE_WHEEL:
               out << "l";
               break;
 

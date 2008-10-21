@@ -45,13 +45,13 @@ public:
   void              resize(int num);
   MaterialsList*    materialsList()                                                  { return &m_materials; }
 
+  static const int  VAL_MIN = 0;
+  static const int  VAL_MAX = 255;
+
 private:
   void              setup();
 
   MaterialsList     m_materials;
-
-  static const int  VAL_MIN = 0;
-  static const int  VAL_MAX = 255;
 };
 
 #endif

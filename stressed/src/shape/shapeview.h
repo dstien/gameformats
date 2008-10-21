@@ -64,9 +64,13 @@ protected:
 
 private:
   void              draw(bool pick);
-  void              drawCullData(const Primitive& primitive) const;
-  Vertex            centroid(const Primitive& primitive) const;
+  inline void       drawWheel(const VerticesList* vertices, int& material, const bool& pick);
+  inline void       drawCullData(const Primitive& primitive);
   int               pick();
+
+  static Vertex     centroid(const Primitive& primitive);
+  static Vertex     centroid(const Vertex& v1, const Vertex& v2);
+  static float      distance(const Vertex& v1, const Vertex& v2);
 
   QGLWidget*        m_glWidget;
   ShapeModel*       m_shapeModel;
@@ -78,6 +82,9 @@ private:
   bool              m_showCullData;
 
   static const quint8 PATTERNS[5][0x80];
+
+  static const float  PI2;
+  static const int    WHEEL_STEPS = 16;
 };
 
 #endif
