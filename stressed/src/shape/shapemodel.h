@@ -33,6 +33,18 @@ class QItemSelectionModel;
 #define PRIM_FLAG_TWOSIDED (1 << 0)
 #define PRIM_FLAG_ZBIAS    (1 << 1)
 
+#define PRIM_CULL_POS       0xFFFE0000
+#define PRIM_CULL_NEG       0x0001FFFC
+#define PRIM_CULL_POS_SHIFT 17
+#define PRIM_CULL_NEG_SHIFT 2
+#define PRIM_CULL_POS_FLAG  (1 << 1)
+#define PRIM_CULL_NEG_FLAG  (1 << 0)
+
+#define PRIM_CULL_POS_GET(c)    ((c & PRIM_CULL_POS) >> PRIM_CULL_POS_SHIFT)
+#define PRIM_CULL_NEG_GET(c)    ((c & PRIM_CULL_NEG) >> PRIM_CULL_NEG_SHIFT)
+#define PRIM_CULL_POS_SET(c, v) (c = (v << PRIM_CULL_POS_SHIFT) | (c & ~PRIM_CULL_POS))
+#define PRIM_CULL_NEG_SET(c, v) (c = (v << PRIM_CULL_NEG_SHIFT) | (c & ~PRIM_CULL_NEG))
+
 typedef struct {
   quint8            type;
   bool              twoSided;
@@ -65,7 +77,7 @@ public:
   void              duplicateRow(int position);
 
   int               rowCount(const QModelIndex& /*parent*/ = QModelIndex()) const    { return m_primitives.size(); }
-  int               columnCount(const QModelIndex& /*parent*/ = QModelIndex()) const { return 5; }
+  int               columnCount(const QModelIndex& /*parent*/ = QModelIndex()) const { return 7; }
 
   void              setShape(PrimitivesList& primitives);
   PrimitivesList*   primitivesList()                                                 { return &m_primitives; }

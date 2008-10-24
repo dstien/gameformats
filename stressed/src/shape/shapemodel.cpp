@@ -65,11 +65,19 @@ Qt::ItemFlags ShapeModel::flags(const QModelIndex& index) const
     return 0;
   }
 
-  if (index.column() == 1 | index.column() == 2) {
-    return QAbstractItemModel::flags(index) | Qt::ItemIsUserCheckable;
-  }
+  switch (index.column()) {
+    case 1:
+    case 2:
+      return QAbstractItemModel::flags(index) | Qt::ItemIsUserCheckable;
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+      return QAbstractItemModel::flags(index) | Qt::ItemIsUserCheckable | Qt::ItemIsEditable;
 
-  return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
+    default:
+      return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
+  }
 }
 
 QVariant ShapeModel::data(const QModelIndex& index, int role) const
@@ -104,10 +112,16 @@ QVariant ShapeModel::data(const QModelIndex& index, int role) const
         return m_primitives[row].type;
       }
       else if (col == 3) {
-        return QString("%1").arg(m_primitives[row].cullHorizontal, 8, 16, QChar('0')).toUpper();
+        return QString("%1").arg(PRIM_CULL_POS_GET(m_primitives[row].cullHorizontal), 5, 8, QChar('0')).toUpper();
       }
       else if (col == 4) {
-        return QString("%1").arg(m_primitives[row].cullVertical, 8, 16, QChar('0')).toUpper();
+        return QString("%1").arg(PRIM_CULL_NEG_GET(m_primitives[row].cullHorizontal), 5, 8, QChar('0')).toUpper();
+      }
+      else if (col == 5) {
+        return QString("%1").arg(PRIM_CULL_POS_GET(m_primitives[row].cullVertical), 5, 8, QChar('0')).toUpper();
+      }
+      else if (col == 6) {
+        return QString("%1").arg(PRIM_CULL_NEG_GET(m_primitives[row].cullVertical), 5, 8, QChar('0')).toUpper();
       }
       break;
     case Qt::CheckStateRole:
@@ -116,6 +130,18 @@ QVariant ShapeModel::data(const QModelIndex& index, int role) const
       }
       else if (col == 2) {
         return m_primitives[row].zBias ? Qt::Checked : Qt::Unchecked;
+      }
+      else if (col == 3) {
+        return m_primitives[row].cullHorizontal & PRIM_CULL_POS_FLAG ? Qt::Checked : Qt::Unchecked;
+      }
+      else if (col == 4) {
+        return m_primitives[row].cullHorizontal & PRIM_CULL_NEG_FLAG ? Qt::Checked : Qt::Unchecked;
+      }
+      else if (col == 5) {
+        return m_primitives[row].cullVertical & PRIM_CULL_POS_FLAG ? Qt::Checked : Qt::Unchecked;
+      }
+      else if (col == 6) {
+        return m_primitives[row].cullVertical & PRIM_CULL_NEG_FLAG ? Qt::Checked : Qt::Unchecked;
       }
   }
 
@@ -148,23 +174,35 @@ bool ShapeModel::setData(const QModelIndex &index, const QVariant& value, int ro
       return false;
     }
     else {
-      quint32 result = value.toString().toUInt(&success, 16);
+      quint32 result = value.toString().toUInt(&success, 8);
 
       if (!success) {
         return false;
       }
 
       if (col == 3) {
-        if (result == m_primitives[row].cullHorizontal) {
+        if (result == PRIM_CULL_POS_GET(m_primitives[row].cullHorizontal)) {
           return false;
         }
-        m_primitives[row].cullHorizontal = result;
+        PRIM_CULL_POS_SET(m_primitives[row].cullHorizontal, result);
       }
       else if (col == 4) {
-        if (result == m_primitives[row].cullVertical) {
+        if (result == PRIM_CULL_NEG_GET(m_primitives[row].cullHorizontal)) {
           return false;
         }
-        m_primitives[row].cullVertical = result;
+        PRIM_CULL_NEG_SET(m_primitives[row].cullHorizontal, result);
+      }
+      else if (col == 5) {
+        if (result == PRIM_CULL_POS_GET(m_primitives[row].cullVertical)) {
+          return false;
+        }
+        PRIM_CULL_POS_SET(m_primitives[row].cullVertical, result);
+      }
+      else if (col == 6) {
+        if (result == PRIM_CULL_NEG_GET(m_primitives[row].cullVertical)) {
+          return false;
+        }
+        PRIM_CULL_NEG_SET(m_primitives[row].cullVertical, result);
       }
       else {
         return false;
@@ -177,6 +215,38 @@ bool ShapeModel::setData(const QModelIndex &index, const QVariant& value, int ro
     }
     else if (col == 2) {
       m_primitives[row].zBias = value.toBool();
+    }
+    else if (col == 3) {
+      if (value.toBool()) {
+        m_primitives[row].cullHorizontal |= PRIM_CULL_POS_FLAG;
+      }
+      else {
+        m_primitives[row].cullHorizontal &= ~PRIM_CULL_POS_FLAG;
+      }
+    }
+    else if (col == 4) {
+      if (value.toBool()) {
+        m_primitives[row].cullHorizontal |= PRIM_CULL_NEG_FLAG;
+      }
+      else {
+        m_primitives[row].cullHorizontal &= ~PRIM_CULL_NEG_FLAG;
+      }
+    }
+    else if (col == 5) {
+      if (value.toBool()) {
+        m_primitives[row].cullVertical |= PRIM_CULL_POS_FLAG;
+      }
+      else {
+        m_primitives[row].cullVertical &= ~PRIM_CULL_POS_FLAG;
+      }
+    }
+    else if (col == 6) {
+      if (value.toBool()) {
+        m_primitives[row].cullVertical |= PRIM_CULL_NEG_FLAG;
+      }
+      else {
+        m_primitives[row].cullVertical &= ~PRIM_CULL_NEG_FLAG;
+      }
     }
   }
 
@@ -199,10 +269,14 @@ QVariant ShapeModel::headerData(int section, Qt::Orientation orientation, int ro
       case 2:
         return "Z-bias";
       case 3:
-        return "Cull H";
+        return "CH+";
       case 4:
+        return "CH-";
+      case 5:
+        return "CV+";
+      case 6:
       default:
-        return "Cull V";
+        return "CV-";
     }
   }
   else {
