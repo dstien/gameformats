@@ -64,6 +64,7 @@ protected:
 
 private:
   void              draw(bool pick);
+  inline void       drawSphere(const VerticesList* vertices);
   inline void       drawWheel(const VerticesList* vertices, int& material, const bool& pick);
   inline void       drawCullData(const Primitive& primitive);
   int               pick();
@@ -84,7 +85,8 @@ private:
   static const quint8 PATTERNS[5][0x80];
 
   static const float  PI2;
-  static const int    WHEEL_STEPS = 16;
+  static const float  SPHERE_RADIUS_RATIO;
+  static const int    CIRCLE_STEPS = 16;
 };
 
 #endif

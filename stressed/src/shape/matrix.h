@@ -34,8 +34,9 @@ public:
   void              move(float distance, Axis axis);
   void              rotate(float angle, Axis axis);
 
+  Matrix            transpose() const;
+
   void              multMatrix() const;
-  void              loadViewMatrix() const;
 
 private:
   inline void       loadMatrix() const;

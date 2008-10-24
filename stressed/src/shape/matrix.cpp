@@ -32,18 +32,16 @@ void Matrix::reset(float x, float y, float z)
   matrix[12] = x;    matrix[13] = y;    matrix[14] = z;    matrix[15] = 1.0f;
 }
 
-void Matrix::loadViewMatrix() const
+Matrix Matrix::transpose() const
 {
-  float transposedMatrix[16] = {
-    matrix[ 0], matrix[ 4], matrix[ 8], 0.0f,
-    matrix[ 1], matrix[ 5], matrix[ 9], 0.0f,
-    matrix[ 2], matrix[ 6], matrix[10], 0.0f,
-    0.0f,      0.0f,        0.0f,       1.0f
-  };
 
-  glLoadMatrixf(transposedMatrix);
+  Matrix m;
+  m.matrix[ 0] = matrix[ 0]; m.matrix[ 1] = matrix[ 4]; m.matrix[ 2] = matrix[ 8]; m.matrix[ 3] = 0.0f;
+  m.matrix[ 4] = matrix[ 1]; m.matrix[ 5] = matrix[ 5]; m.matrix[ 6] = matrix[ 9]; m.matrix[ 7] = 0.0f;
+  m.matrix[ 8] = matrix[ 2]; m.matrix[ 9] = matrix[ 6]; m.matrix[10] = matrix[10]; m.matrix[11] = 0.0f;
+  m.matrix[12] = 0.0f;       m.matrix[13] = 0.0f;       m.matrix[14] = 0.0f;       m.matrix[15] = 1.0f;
 
-  glTranslatef(matrix[12], matrix[13], matrix[14]);
+  return m;
 }
 
 void Matrix::move(float distance, Axis axis)

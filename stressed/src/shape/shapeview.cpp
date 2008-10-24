@@ -82,6 +82,7 @@ const quint8 ShapeView::PATTERNS[5][0x80] = {
 };
 
 const float ShapeView::PI2 = M_PI * 2.0f;
+const float ShapeView::SPHERE_RADIUS_RATIO = 2.0f / 3.0f;
 
 ShapeView::ShapeView(QWidget* parent)
 : QAbstractItemView(parent)
@@ -264,11 +265,7 @@ void ShapeView::draw(bool pick)
       glEnd();
     }
     else if (primitive.type == PRIM_TYPE_SPHERE) {
-      glBegin(GL_LINES);
-      foreach (Vertex vertex, *verticesList) {
-        glVertex3s(vertex.x, vertex.y, -vertex.z);
-      }
-      glEnd();
+      drawSphere(verticesList);
     }
     else if (primitive.type == PRIM_TYPE_WHEEL) {
       drawWheel(verticesList, material, pick);
@@ -295,6 +292,28 @@ void ShapeView::draw(bool pick)
   glPopMatrix();
 }
 
+void ShapeView::drawSphere(const VerticesList* vertices)
+{
+  float radius = distance(vertices->at(0), vertices->at(1)) * SPHERE_RADIUS_RATIO;
+
+  glPushMatrix();
+  glTranslatef(vertices->at(0).x, vertices->at(0).y, -vertices->at(0).z);
+
+  // Billboard face by using inverse shape rotation matrix.
+  m_rotation.transpose().multMatrix();
+
+  glBegin(GL_TRIANGLE_FAN);
+  for (int j = 0; j < CIRCLE_STEPS; j++) {
+    glVertex3f(
+        cos((PI2 * (j + 1)) / CIRCLE_STEPS) * radius,
+        sin((PI2 * (j + 1)) / CIRCLE_STEPS) * radius,
+        0.0f);
+  }
+  glEnd();
+
+  glPopMatrix();
+}
+
 void ShapeView::drawWheel(const VerticesList* vertices, int& material, const bool& pick)
 {
   float radius2 = distance(vertices->at(0), vertices->at(1));
@@ -316,9 +335,9 @@ void ShapeView::drawWheel(const VerticesList* vertices, int& material, const boo
   glBegin(GL_QUAD_STRIP);
   glVertex3f(radius2, 0.0f, halfWidth);
   glVertex3f(radius2, 0.0f, -halfWidth);
-  for (int i = 0; i < WHEEL_STEPS; i++) {
-    x = cos((PI2 * (i + 1)) / WHEEL_STEPS) * radius2;
-    y = sin((PI2 * (i + 1)) / WHEEL_STEPS) * radius2;
+  for (int i = 0; i < CIRCLE_STEPS; i++) {
+    x = cos((PI2 * (i + 1)) / CIRCLE_STEPS) * radius2;
+    y = sin((PI2 * (i + 1)) / CIRCLE_STEPS) * radius2;
     glVertex3f(x, y, halfWidth);
     glVertex3f(x, y, -halfWidth);
   }
@@ -332,9 +351,9 @@ void ShapeView::drawWheel(const VerticesList* vertices, int& material, const boo
   glBegin(GL_QUAD_STRIP);
   glVertex3f(radius1, 0.0f, -halfWidth);
   glVertex3f(radius2, 0.0f, -halfWidth);
-  for (int i = 0; i < WHEEL_STEPS; i++) {
-    x = cos((PI2 * (i + 1)) / WHEEL_STEPS);
-    y = -sin((PI2 * (i + 1)) / WHEEL_STEPS);
+  for (int i = 0; i < CIRCLE_STEPS; i++) {
+    x = cos((PI2 * (i + 1)) / CIRCLE_STEPS);
+    y = -sin((PI2 * (i + 1)) / CIRCLE_STEPS);
     glVertex3f(x * radius1, y * radius1, -halfWidth);
     glVertex3f(x * radius2, y * radius2, -halfWidth);
   }
@@ -343,9 +362,9 @@ void ShapeView::drawWheel(const VerticesList* vertices, int& material, const boo
   glBegin(GL_QUAD_STRIP);
   glVertex3f(radius1, 0.0f, halfWidth);
   glVertex3f(radius2, 0.0f, halfWidth);
-  for (int i = 0; i < WHEEL_STEPS; i++) {
-    x = cos((PI2 * (i + 1)) / WHEEL_STEPS);
-    y = sin((PI2 * (i + 1)) / WHEEL_STEPS);
+  for (int i = 0; i < CIRCLE_STEPS; i++) {
+    x = cos((PI2 * (i + 1)) / CIRCLE_STEPS);
+    y = sin((PI2 * (i + 1)) / CIRCLE_STEPS);
     glVertex3f(x * radius1, y * radius1, halfWidth);
     glVertex3f(x * radius2, y * radius2, halfWidth);
   }
@@ -357,19 +376,19 @@ void ShapeView::drawWheel(const VerticesList* vertices, int& material, const boo
 
   // Inner rim
   glBegin(GL_TRIANGLE_FAN);
-  for (int i = 0; i < WHEEL_STEPS; i++) {
+  for (int i = 0; i < CIRCLE_STEPS; i++) {
     glVertex3f(
-        sin((PI2 * (i + 1)) / WHEEL_STEPS) * radius1,
-        cos((PI2 * (i + 1)) / WHEEL_STEPS) * radius1,
+        sin((PI2 * (i + 1)) / CIRCLE_STEPS) * radius1,
+        cos((PI2 * (i + 1)) / CIRCLE_STEPS) * radius1,
         -halfWidth);
   }
   glEnd();
   // Outer rim
   glBegin(GL_TRIANGLE_FAN);
-  for (int i = 0; i < WHEEL_STEPS; i++) {
+  for (int i = 0; i < CIRCLE_STEPS; i++) {
     glVertex3f(
-        cos((PI2 * (i + 1)) / WHEEL_STEPS) * radius1,
-        sin((PI2 * (i + 1)) / WHEEL_STEPS) * radius1,
+        cos((PI2 * (i + 1)) / CIRCLE_STEPS) * radius1,
+        sin((PI2 * (i + 1)) / CIRCLE_STEPS) * radius1,
         halfWidth);
   }
   glEnd();
