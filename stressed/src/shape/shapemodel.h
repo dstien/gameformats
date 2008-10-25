@@ -82,6 +82,7 @@ public:
   void              setShape(PrimitivesList& primitives);
   PrimitivesList*   primitivesList()                                                 { return &m_primitives; }
   Vertex*           boundBox();
+  void              replaceVertices(const Vertex& curVert, const Vertex& newVert);
 
   bool              setNumPaintJobs(int& num);
   int               numPaintJobs() const                                             { return m_numPaintJobs; }

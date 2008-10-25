@@ -20,6 +20,8 @@
 
 #include <QAbstractTableModel>
 
+class ShapeModel;
+
 typedef struct {
   qint16 x;
   qint16 y;
@@ -38,8 +40,8 @@ class VerticesModel : public QAbstractTableModel
   Q_OBJECT
 
 public:
-  VerticesModel(const VerticesList& vertices, QObject* parent = 0);
-  VerticesModel(int type, QObject* parent = 0);
+  VerticesModel(const VerticesList& vertices, ShapeModel* parent = 0);
+  VerticesModel(int type, ShapeModel* parent = 0);
 
   Qt::ItemFlags     flags(const QModelIndex& index) const;
   QVariant          data(const QModelIndex& index, int role) const;
@@ -52,15 +54,19 @@ public:
   int               rowCount(const QModelIndex& /*parent*/ = QModelIndex()) const    { return m_vertices.size(); }
   int               columnCount(const QModelIndex& /*parent*/ = QModelIndex()) const { return 3; }
 
+  void              replace(const Vertex& curVert, const Vertex& newVert);
   void              resize(int type);
   VerticesList*     verticesList()                                                   { return &m_vertices; }
 
+  static void       toggleWeld(bool enable)                                          { m_weld = enable; }
   static bool       verticesNeeded(int type, int& verticesNeeded);
 
 private:
   void              setup();
 
   VerticesList      m_vertices;
+
+  static bool       m_weld;
 
   static const int  VAL_MIN = -32768;
   static const int  VAL_MAX =  32767;

@@ -1,6 +1,6 @@
 <ui version="4.0" >
  <class>ShapeResource</class>
- <widget class="QWidget" name="ShapeResource" >
+ <widget class="QWidget" name="shapeResource" >
   <property name="windowTitle" >
    <string />
   </property>
@@ -18,7 +18,7 @@
     <number>0</number>
    </property>
    <item>
-    <widget class="QSplitter" name="">
+    <widget class="QSplitter" >
      <property name="orientation" >
       <enum>Qt::Vertical</enum>
      </property>
@@ -102,31 +102,43 @@
         </layout>
        </item>
        <item>
-        <layout class="QHBoxLayout" >
-         <item>
-          <widget class="QTableView" name="primitivesView" >
-           <property name="contextMenuPolicy" >
-            <enum>Qt::CustomContextMenu</enum>
-           </property>
-           <property name="selectionBehavior" >
-            <enum>QAbstractItemView::SelectRows</enum>
-           </property>
-           <property name="cornerButtonEnabled" >
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QTableView" name="verticesView" >
-           <property name="selectionBehavior" >
-            <enum>QAbstractItemView::SelectRows</enum>
-           </property>
-           <property name="cornerButtonEnabled" >
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
+        <widget class="QSplitter" >
+         <property name="orientation" >
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <widget class="QTableView" name="primitivesView" >
+          <property name="contextMenuPolicy" >
+           <enum>Qt::CustomContextMenu</enum>
+          </property>
+          <property name="selectionBehavior" >
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <property name="cornerButtonEnabled" >
+           <bool>false</bool>
+          </property>
+         </widget>
+         <widget class="QWidget" >
+          <layout class="QVBoxLayout" >
+           <item>
+            <widget class="QTableView" name="verticesView" >
+             <property name="selectionBehavior" >
+              <enum>QAbstractItemView::SelectRows</enum>
+             </property>
+             <property name="cornerButtonEnabled" >
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="weldCheckBox" >
+             <property name="text" >
+              <string>&amp;Weld coexisting</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" >
           <layout class="QVBoxLayout" >
            <item>
             <widget class="QTableView" name="materialsView" >
@@ -166,8 +178,8 @@
             </layout>
            </item>
           </layout>
-         </item>
-        </layout>
+         </widget>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -259,85 +271,91 @@
   <connection>
    <sender>deselectButton</sender>
    <signal>pressed()</signal>
-   <receiver>ShapeResource</receiver>
+   <receiver>shapeResource</receiver>
    <slot>deselectAll()</slot>
+  </connection>
+  <connection>
+   <sender>weldCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>shapeResource</receiver>
+   <slot>toggleWeld(bool)</slot>
   </connection>
   <connection>
    <sender>numPaintJobsSpinBox</sender>
    <signal>editingFinished()</signal>
-   <receiver>ShapeResource</receiver>
+   <receiver>shapeResource</receiver>
    <slot>setNumPaintJobs()</slot>
   </connection>
   <connection>
    <sender>exportButton</sender>
    <signal>clicked()</signal>
-   <receiver>ShapeResource</receiver>
+   <receiver>shapeResource</receiver>
    <slot>exportFile()</slot>
   </connection>
   <connection>
    <sender>importButton</sender>
    <signal>clicked()</signal>
-   <receiver>ShapeResource</receiver>
+   <receiver>shapeResource</receiver>
    <slot>importFile()</slot>
   </connection>
   <connection>
    <sender>primitivesView</sender>
    <signal>customContextMenuRequested(QPoint)</signal>
-   <receiver>ShapeResource</receiver>
+   <receiver>shapeResource</receiver>
    <slot>primitivesContextMenu(QPoint)</slot>
   </connection>
   <connection>
    <sender>moveFirstPrimitivesAction</sender>
    <signal>triggered()</signal>
-   <receiver>ShapeResource</receiver>
+   <receiver>shapeResource</receiver>
    <slot>moveFirstPrimitives()</slot>
   </connection>
   <connection>
    <sender>moveUpPrimitivesAction</sender>
    <signal>triggered()</signal>
-   <receiver>ShapeResource</receiver>
+   <receiver>shapeResource</receiver>
    <slot>moveUpPrimitives()</slot>
   </connection>
   <connection>
    <sender>moveDownPrimitivesAction</sender>
    <signal>triggered()</signal>
-   <receiver>ShapeResource</receiver>
+   <receiver>shapeResource</receiver>
    <slot>moveDownPrimitives()</slot>
   </connection>
   <connection>
    <sender>moveLastPrimitivesAction</sender>
    <signal>triggered()</signal>
-   <receiver>ShapeResource</receiver>
+   <receiver>shapeResource</receiver>
    <slot>moveLastPrimitives()</slot>
   </connection>
   <connection>
    <sender>insertPrimitiveAction</sender>
    <signal>triggered()</signal>
-   <receiver>ShapeResource</receiver>
+   <receiver>shapeResource</receiver>
    <slot>insertPrimitive()</slot>
   </connection>
   <connection>
    <sender>duplicatePrimitiveAction</sender>
    <signal>triggered()</signal>
-   <receiver>ShapeResource</receiver>
+   <receiver>shapeResource</receiver>
    <slot>duplicatePrimitive()</slot>
   </connection>
   <connection>
    <sender>removePrimitivesAction</sender>
    <signal>triggered()</signal>
-   <receiver>ShapeResource</receiver>
+   <receiver>shapeResource</receiver>
    <slot>removePrimitives()</slot>
   </connection>
   <connection>
    <sender>materialsView</sender>
    <signal>customContextMenuRequested(QPoint)</signal>
-   <receiver>ShapeResource</receiver>
+   <receiver>shapeResource</receiver>
    <slot>materialsContextMenu(QPoint)</slot>
   </connection>
   <connection>
    <sender>replaceMaterialsAction</sender>
    <signal>triggered()</signal>
-   <receiver>ShapeResource</receiver>
+   <receiver>shapeResource</receiver>
    <slot>replaceMaterials()</slot>
   </connection>
  </connections>

@@ -464,6 +464,13 @@ Vertex* ShapeModel::boundBox()
   return m_bound;
 }
 
+void ShapeModel::replaceVertices(const Vertex& curVert, const Vertex& newVert)
+{
+  foreach (Primitive primitive, m_primitives) {
+    primitive.verticesModel->replace(curVert, newVert);
+  }
+}
+
 bool ShapeModel::setNumPaintJobs(int& num)
 {
   num = qBound(PAINTJOBS_MIN, num, PAINTJOBS_MAX);

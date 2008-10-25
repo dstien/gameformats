@@ -21,14 +21,16 @@
 const int VerticesModel::VAL_MIN;
 const int VerticesModel::VAL_MAX;
 
-VerticesModel::VerticesModel(const VerticesList& vertices, QObject* parent)
+bool VerticesModel::m_weld = false;
+
+VerticesModel::VerticesModel(const VerticesList& vertices, ShapeModel* parent)
 : QAbstractTableModel(parent),
   m_vertices(vertices)
 {
   setup();
 }
 
-VerticesModel::VerticesModel(int type, QObject* parent)
+VerticesModel::VerticesModel(int type, ShapeModel* parent)
 : QAbstractTableModel(parent)
 {
   setup();
@@ -90,6 +92,8 @@ bool VerticesModel::setData(const QModelIndex &index, const QVariant& value, int
     return false;
   }
 
+  Vertex oldVertex = m_vertices[row];
+
   switch (col) {
     case 0:
       if (result == m_vertices[row].x) {
@@ -110,6 +114,14 @@ bool VerticesModel::setData(const QModelIndex &index, const QVariant& value, int
         return false;
       }
       m_vertices[row].z = result;
+      break;
+
+    default:
+      return false;
+  }
+
+  if (m_weld) {
+    qobject_cast<ShapeModel*>(QObject::parent())->replaceVertices(oldVertex, m_vertices[row]);
   }
 
   emit dataChanged(index, index);
@@ -166,6 +178,15 @@ bool VerticesModel::removeRows(int position, int rows, const QModelIndex& index)
   endRemoveRows();
 
   return true;
+}
+
+void VerticesModel::replace(const Vertex& curVert, const Vertex& newVert)
+{
+  int i;
+  while ((i = m_vertices.indexOf(curVert)) >= 0) {
+    m_vertices.replace(i, newVert);
+    emit dataChanged(index(i, 0), index(i, 2));
+  }
 }
 
 void VerticesModel::resize(int type)

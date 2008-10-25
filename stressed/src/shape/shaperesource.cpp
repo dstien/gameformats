@@ -291,6 +291,11 @@ void ShapeResource::setNumPaintJobs()
   }
 }
 
+void ShapeResource::toggleWeld(bool enable)
+{
+  VerticesModel::toggleWeld(enable);
+}
+
 void ShapeResource::movePrimitives(int direction)
 {
   if (m_ui.primitivesView->selectionModel()->hasSelection()) {
