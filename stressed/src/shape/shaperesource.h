@@ -68,6 +68,7 @@ private slots:
 
 private:
   void              setup();
+  void              showEvent(QShowEvent* event);
   VerticesList      buildVerticesList(bool boundBox = false) const;
 
   Ui::ShapeResource m_ui;

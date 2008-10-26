@@ -37,6 +37,8 @@ public:
   void              scrollTo(const QModelIndex& /*index*/, ScrollHint /*hint*/ = EnsureVisible) { }
   QModelIndex       indexAt(const QPoint& /*point*/) const                              { return QModelIndex(); }
 
+  void              setVertexSelectionModel(QItemSelectionModel* selection)             { m_vertexSelection = selection; }
+
 public slots:
   void              reset();
 
@@ -65,8 +67,10 @@ protected:
 private:
   void              draw(bool pick);
   inline void       drawSphere(const VerticesList* vertices);
-  inline void       drawWheel(const VerticesList* vertices, int& material, const bool& pick);
+  inline void       drawWheel(const VerticesList* vertices, int& material, bool& pattern, const bool& selected, const bool& pick);
+  inline void       drawHighlightedVertex(const Vertex& vertex);
   inline void       drawCullData(const Primitive& primitive);
+  void              setMaterial(const int& material, bool& pattern, const bool& selected, const bool& pick);
   int               pick();
 
   static Vertex     centroid(const Primitive& primitive);
@@ -82,8 +86,11 @@ private:
   bool              m_wireframe;
   bool              m_showCullData;
 
-  static const quint8 PATTERNS[5][0x80];
+  QItemSelectionModel* m_vertexSelection;
 
+  static const quint8 PATTERNS[6][0x80];
+
+  static const float  VERTEX_HIGHLIGHT_OFFSET;
   static const float  PI2;
   static const float  SPHERE_RADIUS_RATIO;
   static const int    CIRCLE_STEPS = 16;

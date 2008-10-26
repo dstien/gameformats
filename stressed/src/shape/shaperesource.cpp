@@ -97,6 +97,12 @@ void ShapeResource::setup()
       this, SLOT(setModels(QModelIndex)));
 }
 
+void ShapeResource::showEvent(QShowEvent* event)
+{
+  VerticesModel::toggleWeld(m_ui.weldCheckBox->isChecked());
+  Resource::showEvent(event);
+}
+
 void ShapeResource::parse(QDataStream* in)
 {
   PrimitivesList primitives;
@@ -280,6 +286,10 @@ void ShapeResource::setModels(const QModelIndex& index)
   m_ui.materialsView->setModel(currentPrimitive.materialsModel);
 
   m_ui.shapeView->setCurrentIndex(index);
+  m_ui.shapeView->setVertexSelectionModel(m_ui.verticesView->selectionModel());
+
+  connect(m_ui.verticesView->selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
+      m_ui.shapeView, SLOT(selectionChanged(QItemSelection, QItemSelection)));
 }
 
 void ShapeResource::setNumPaintJobs()

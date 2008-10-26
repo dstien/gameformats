@@ -28,7 +28,10 @@
 #define CODE2COLOR(i) QColor(i & 0xE0, (i & 0x1C) << 3, (i & 0x3) << 6)
 #define COLOR2CODE(c) (c[0] | c[1] >> 3 | c[2] >> 6)
 
-const quint8 ShapeView::PATTERNS[5][0x80] = {
+const quint8 ShapeView::PATTERNS[6][0x80] = {
+  { // Transparent
+    0x00
+  },
   { // Grate
     0xCF, 0xCF, 0xCF, 0xCF, 0xCF, 0xCF, 0xCF, 0xCF, 0xFC, 0xFC, 0xFC, 0xFC, 0xFC, 0xFC, 0xFC, 0xFC,
     0xCF, 0xCF, 0xCF, 0xCF, 0xCF, 0xCF, 0xCF, 0xCF, 0xFC, 0xFC, 0xFC, 0xFC, 0xFC, 0xFC, 0xFC, 0xFC,
@@ -81,6 +84,7 @@ const quint8 ShapeView::PATTERNS[5][0x80] = {
   }
 };
 
+const float ShapeView::VERTEX_HIGHLIGHT_OFFSET = 20.0f;
 const float ShapeView::PI2 = M_PI * 2.0f;
 const float ShapeView::SPHERE_RADIUS_RATIO = 2.0f / 3.0f;
 
@@ -91,6 +95,7 @@ ShapeView::ShapeView(QWidget* parent)
   m_currentPaintJob = 0;
   m_wireframe = false;
   m_showCullData = false;
+  m_vertexSelection = 0;
 
   m_glWidget = new QGLWidget(this);
   m_glWidget->makeCurrent();
@@ -118,7 +123,7 @@ void ShapeView::reset()
   if (m_shapeModel) {
     Vertex* bound = m_shapeModel->boundBox();
     m_translation.move(-((bound[4].y + bound[0].y) / 2), Matrix::AXIS_Y);
-    m_translation.move(bound[2].z * 2, Matrix::AXIS_Z);
+    m_translation.move(-distance(bound[2], bound[5]), Matrix::AXIS_Z);
     m_rotation.rotate(10.0f, Matrix::AXIS_X);
   }
 
@@ -192,50 +197,42 @@ void ShapeView::draw(bool pick)
   int i = 0;
   QItemSelectionModel* selections = selectionModel();
 
-  foreach (Primitive primitive, *m_shapeModel->primitivesList()) {
+  foreach (const Primitive& primitive, *m_shapeModel->primitivesList()) {
     VerticesList* verticesList = primitive.verticesModel->verticesList();
     MaterialsList* materialsList = primitive.materialsModel->materialsList();
 
     int material = materialsList->at(m_currentPaintJob);
     QColor color;
 
+    bool selected = false, pattern = false;
+
     if (pick) {
-      color = CODE2COLOR(i);
+      m_glWidget->qglColor(CODE2COLOR(i));
     }
     else {
-      color = Settings::PALETTE[Settings::MATERIALS[material].color];
+      if (m_vertexSelection && primitive.verticesModel == m_vertexSelection->model()) {
+        foreach (const QModelIndex& index, m_vertexSelection->selectedRows()) {
+          drawHighlightedVertex(verticesList->at(index.row()));
+        }
+      }
 
       if (selections->isSelected(m_shapeModel->index(i, 0))) {
+        selected = true;
+
         if (m_showCullData) {
           drawCullData(primitive);
         }
-
-        color.setRed(qMin(0xFF, color.red() + 0x7F));
-        color.setGreen(qMax(0, color.green() - 0x7F));
-        color.setBlue(qMax(0, color.blue() - 0x7F));
       }
     }
 
-    m_glWidget->qglColor(color);
-
-    if (Settings::MATERIALS[material].pattern && (Settings::MATERIALS[material].pattern <= 6)) {
-      if (Settings::MATERIALS[material].pattern == 1) { // Skip transparent primitives.
-        continue;
-      }
-
-      glEnable(GL_POLYGON_STIPPLE);
-      glPolygonStipple(PATTERNS[Settings::MATERIALS[material].pattern - 2]);
-    }
+    setMaterial(material, pattern, selected, pick);
 
     if (primitive.twoSided | m_wireframe) {
       glDisable(GL_CULL_FACE);
     }
 
     if (primitive.zBias) {
-      glPolygonOffset(-1.0f, -2.0f);
-      glEnable(GL_POLYGON_OFFSET_POINT);
-      glEnable(GL_POLYGON_OFFSET_LINE);
-      glEnable(GL_POLYGON_OFFSET_FILL);
+      glDepthRange(0.0f, 1.0f);
     }
 
     if (primitive.type == PRIM_TYPE_PARTICLE) {
@@ -245,7 +242,7 @@ void ShapeView::draw(bool pick)
     }
     else if (primitive.type == PRIM_TYPE_LINE) {
       glBegin(GL_LINES);
-      foreach (Vertex vertex, *verticesList) {
+      foreach (const Vertex& vertex, *verticesList) {
         glVertex3s(vertex.x, vertex.y, -vertex.z);
       }
       glEnd();
@@ -259,7 +256,7 @@ void ShapeView::draw(bool pick)
     }
     else if (m_wireframe && (primitive.type == PRIM_TYPE_SPHERE || primitive.type == PRIM_TYPE_WHEEL)) {
       glBegin(GL_LINE_STRIP);
-      foreach (Vertex vertex, *verticesList) {
+      foreach (const Vertex& vertex, *verticesList) {
         glVertex3s(vertex.x, vertex.y, -vertex.z);
       }
       glEnd();
@@ -268,18 +265,15 @@ void ShapeView::draw(bool pick)
       drawSphere(verticesList);
     }
     else if (primitive.type == PRIM_TYPE_WHEEL) {
-      drawWheel(verticesList, material, pick);
-    }
-
-    if (Settings::MATERIALS[material].pattern) {
-      glDisable(GL_POLYGON_STIPPLE);
+      drawWheel(verticesList, material, pattern, selected, pick);
     }
 
     if (primitive.zBias) {
-      glDisable(GL_POLYGON_OFFSET_POINT);
-      glDisable(GL_POLYGON_OFFSET_LINE);
-      glDisable(GL_POLYGON_OFFSET_FILL);
-      glPolygonOffset(0.0f, 0.0f);
+      glDepthRange(0.025f, 1.0f);
+    }
+
+    if (pattern) {
+      glDisable(GL_POLYGON_STIPPLE);
     }
 
     if (primitive.twoSided | m_wireframe) {
@@ -314,7 +308,7 @@ void ShapeView::drawSphere(const VerticesList* vertices)
   glPopMatrix();
 }
 
-void ShapeView::drawWheel(const VerticesList* vertices, int& material, const bool& pick)
+void ShapeView::drawWheel(const VerticesList* vertices, int& material, bool& pattern, const bool& selected, const bool& pick)
 {
   float radius2 = distance(vertices->at(0), vertices->at(1));
   float radius1 = radius2 * 0.6f;
@@ -343,8 +337,8 @@ void ShapeView::drawWheel(const VerticesList* vertices, int& material, const boo
   }
   glEnd();
 
-  if (!pick && material < MaterialsModel::VAL_MAX) {
-    m_glWidget->qglColor(Settings::PALETTE[Settings::MATERIALS[++material].color]);
+  if (material < MaterialsModel::VAL_MAX) {
+    setMaterial(++material, pattern, selected, pick);
   }
 
   // Inner tyre
@@ -370,8 +364,8 @@ void ShapeView::drawWheel(const VerticesList* vertices, int& material, const boo
   }
   glEnd();
 
-  if (!pick && material < MaterialsModel::VAL_MAX) {
-    m_glWidget->qglColor(Settings::PALETTE[Settings::MATERIALS[++material].color]);
+  if (material < MaterialsModel::VAL_MAX) {
+    setMaterial(++material, pattern, selected, pick);
   }
 
   // Inner rim
@@ -394,6 +388,27 @@ void ShapeView::drawWheel(const VerticesList* vertices, int& material, const boo
   glEnd();
 
   glPopMatrix();
+}
+
+void ShapeView::drawHighlightedVertex(const Vertex& vertex)
+{
+  glDepthRange(0.0f, 1.0f);
+
+  glBegin(GL_LINES);
+  m_glWidget->qglColor(Qt::red);
+  glVertex3f(vertex.x, vertex.y + VERTEX_HIGHLIGHT_OFFSET, -vertex.z);
+  glVertex3f(vertex.x, vertex.y - VERTEX_HIGHLIGHT_OFFSET, -vertex.z);
+
+  m_glWidget->qglColor(Qt::blue);
+  glVertex3f(vertex.x + VERTEX_HIGHLIGHT_OFFSET, vertex.y, -vertex.z);
+  glVertex3f(vertex.x - VERTEX_HIGHLIGHT_OFFSET, vertex.y, -vertex.z);
+
+  m_glWidget->qglColor(Qt::green);
+  glVertex3f(vertex.x, vertex.y, -vertex.z + VERTEX_HIGHLIGHT_OFFSET);
+  glVertex3f(vertex.x, vertex.y, -vertex.z - VERTEX_HIGHLIGHT_OFFSET);
+  glEnd();
+
+  glDepthRange(0.025f, 1.0f);
 }
 
 void ShapeView::drawCullData(const Primitive& primitive)
@@ -488,6 +503,35 @@ void ShapeView::drawCullData(const Primitive& primitive)
 
   if (m_wireframe) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  }
+}
+
+void ShapeView::setMaterial(const int& material, bool& pattern, const bool& selected, const bool& pick)
+{
+  if (!pick) {
+    QColor color = Settings::PALETTE[Settings::MATERIALS[material].color];
+
+    if (selected) {
+      color.setRed(qMin(0xFF, color.red() + 0x7F));
+      color.setGreen(qMax(0, color.green() - 0x7F));
+      color.setBlue(qMax(0, color.blue() - 0x7F));
+    }
+
+    m_glWidget->qglColor(color);
+  }
+
+  if (!m_wireframe) {
+    if (Settings::MATERIALS[material].pattern && (Settings::MATERIALS[material].pattern <= 6)) {
+      if (!pattern) {
+        glEnable(GL_POLYGON_STIPPLE);
+      }
+      pattern = true;
+      glPolygonStipple(PATTERNS[Settings::MATERIALS[material].pattern - 1]);
+    }
+    else if (pattern) {
+      glDisable(GL_POLYGON_STIPPLE);
+      pattern = false;
+    }
   }
 }
 
