@@ -602,11 +602,12 @@ void ShapeResource::importFile()
                   for (int i = 0; i < numVertices; i++) {
                     int index = tokens[i + 1].section('/', 0, 0).toInt();
 
+                    if (index < 0) {
+                      index = vertices.size() + index + 1;
+                    }
+
                     if (index == 0 || index > vertices.size()) {
                       throw tr("Vertex index %1 out of bounds (1 - %2).").arg(index).arg(vertices.size());
-                    }
-                    else if (index < 0) {
-                      throw tr("Negative vertex indices not supported (got %1).").arg(index);
                     }
                     faceVertices.append(vertices[index - 1]);
                   }
