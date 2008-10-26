@@ -24,6 +24,7 @@
 #include "ui_mainwindow.h"
 
 class ResourcesModel;
+class QLabel;
 
 class MainWindow : public QMainWindow
 {
@@ -65,11 +66,14 @@ private slots:
 private:
   void              saveFile(const QString& fileName);
   void              updateWindowTitle();
+  void              updateStatusBar();
 
   Ui::MainWindow    m_ui;
 
   ResourcesModel*   m_resourcesModel;
   Resource*         m_currentResource;
+
+  QLabel*           m_statusLabel;
 
   QString           m_currentFileName;
   QString           m_currentFilePath;

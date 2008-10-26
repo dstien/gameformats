@@ -218,18 +218,18 @@ void ShapeResource::write(QDataStream* out) const
   checkError(out, tr("header"), true);
 
   // Write vertex data.
-  foreach (Vertex vertex, vertices) {
+  foreach (const Vertex& vertex, vertices) {
     *out << vertex.x << vertex.y << vertex.z;
   }
   checkError(out, tr("vertices"), true);
 
   // Write culling data.
-  foreach (Primitive primitive, *(m_shapeModel->primitivesList())) {
+  foreach (const Primitive& primitive, *(m_shapeModel->primitivesList())) {
     *out << primitive.cullHorizontal;
   }
   checkError(out, tr("horizontal primitive culling data"), true);
 
-  foreach (Primitive primitive, *(m_shapeModel->primitivesList())) {
+  foreach (const Primitive& primitive, *(m_shapeModel->primitivesList())) {
     *out << primitive.cullVertical;
   }
   checkError(out, tr("vertical primitive culling data"), true);
@@ -237,7 +237,7 @@ void ShapeResource::write(QDataStream* out) const
   // Write primitives.
   int i = 0;
   quint8 flags;
-  foreach (Primitive primitive, *(m_shapeModel->primitivesList())) {
+  foreach (const Primitive& primitive, *(m_shapeModel->primitivesList())) {
     flags = (primitive.twoSided ? PRIM_FLAG_TWOSIDED : 0) | (primitive.zBias ? PRIM_FLAG_ZBIAS : 0);
 
     // Primitive header.
@@ -251,7 +251,7 @@ void ShapeResource::write(QDataStream* out) const
     checkError(out, tr("material indices in primitive %1").arg(i));
 
     // Vertex indices.
-    foreach (Vertex vertex, *(primitive.verticesModel->verticesList())) {
+    foreach (const Vertex& vertex, *(primitive.verticesModel->verticesList())) {
       *out << (quint8)vertices.indexOf(vertex);
     }
     checkError(out, tr("vertex indices in primitive %1").arg(i));
@@ -474,7 +474,7 @@ void ShapeResource::exportFile()
         out << "mtllib " << MTL_DST << endl << endl;
 
         VerticesList vertices = buildVerticesList();
-        foreach (Vertex vertex, vertices) {
+        foreach (const Vertex& vertex, vertices) {
           out << "v" << qSetFieldWidth(10) << right << fixed << qSetRealNumberPrecision(1)
               << (float)vertex.x << (float)vertex.y << (float)vertex.z << reset << endl;
         }
@@ -482,7 +482,7 @@ void ShapeResource::exportFile()
         out << endl;
 
         int prevMat = -1, curMat;
-        foreach (Primitive primitive, *(m_shapeModel->primitivesList())) {
+        foreach (const Primitive& primitive, *(m_shapeModel->primitivesList())) {
           curMat = primitive.materialsModel->materialsList()->at(m_ui.paintJobSpinBox->value() - 1);
           if (curMat != prevMat) {
             prevMat = curMat;
@@ -504,7 +504,7 @@ void ShapeResource::exportFile()
           }
 
           out << qSetFieldWidth(4) << right;
-          foreach (Vertex vertex, *(primitive.verticesModel->verticesList())) {
+          foreach (const Vertex& vertex, *(primitive.verticesModel->verticesList())) {
             out << vertices.indexOf(vertex) + 1;
           }
           out << reset << endl;
@@ -634,7 +634,7 @@ void ShapeResource::importFile()
         }
         catch (QString msg) {
           // Clean-up.
-          foreach (Primitive primitive, primitives) {
+          foreach (const Primitive& primitive, primitives) {
             delete primitive.verticesModel;
             delete primitive.materialsModel;
           }
@@ -680,8 +680,8 @@ VerticesList ShapeResource::buildVerticesList(bool boundBox) const
     }
   }
 
-  foreach (Primitive primitive, *(m_shapeModel->primitivesList())) {
-    foreach (Vertex vertex, *(primitive.verticesModel->verticesList())) {
+  foreach (const Primitive& primitive, *(m_shapeModel->primitivesList())) {
+    foreach (const Vertex& vertex, *(primitive.verticesModel->verticesList())) {
       if (!vertices.contains(vertex)) {
         vertices.append(vertex);
       }

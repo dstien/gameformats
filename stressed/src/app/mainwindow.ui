@@ -64,7 +64,7 @@
     </item>
    </layout>
   </widget>
-  <widget class="QStatusBar" name="statusbar" />
+  <widget class="QStatusBar" name="statusBar" />
   <action name="action_New" >
    <property name="text" >
     <string>&amp;New</string>

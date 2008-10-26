@@ -13,7 +13,7 @@ ABOUT
 
 DEPENDENCIES
 
- - Qt4 development tools and libraries
+ - Qt 4.2 (or higher) development tools and libraries
  - OpenGL
 
 BUILDING

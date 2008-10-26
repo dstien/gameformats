@@ -17,6 +17,7 @@
 
 #include <QCloseEvent>
 #include <QFileDialog>
+#include <QLabel>
 #include <QMessageBox>
 
 #include "mainwindow.h"
@@ -51,6 +52,10 @@ MainWindow::MainWindow(QWidget* parent, Qt::WFlags flags)
   m_currentResource = NULL;
   m_modified = false;
   updateWindowTitle();
+
+  m_statusLabel = new QLabel(m_ui.statusBar);
+  m_ui.statusBar->addWidget(m_statusLabel);
+  updateStatusBar();
 }
 
 void MainWindow::loadFile(const QString& fileName)
@@ -62,6 +67,7 @@ void MainWindow::loadFile(const QString& fileName)
 
     m_currentFileName = fileName;
     updateWindowTitle();
+    updateStatusBar();
   }
   catch (QString msg) {
     QMessageBox::critical(
@@ -131,6 +137,7 @@ bool MainWindow::reset()
   m_modified = false;
   m_currentFileName.clear();
   updateWindowTitle();
+  updateStatusBar();
 
   return true;
 }
@@ -271,6 +278,7 @@ void MainWindow::insertResource()
     m_resourcesModel->insertRow(resource, row);
     m_ui.resourcesView->setCurrentIndex(m_resourcesModel->index(row));
     isModified();
+    updateStatusBar();
     renameResource();
   }
 }
@@ -283,7 +291,7 @@ void MainWindow::duplicateResource()
 
     m_ui.resourcesView->setCurrentIndex(m_resourcesModel->index(row));
     isModified();
-
+    updateStatusBar();
     renameResource();
   }
 }
@@ -301,6 +309,7 @@ void MainWindow::removeResources()
 
   m_resourcesModel->removeRows(m_ui.resourcesView->selectionModel()->selectedRows());
   isModified();
+  updateStatusBar();
 }
 
 void MainWindow::resourcesContextMenu(const QPoint& /*pos*/)
@@ -360,4 +369,17 @@ void MainWindow::updateWindowTitle()
       (m_currentFileName.isEmpty() ? tr("New file") : m_currentFileName) +
       " - " +
       QCoreApplication::applicationName());
+}
+
+void MainWindow::updateStatusBar()
+{
+  QString msg;
+  if (m_resourcesModel->rowCount() == 1) {
+    msg.append(tr("1 resource"));
+  }
+  else {
+    msg.append(tr("%1 resources").arg(m_resourcesModel->rowCount()));
+  }
+
+  m_statusLabel->setText(msg);
 }

@@ -42,7 +42,6 @@ BitmapResource::BitmapResource(QString id, QWidget* parent, Qt::WFlags flags)
   m_image = 0;
   m_ui.scrollArea->setWidget(new QLabel());
 
-  // disable export
   m_ui.editWidth->setText("0");
   m_ui.editHeight->setText("0");
 
@@ -73,7 +72,13 @@ BitmapResource::BitmapResource(const BitmapResource& res)
   m_ui.editUnk7->setText(res.m_ui.editUnk7->text());
   m_ui.editUnk8->setText(res.m_ui.editUnk8->text());
 
-  m_image = new QImage(*res.m_image);
+  if (res.m_image) {
+    m_image = new QImage(*res.m_image);
+  }
+  else {
+    m_image = 0;
+  }
+
   m_ui.scrollArea->setWidget(new QLabel());
 
   m_ui.radioScale1->setChecked(res.m_ui.radioScale1->isChecked());
