@@ -21,6 +21,8 @@ win32 {
                       ../text/debug/libtext.a
   }
   LIBS += $$PRE_TARGETDEPS -lopengl32 -lglu32
+
+  RC_FILE = ../../resources/resources-win32.rc
 }
 else {
   PRE_TARGETDEPS += ../bitmap/libbitmap.a \
