@@ -75,6 +75,7 @@ public:
   void              removeRows(const QModelIndexList& rows);
   void              moveRows(QItemSelectionModel* selectionModel, int direction);
   void              duplicateRow(int position);
+  void              mirrorXRow(int position);
 
   int               rowCount(const QModelIndex& /*parent*/ = QModelIndex()) const    { return m_primitives.size(); }
   int               columnCount(const QModelIndex& /*parent*/ = QModelIndex()) const { return 7; }

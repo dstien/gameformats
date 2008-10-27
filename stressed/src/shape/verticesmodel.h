@@ -54,6 +54,9 @@ public:
   int               rowCount(const QModelIndex& /*parent*/ = QModelIndex()) const    { return m_vertices.size(); }
   int               columnCount(const QModelIndex& /*parent*/ = QModelIndex()) const { return 3; }
 
+  void              flip();
+  void              invertX(bool flip = true);
+
   void              replace(const Vertex& curVert, const Vertex& newVert);
   void              resize(int type);
   VerticesList*     verticesList()                                                   { return &m_vertices; }

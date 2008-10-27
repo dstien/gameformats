@@ -180,6 +180,24 @@ bool VerticesModel::removeRows(int position, int rows, const QModelIndex& index)
   return true;
 }
 
+void VerticesModel::flip()
+{
+  for (int i = 1; i < m_vertices.size(); i++) {
+    m_vertices.move(i, 0);
+  }
+}
+
+void VerticesModel::invertX(bool flip)
+{
+  for (int i = 0; i < m_vertices.size(); i++) {
+    m_vertices[i].x = -m_vertices[i].x;
+  }
+
+  if (flip) {
+    this->flip();
+  }
+}
+
 void VerticesModel::replace(const Vertex& curVert, const Vertex& newVert)
 {
   int i;

@@ -397,6 +397,14 @@ void ShapeModel::duplicateRow(int position)
   endInsertRows();
 }
 
+void ShapeModel::mirrorXRow(int position)
+{
+  duplicateRow(position);
+  m_primitives[position + 1].verticesModel->invertX(
+      m_primitives[position + 1].type > PRIM_TYPE_LINE &&
+      m_primitives[position + 1].type < PRIM_TYPE_SPHERE);
+}
+
 void ShapeModel::setShape(PrimitivesList& primitives)
 {
   if (primitives.isEmpty()) {

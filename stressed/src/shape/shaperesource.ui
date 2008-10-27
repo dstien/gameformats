@@ -121,6 +121,9 @@
           <layout class="QVBoxLayout" >
            <item>
             <widget class="QTableView" name="verticesView" >
+             <property name="contextMenuPolicy" >
+              <enum>Qt::CustomContextMenu</enum>
+             </property>
              <property name="selectionBehavior" >
               <enum>QAbstractItemView::SelectRows</enum>
              </property>
@@ -216,6 +219,11 @@
     <string>Du&amp;plicate</string>
    </property>
   </action>
+  <action name="mirrorXPrimitiveAction" >
+   <property name="text" >
+    <string>Mirror &amp;X</string>
+   </property>
+  </action>
   <action name="removePrimitivesAction" >
    <property name="text" >
     <string>&amp;Remove</string>
@@ -229,8 +237,23 @@
    <addaction name="separator" />
    <addaction name="insertPrimitiveAction" />
    <addaction name="duplicatePrimitiveAction" />
+   <addaction name="mirrorXPrimitiveAction" />
    <addaction name="separator" />
    <addaction name="removePrimitivesAction" />
+  </widget>
+  <action name="flipVerticesAction" >
+   <property name="text" >
+    <string>&amp;Flip</string>
+   </property>
+  </action>
+  <action name="invertXVerticesAction" >
+   <property name="text" >
+    <string>Invert &amp;X</string>
+   </property>
+  </action>
+  <widget class="QMenu" name="verticesMenu" >
+   <addaction name="flipVerticesAction" />
+   <addaction name="invertXVerticesAction" />
   </widget>
   <action name="replaceMaterialsAction" >
    <property name="text" >
@@ -341,10 +364,34 @@
    <slot>duplicatePrimitive()</slot>
   </connection>
   <connection>
+   <sender>mirrorXPrimitiveAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>mirrorXPrimitive()</slot>
+  </connection>
+  <connection>
    <sender>removePrimitivesAction</sender>
    <signal>triggered()</signal>
    <receiver>shapeResource</receiver>
    <slot>removePrimitives()</slot>
+  </connection>
+  <connection>
+   <sender>verticesView</sender>
+   <signal>customContextMenuRequested(QPoint)</signal>
+   <receiver>shapeResource</receiver>
+   <slot>verticesContextMenu(QPoint)</slot>
+  </connection>
+  <connection>
+   <sender>flipVerticesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>flipVertices()</slot>
+  </connection>
+  <connection>
+   <sender>invertXVerticesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>invertXVertices()</slot>
   </connection>
   <connection>
    <sender>materialsView</sender>

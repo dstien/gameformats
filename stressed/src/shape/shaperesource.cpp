@@ -29,6 +29,7 @@
 #include "shapemodel.h"
 #include "shaperesource.h"
 #include "typedelegate.h"
+#include "verticesmodel.h"
 
 QString       ShapeResource::m_currentFilePath;
 QString       ShapeResource::m_currentFileFilter;
@@ -363,7 +364,18 @@ void ShapeResource::duplicatePrimitive()
     int row = m_ui.primitivesView->currentIndex().row();
     m_shapeModel->duplicateRow(row);
 
-    m_ui.primitivesView->setCurrentIndex(m_shapeModel->index(row, 0));
+    m_ui.primitivesView->setCurrentIndex(m_shapeModel->index(row + 1, 0));
+    isModified();
+  }
+}
+
+void ShapeResource::mirrorXPrimitive()
+{
+  if (m_ui.primitivesView->selectionModel()->hasSelection()) {
+    int row = m_ui.primitivesView->currentIndex().row();
+    m_shapeModel->mirrorXRow(row);
+
+    m_ui.primitivesView->setCurrentIndex(m_shapeModel->index(row + 1, 0));
     isModified();
   }
 }
@@ -389,6 +401,7 @@ void ShapeResource::primitivesContextMenu(const QPoint& /*pos*/)
     m_ui.moveLastPrimitivesAction->setEnabled(true);
 
     m_ui.duplicatePrimitiveAction->setEnabled(true);
+    m_ui.mirrorXPrimitiveAction->setEnabled(true);
     m_ui.removePrimitivesAction->setEnabled(true);
   }
   else {
@@ -398,18 +411,52 @@ void ShapeResource::primitivesContextMenu(const QPoint& /*pos*/)
     m_ui.moveLastPrimitivesAction->setEnabled(false);
 
     m_ui.duplicatePrimitiveAction->setEnabled(false);
+    m_ui.mirrorXPrimitiveAction->setEnabled(false);
     m_ui.removePrimitivesAction->setEnabled(false);
   }
 
   if (m_shapeModel->rowCount() >= 255) {
     m_ui.insertPrimitiveAction->setEnabled(false);
     m_ui.duplicatePrimitiveAction->setEnabled(false);
+    m_ui.mirrorXPrimitiveAction->setEnabled(false);
   }
   else {
     m_ui.insertPrimitiveAction->setEnabled(true);
   }
 
   m_ui.primitivesMenu->exec(QCursor::pos());
+}
+
+void ShapeResource::flipVertices()
+{
+  if (m_ui.verticesView->model()) {
+    qobject_cast<VerticesModel*>(m_ui.verticesView->model())->flip();
+  }
+
+  isModified();
+}
+
+void ShapeResource::invertXVertices()
+{
+  if (m_ui.verticesView->model()) {
+    qobject_cast<VerticesModel*>(m_ui.verticesView->model())->invertX(false);
+  }
+
+  isModified();
+}
+
+void ShapeResource::verticesContextMenu(const QPoint& /*pos*/)
+{
+  if (m_ui.verticesView->model()) {
+    m_ui.flipVerticesAction->setEnabled(true);
+    m_ui.invertXVerticesAction->setEnabled(true);
+  }
+  else {
+    m_ui.flipVerticesAction->setEnabled(false);
+    m_ui.invertXVerticesAction->setEnabled(false);
+  }
+
+  m_ui.verticesMenu->exec(QCursor::pos());
 }
 
 void ShapeResource::replaceMaterials()

@@ -55,8 +55,13 @@ private slots:
 
   void              insertPrimitive();
   void              duplicatePrimitive();
+  void              mirrorXPrimitive();
   void              removePrimitives();
   void              primitivesContextMenu(const QPoint& pos);
+
+  void              flipVertices();
+  void              invertXVertices();
+  void              verticesContextMenu(const QPoint& pos);
 
   void              replaceMaterials();
   void              materialsContextMenu(const QPoint& pos);
