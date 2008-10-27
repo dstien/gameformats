@@ -3,6 +3,12 @@
  <qresource>
   <file>conf/defaults.conf</file>
   <file>shape/materials.mtl</file>
+  <file>shape/icon_pattern_glass_inverse.png</file>
+  <file>shape/icon_pattern_glass.png</file>
+  <file>shape/icon_pattern_grate.png</file>
+  <file>shape/icon_pattern_grille_inverse.png</file>
+  <file>shape/icon_pattern_grille.png</file>
+  <file>shape/icon_pattern_transparent.png</file>
   <file>stressed-icon.svg</file>
  </qresource>
 </RCC>

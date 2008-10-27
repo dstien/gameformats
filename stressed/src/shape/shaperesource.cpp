@@ -24,6 +24,7 @@
 
 #include "app/settings.h"
 #include "flagdelegate.h"
+#include "materialdelegate.h"
 #include "materialsmodel.h"
 #include "shapemodel.h"
 #include "shaperesource.h"
@@ -87,6 +88,8 @@ void ShapeResource::setup()
   m_ui.shapeView->setSelectionModel(m_ui.primitivesView->selectionModel());
 
   m_ui.shapeView->reset();
+
+  m_ui.materialsView->setItemDelegateForColumn(0, new MaterialDelegate(m_ui.materialsView));
 
   m_ui.numPaintJobsSpinBox->setValue(m_shapeModel->numPaintJobs());
   m_ui.paintJobSpinBox->setMaximum(m_shapeModel->numPaintJobs());
@@ -606,7 +609,7 @@ void ShapeResource::importFile()
                       index = vertices.size() + index + 1;
                     }
 
-                    if (index == 0 || index > vertices.size()) {
+                    if (index < 1 || index > vertices.size()) {
                       throw tr("Vertex index %1 out of bounds (1 - %2).").arg(index).arg(vertices.size());
                     }
                     faceVertices.append(vertices[index - 1]);

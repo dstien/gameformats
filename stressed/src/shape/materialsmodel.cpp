@@ -15,7 +15,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-#include "app/settings.h"
+#include "materialdelegate.h"
 #include "materialsmodel.h"
 #include "shapemodel.h"
 
@@ -65,7 +65,7 @@ QVariant MaterialsModel::data(const QModelIndex& index, int role) const
       return QVariant(Qt::AlignRight | Qt::AlignVCenter);
 
     case Qt::DecorationRole:
-      return QColor(Settings::PALETTE[Settings::MATERIALS[m_materials[row]].color]);
+      return MaterialDelegate::getIcon(m_materials[row]);
 
     case Qt::DisplayRole:
     case Qt::EditRole:
