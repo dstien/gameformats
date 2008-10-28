@@ -199,6 +199,11 @@
     <string>Move &amp;up</string>
    </property>
   </action>
+  <action name="moveToPrimitivesAction" >
+   <property name="text" >
+    <string>Move &amp;to...</string>
+   </property>
+  </action>
   <action name="moveDownPrimitivesAction" >
    <property name="text" >
     <string>Move &amp;down</string>
@@ -232,6 +237,7 @@
   <widget class="QMenu" name="primitivesMenu" >
    <addaction name="moveFirstPrimitivesAction" />
    <addaction name="moveUpPrimitivesAction" />
+   <addaction name="moveToPrimitivesAction" />
    <addaction name="moveDownPrimitivesAction" />
    <addaction name="moveLastPrimitivesAction" />
    <addaction name="separator" />
@@ -338,6 +344,12 @@
    <signal>triggered()</signal>
    <receiver>shapeResource</receiver>
    <slot>moveUpPrimitives()</slot>
+  </connection>
+  <connection>
+   <sender>moveToPrimitivesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>moveToPrimitives()</slot>
   </connection>
   <connection>
    <sender>moveDownPrimitivesAction</sender>

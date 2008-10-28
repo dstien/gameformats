@@ -328,6 +328,21 @@ void ShapeResource::moveUpPrimitives()
   movePrimitives(-1);
 }
 
+void ShapeResource::moveToPrimitives()
+{
+  bool success;
+  int curPosition = m_ui.primitivesView->currentIndex().row();
+  int newPosition = QInputDialog::getInteger(
+      this,
+      tr("Move primitive"),
+      tr("New position (1 - %1):").arg(m_ui.primitivesView->model()->rowCount()),
+      curPosition + 1, 1, m_ui.primitivesView->model()->rowCount(), 1, &success) - 1;
+
+  if (success && (newPosition != curPosition)) {
+    movePrimitives(newPosition - curPosition);
+  }
+}
+
 void ShapeResource::moveDownPrimitives()
 {
   movePrimitives(1);
@@ -397,6 +412,7 @@ void ShapeResource::primitivesContextMenu(const QPoint& /*pos*/)
   if (m_ui.primitivesView->selectionModel()->hasSelection()) {
     m_ui.moveFirstPrimitivesAction->setEnabled(true);
     m_ui.moveUpPrimitivesAction->setEnabled(true);
+    m_ui.moveToPrimitivesAction->setEnabled(true);
     m_ui.moveDownPrimitivesAction->setEnabled(true);
     m_ui.moveLastPrimitivesAction->setEnabled(true);
 
@@ -407,6 +423,7 @@ void ShapeResource::primitivesContextMenu(const QPoint& /*pos*/)
   else {
     m_ui.moveFirstPrimitivesAction->setEnabled(false);
     m_ui.moveUpPrimitivesAction->setEnabled(false);
+    m_ui.moveToPrimitivesAction->setEnabled(false);
     m_ui.moveDownPrimitivesAction->setEnabled(false);
     m_ui.moveLastPrimitivesAction->setEnabled(false);
 

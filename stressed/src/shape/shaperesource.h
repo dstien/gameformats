@@ -50,6 +50,7 @@ private slots:
   void              movePrimitives(int direction);
   void              moveFirstPrimitives();
   void              moveUpPrimitives();
+  void              moveToPrimitives();
   void              moveDownPrimitives();
   void              moveLastPrimitives();
 

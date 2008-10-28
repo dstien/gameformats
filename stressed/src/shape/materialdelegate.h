@@ -42,7 +42,7 @@ private:
   static Icons          m_icons;
   static bool           m_initialized;
 
-  static const int      NUM_MATERIALS = 128;
+  static const int      NUM_MATERIALS = 130;
 };
 
 #endif
