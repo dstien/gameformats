@@ -20,6 +20,8 @@
 
 #include <QItemDelegate>
 
+class QComboBox;
+
 typedef QList<QPixmap> Icons;
 
 class MaterialDelegate : public QItemDelegate
@@ -34,6 +36,7 @@ public:
   void                  setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const;
   void                  updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option, const QModelIndex& index) const;
 
+  static QComboBox*     createComboBox(QWidget* parent);
   static const QPixmap& getIcon(unsigned int index);
 
 private:
@@ -42,7 +45,7 @@ private:
   static Icons          m_icons;
   static bool           m_initialized;
 
-  static const int      NUM_MATERIALS = 130;
+  static const unsigned int NUM_MATERIALS = 130;
 };
 
 #endif

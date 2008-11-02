@@ -15,6 +15,8 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+#include <QComboBox>
+#include <QDialogButtonBox>
 #include <QFileDialog>
 #include <QHeaderView>
 #include <QInputDialog>
@@ -479,17 +481,37 @@ void ShapeResource::verticesContextMenu(const QPoint& /*pos*/)
 void ShapeResource::replaceMaterials()
 {
   if (m_ui.materialsView->model() && m_ui.materialsView->selectionModel()->hasSelection()) {
-    bool success;
     int curMaterial = m_ui.materialsView->model()->data(m_ui.materialsView->currentIndex()).toUInt();
-    int newMaterial = QInputDialog::getInteger(
-        this,
-        tr("Replace material"),
-        tr("New material (0 - 255):"),
-        curMaterial, 0, 255, 1, &success);
 
-    if (success && (newMaterial != curMaterial)) {
-      m_shapeModel->replaceMaterials(m_ui.materialsView->currentIndex().row(), curMaterial, newMaterial);
-      isModified();
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("Replace material"));
+
+    QLabel* label = new QLabel(tr("New material:"), &dlg);
+    QComboBox* comboBox = MaterialDelegate::createComboBox(&dlg);
+    comboBox->setCurrentIndex(curMaterial);
+    label->setBuddy(comboBox);
+
+    QVBoxLayout* vbox = new QVBoxLayout(&dlg);
+    vbox->addWidget(label);
+    vbox->addStretch(1);
+    vbox->addWidget(comboBox);
+    vbox->addStretch(1);
+
+    QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Cancel, Qt::Horizontal, &dlg);
+    QPushButton* okButton = static_cast<QPushButton*>(buttonBox->addButton(QDialogButtonBox::Ok));
+    okButton->setDefault(true);
+    vbox->addWidget(buttonBox);
+
+    QObject::connect(buttonBox, SIGNAL(accepted()), &dlg, SLOT(accept()));
+    QObject::connect(buttonBox, SIGNAL(rejected()), &dlg, SLOT(reject()));
+
+    if (dlg.exec() == QDialog::Accepted) {
+      int newMaterial = comboBox->currentIndex();
+
+      if (newMaterial != curMaterial) {
+        m_shapeModel->replaceMaterials(m_ui.materialsView->currentIndex().row(), curMaterial, newMaterial);
+        isModified();
+      }
     }
   }
 }

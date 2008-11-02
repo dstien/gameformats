@@ -21,9 +21,9 @@
 #include "app/settings.h"
 #include "materialdelegate.h"
 
-Icons       MaterialDelegate::m_icons;
-bool        MaterialDelegate::m_initialized = false;
-const int   MaterialDelegate::NUM_MATERIALS;
+Icons MaterialDelegate::m_icons;
+bool  MaterialDelegate::m_initialized = false;
+const unsigned int MaterialDelegate::NUM_MATERIALS;
 
 MaterialDelegate::MaterialDelegate(QObject *parent)
 : QItemDelegate(parent)
@@ -35,14 +35,7 @@ MaterialDelegate::MaterialDelegate(QObject *parent)
 
 QWidget* MaterialDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& /*option*/, const QModelIndex& /*index*/) const
 {
-  QComboBox* materialComboBox = new QComboBox(parent);
-
-  for (int i = 0; i < NUM_MATERIALS; i++) {
-    materialComboBox->insertItem(i, tr("%1").arg(i));
-    materialComboBox->setItemData(i, m_icons[i], Qt::DecorationRole);
-  }
-
-  return materialComboBox;
+  return createComboBox(parent);
 }
 
 void MaterialDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const
@@ -76,10 +69,29 @@ const QPixmap& MaterialDelegate::getIcon(unsigned int index)
   }
 }
 
+QComboBox* MaterialDelegate::createComboBox(QWidget* parent)
+{
+  QComboBox* materialComboBox = new QComboBox(parent);
+
+  for (unsigned int i = 0; i < NUM_MATERIALS; i++) {
+    materialComboBox->insertItem(i, tr("%1").arg(i));
+    materialComboBox->setItemData(i, m_icons[i], Qt::DecorationRole);
+  }
+
+  return materialComboBox;
+}
+
 void MaterialDelegate::setup()
 {
-  for (int i = 0; i < NUM_MATERIALS; i++) {
+  for (unsigned int i = 0; i < NUM_MATERIALS; i++) {
     QPixmap icon(16, 16);
+
+    if (Settings::MATERIALS[i].pattern == 1) {
+      icon.fill(QColor(Qt::black));
+    }
+    else {
+      icon.fill(QColor(Settings::PALETTE[Settings::MATERIALS[i].color]));
+    }
 
     switch (Settings::MATERIALS[i].pattern) {
       case 1:
@@ -100,13 +112,6 @@ void MaterialDelegate::setup()
       case 6:
         icon.setMask(QBitmap(":/shape/icon_pattern_glass_inverse.png"));
         break;
-    }
-
-    if (Settings::MATERIALS[i].pattern == 1) {
-      icon.fill(QColor(Qt::black));
-    }
-    else {
-      icon.fill(QColor(Settings::PALETTE[Settings::MATERIALS[i].color]));
     }
 
     m_icons.append(icon);

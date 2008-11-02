@@ -54,7 +54,7 @@ MainWindow::MainWindow(QWidget* parent, Qt::WFlags flags)
   updateWindowTitle();
 
   m_statusLabel = new QLabel(m_ui.statusBar);
-  m_ui.statusBar->addWidget(m_statusLabel);
+  m_ui.statusBar->addWidget(m_statusLabel, 1);
   updateStatusBar();
 }
 
