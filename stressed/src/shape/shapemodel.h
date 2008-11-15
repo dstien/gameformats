@@ -20,9 +20,8 @@
 
 #include <QAbstractTableModel>
 
-#include "verticesmodel.h"
+#include "types.h"
 
-class MaterialsModel;
 class QItemSelectionModel;
 
 #define PRIM_TYPE_PARTICLE 1
@@ -45,17 +44,14 @@ class QItemSelectionModel;
 #define PRIM_CULL_POS_SET(c, v) (c = (v << PRIM_CULL_POS_SHIFT) | (c & ~PRIM_CULL_POS))
 #define PRIM_CULL_NEG_SET(c, v) (c = (v << PRIM_CULL_NEG_SHIFT) | (c & ~PRIM_CULL_NEG))
 
-typedef struct {
-  quint8            type;
-  bool              twoSided;
-  bool              zBias;
-  VerticesModel*    verticesModel;
-  MaterialsModel*   materialsModel;
-  quint32           cullHorizontal;
-  quint32           cullVertical;
-} Primitive;
-
-typedef QList<Primitive> PrimitivesList;
+#define PRIM_CULL_3BITS  0x001C
+#define PRIM_CULL_5BITS  0x003E
+#define PRIM_CULL_7BITS  0x007F
+#define PRIM_CULL_9BITS  0x40FF
+#define PRIM_CULL_11BITS 0x61FF
+#define PRIM_CULL_13BITS 0x73FF
+#define PRIM_CULL_15BITS 0x7FFF
+#define PRIM_CULL_ROTATE(v, r) (((v << r) | (v >> (15 - r))) & PRIM_CULL_15BITS)
 
 class ShapeModel : public QAbstractTableModel
 {
@@ -76,6 +72,9 @@ public:
   void              moveRows(QItemSelectionModel* selectionModel, int direction);
   void              duplicateRow(int position);
   void              mirrorXRow(int position);
+  void              computeCullRows(const QModelIndexList& rows);
+  void              computeCull();
+  void              computeCull(Primitive& primitive);
 
   int               rowCount(const QModelIndex& /*parent*/ = QModelIndex()) const    { return m_primitives.size(); }
   int               columnCount(const QModelIndex& /*parent*/ = QModelIndex()) const { return 7; }

@@ -229,6 +229,11 @@
     <string>Mirror &amp;X</string>
    </property>
   </action>
+  <action name="computeCullPrimitivesAction" >
+   <property name="text" >
+    <string>&amp;Compute cull data</string>
+   </property>
+  </action>
   <action name="removePrimitivesAction" >
    <property name="text" >
     <string>&amp;Remove</string>
@@ -244,6 +249,7 @@
    <addaction name="insertPrimitiveAction" />
    <addaction name="duplicatePrimitiveAction" />
    <addaction name="mirrorXPrimitiveAction" />
+   <addaction name="computeCullPrimitivesAction" />
    <addaction name="separator" />
    <addaction name="removePrimitivesAction" />
   </widget>
@@ -380,6 +386,12 @@
    <signal>triggered()</signal>
    <receiver>shapeResource</receiver>
    <slot>mirrorXPrimitive()</slot>
+  </connection>
+  <connection>
+   <sender>computeCullPrimitivesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>computeCullPrimitives()</slot>
   </connection>
   <connection>
    <sender>removePrimitivesAction</sender>

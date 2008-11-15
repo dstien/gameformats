@@ -17,9 +17,12 @@
 
 #include <QItemSelectionModel>
 #include <QStringList>
+#include <cmath>
 
 #include "materialsmodel.h"
 #include "shapemodel.h"
+#include "shaperesource.h"
+#include "vector3.h"
 #include "verticesmodel.h"
 
 const int ShapeModel::ROWS_MAX;
@@ -112,16 +115,16 @@ QVariant ShapeModel::data(const QModelIndex& index, int role) const
         return m_primitives[row].type;
       }
       else if (col == 3) {
-        return QString("%1").arg(PRIM_CULL_POS_GET(m_primitives[row].cullHorizontal), 5, 8, QChar('0')).toUpper();
+        return QString("%1").arg(PRIM_CULL_POS_GET(m_primitives[row].cull1), 5, 8, QChar('0')).toUpper();
       }
       else if (col == 4) {
-        return QString("%1").arg(PRIM_CULL_NEG_GET(m_primitives[row].cullHorizontal), 5, 8, QChar('0')).toUpper();
+        return QString("%1").arg(PRIM_CULL_NEG_GET(m_primitives[row].cull1), 5, 8, QChar('0')).toUpper();
       }
       else if (col == 5) {
-        return QString("%1").arg(PRIM_CULL_POS_GET(m_primitives[row].cullVertical), 5, 8, QChar('0')).toUpper();
+        return QString("%1").arg(PRIM_CULL_POS_GET(m_primitives[row].cull2), 5, 8, QChar('0')).toUpper();
       }
       else if (col == 6) {
-        return QString("%1").arg(PRIM_CULL_NEG_GET(m_primitives[row].cullVertical), 5, 8, QChar('0')).toUpper();
+        return QString("%1").arg(PRIM_CULL_NEG_GET(m_primitives[row].cull2), 5, 8, QChar('0')).toUpper();
       }
       break;
     case Qt::CheckStateRole:
@@ -132,16 +135,16 @@ QVariant ShapeModel::data(const QModelIndex& index, int role) const
         return m_primitives[row].zBias ? Qt::Checked : Qt::Unchecked;
       }
       else if (col == 3) {
-        return m_primitives[row].cullHorizontal & PRIM_CULL_POS_FLAG ? Qt::Checked : Qt::Unchecked;
+        return m_primitives[row].cull1 & PRIM_CULL_POS_FLAG ? Qt::Checked : Qt::Unchecked;
       }
       else if (col == 4) {
-        return m_primitives[row].cullHorizontal & PRIM_CULL_NEG_FLAG ? Qt::Checked : Qt::Unchecked;
+        return m_primitives[row].cull1 & PRIM_CULL_NEG_FLAG ? Qt::Checked : Qt::Unchecked;
       }
       else if (col == 5) {
-        return m_primitives[row].cullVertical & PRIM_CULL_POS_FLAG ? Qt::Checked : Qt::Unchecked;
+        return m_primitives[row].cull2 & PRIM_CULL_POS_FLAG ? Qt::Checked : Qt::Unchecked;
       }
       else if (col == 6) {
-        return m_primitives[row].cullVertical & PRIM_CULL_NEG_FLAG ? Qt::Checked : Qt::Unchecked;
+        return m_primitives[row].cull2 & PRIM_CULL_NEG_FLAG ? Qt::Checked : Qt::Unchecked;
       }
   }
 
@@ -181,28 +184,28 @@ bool ShapeModel::setData(const QModelIndex &index, const QVariant& value, int ro
       }
 
       if (col == 3) {
-        if (result == PRIM_CULL_POS_GET(m_primitives[row].cullHorizontal)) {
+        if (result == PRIM_CULL_POS_GET(m_primitives[row].cull1)) {
           return false;
         }
-        PRIM_CULL_POS_SET(m_primitives[row].cullHorizontal, result);
+        PRIM_CULL_POS_SET(m_primitives[row].cull1, result);
       }
       else if (col == 4) {
-        if (result == PRIM_CULL_NEG_GET(m_primitives[row].cullHorizontal)) {
+        if (result == PRIM_CULL_NEG_GET(m_primitives[row].cull1)) {
           return false;
         }
-        PRIM_CULL_NEG_SET(m_primitives[row].cullHorizontal, result);
+        PRIM_CULL_NEG_SET(m_primitives[row].cull1, result);
       }
       else if (col == 5) {
-        if (result == PRIM_CULL_POS_GET(m_primitives[row].cullVertical)) {
+        if (result == PRIM_CULL_POS_GET(m_primitives[row].cull2)) {
           return false;
         }
-        PRIM_CULL_POS_SET(m_primitives[row].cullVertical, result);
+        PRIM_CULL_POS_SET(m_primitives[row].cull2, result);
       }
       else if (col == 6) {
-        if (result == PRIM_CULL_NEG_GET(m_primitives[row].cullVertical)) {
+        if (result == PRIM_CULL_NEG_GET(m_primitives[row].cull2)) {
           return false;
         }
-        PRIM_CULL_NEG_SET(m_primitives[row].cullVertical, result);
+        PRIM_CULL_NEG_SET(m_primitives[row].cull2, result);
       }
       else {
         return false;
@@ -218,34 +221,34 @@ bool ShapeModel::setData(const QModelIndex &index, const QVariant& value, int ro
     }
     else if (col == 3) {
       if (value.toBool()) {
-        m_primitives[row].cullHorizontal |= PRIM_CULL_POS_FLAG;
+        m_primitives[row].cull1 |= PRIM_CULL_POS_FLAG;
       }
       else {
-        m_primitives[row].cullHorizontal &= ~PRIM_CULL_POS_FLAG;
+        m_primitives[row].cull1 &= ~PRIM_CULL_POS_FLAG;
       }
     }
     else if (col == 4) {
       if (value.toBool()) {
-        m_primitives[row].cullHorizontal |= PRIM_CULL_NEG_FLAG;
+        m_primitives[row].cull1 |= PRIM_CULL_NEG_FLAG;
       }
       else {
-        m_primitives[row].cullHorizontal &= ~PRIM_CULL_NEG_FLAG;
+        m_primitives[row].cull1 &= ~PRIM_CULL_NEG_FLAG;
       }
     }
     else if (col == 5) {
       if (value.toBool()) {
-        m_primitives[row].cullVertical |= PRIM_CULL_POS_FLAG;
+        m_primitives[row].cull2 |= PRIM_CULL_POS_FLAG;
       }
       else {
-        m_primitives[row].cullVertical &= ~PRIM_CULL_POS_FLAG;
+        m_primitives[row].cull2 &= ~PRIM_CULL_POS_FLAG;
       }
     }
     else if (col == 6) {
       if (value.toBool()) {
-        m_primitives[row].cullVertical |= PRIM_CULL_NEG_FLAG;
+        m_primitives[row].cull2 |= PRIM_CULL_NEG_FLAG;
       }
       else {
-        m_primitives[row].cullVertical &= ~PRIM_CULL_NEG_FLAG;
+        m_primitives[row].cull2 &= ~PRIM_CULL_NEG_FLAG;
       }
     }
   }
@@ -269,14 +272,14 @@ QVariant ShapeModel::headerData(int section, Qt::Orientation orientation, int ro
       case 2:
         return "Z-bias";
       case 3:
-        return "CH+";
+        return "C1+";
       case 4:
-        return "CH-";
+        return "C1-";
       case 5:
-        return "CV+";
+        return "C2+";
       case 6:
       default:
-        return "CV-";
+        return "C2-";
     }
   }
   else {
@@ -295,8 +298,8 @@ bool ShapeModel::insertRows(int position, int rows, const QModelIndex& index)
     primitive.zBias = false;
     primitive.verticesModel = new VerticesModel(primitive.type, this);
     primitive.materialsModel = new MaterialsModel(m_numPaintJobs, this);
-    primitive.cullHorizontal = 0xFFFFFFFF;
-    primitive.cullVertical   = 0xFFFFFFFF;
+    primitive.cull1 = 0xFFFFFFFF;
+    primitive.cull2 = 0xFFFFFFFF;
 
     m_primitives.insert(position, primitive);
   }
@@ -405,6 +408,138 @@ void ShapeModel::mirrorXRow(int position)
       m_primitives[position + 1].type < PRIM_TYPE_SPHERE);
 }
 
+void ShapeModel::computeCullRows(const QModelIndexList& rows)
+{
+  foreach (const QModelIndex& row, rows) {
+    computeCull(m_primitives[row.row()]);
+  }
+
+  if (!rows.isEmpty()) {
+    emit dataChanged(rows.first(), rows.last());
+  }
+}
+
+void ShapeModel::computeCull()
+{
+  Primitive* primitive = qobject_cast<ShapeResource*>(QObject::parent())->currentPrimitive();
+
+  if (primitive) {
+    computeCull(*primitive);
+  }
+}
+
+void ShapeModel::computeCull(Primitive& primitive)
+{
+  quint32 oldCull1 = primitive.cull1, oldCull2 = primitive.cull2;
+
+  if (primitive.twoSided || (primitive.type <= PRIM_TYPE_LINE) || (primitive.type == PRIM_TYPE_SPHERE)) {
+    primitive.cull1 = primitive.cull2 = 0xFFFFFFFF;
+  }
+  else if (primitive.type == PRIM_TYPE_WHEEL) {
+    primitive.cull1 = 0xFFFFFFFF;
+    primitive.cull2 = 0xFFFFFFFF; // TODO: Like stock cars.
+  }
+  else {
+    primitive.cull1 = primitive.cull2 = 0;
+
+    VerticesList* vertices = primitive.verticesModel->verticesList();
+    Vector3 edge1 = Vector3(vertices->at(1)) - Vector3(vertices->at(0));
+    Vector3 edge2 = Vector3(vertices->at(2)) - Vector3(vertices->at(0));
+    Vector3 normal = edge1.crossProduct(edge2).normalize();
+
+    float yAngle = normal.angle(Vector3(0.0f, 1.0f, 0.0f)) * (180.0f / M_PI);
+
+    if (!isnan(yAngle)) {
+      // C1 flags
+      if (yAngle >= 0.0f && yAngle < 135.0f) {   // C1+
+        primitive.cull1 |= PRIM_CULL_POS_FLAG;
+      }
+      if (yAngle > 45.0f && yAngle <= 180.0f) {  // C1-
+        primitive.cull1 |= PRIM_CULL_NEG_FLAG;
+      }
+
+      quint16 c1p, c1n, c2p, c2n;
+
+      // C1+/C2- fields
+      if (yAngle == 180.0f) {
+        c1p = 0;
+        c2n = 0;
+      }
+      else if (yAngle >= 75.0f && yAngle < 180.0f) {
+        c1p = PRIM_CULL_9BITS;
+        c2n = PRIM_CULL_7BITS;
+      }
+      else if (yAngle >= 55.0f && yAngle < 75.0f) {
+        c1p = PRIM_CULL_11BITS;
+        c2n = PRIM_CULL_5BITS;
+      }
+      else if (yAngle >= 45.0f && yAngle < 55.0f) {
+        c1p = PRIM_CULL_13BITS;
+        c2n = PRIM_CULL_3BITS;
+      }
+      else /*if (yAngle >= 0.0f && yAngle < 45.0f)*/ {
+        c1p = PRIM_CULL_15BITS;
+        c2n = 0;
+        primitive.cull2 |= PRIM_CULL_POS_FLAG; // C2+ flag
+      }
+
+      // C1-/C2+ fields
+      if (yAngle == 0.0f) {
+        c1n = 0;
+        c2p = 0;
+      }
+      else if (yAngle > 0.0f && yAngle <= 105.0f) {
+        c1n = PRIM_CULL_9BITS;
+        c2p = PRIM_CULL_7BITS;
+      }
+      else if (yAngle > 105.0f && yAngle <= 125.0f) {
+        c1n = PRIM_CULL_11BITS;
+        c2p = PRIM_CULL_5BITS;
+      }
+      else if (yAngle > 125.0f && yAngle <= 135.0f) {
+        c1n = PRIM_CULL_13BITS;
+        c2p = PRIM_CULL_3BITS;
+      }
+      else /*if (yAngle > 135.0f && yAngle <= 180.0f)*/ {
+        c1n = PRIM_CULL_15BITS;
+        c2p = 0;
+        primitive.cull2 |= PRIM_CULL_NEG_FLAG; // C2- flag
+      }
+
+      // Rotate fields
+      int rotation  = (int)(((M_PI + atan2(normal.x, normal.z)) / (2.0f * M_PI)) * 15.0f + 0.5f);
+
+      if (c1p) {
+        if (c1p == PRIM_CULL_15BITS) {
+          PRIM_CULL_POS_SET(primitive.cull1, c1p);
+        }
+        else {
+          PRIM_CULL_POS_SET(primitive.cull1, PRIM_CULL_ROTATE(c1p, rotation));
+        }
+      }
+
+      if (c1n) {
+        if (c1n == PRIM_CULL_15BITS) {
+          PRIM_CULL_NEG_SET(primitive.cull1, c1n);
+        }
+        else {
+          PRIM_CULL_NEG_SET(primitive.cull1, PRIM_CULL_ROTATE(c1n, rotation));
+        }
+      }
+
+      if (c2p) {
+        PRIM_CULL_POS_SET(primitive.cull2, PRIM_CULL_ROTATE(c2p, rotation));
+      }
+
+      if (c2n) {
+        PRIM_CULL_NEG_SET(primitive.cull2, PRIM_CULL_ROTATE(c2n, rotation));
+      }
+    }
+  }
+
+  qWarning("%08X => %08X    %08X => %08X", oldCull1, primitive.cull1, oldCull2, primitive.cull2);
+}
+
 void ShapeModel::setShape(PrimitivesList& primitives)
 {
   if (primitives.isEmpty()) {
@@ -414,7 +549,7 @@ void ShapeModel::setShape(PrimitivesList& primitives)
   if (!m_primitives.isEmpty()) {
     beginRemoveRows(QModelIndex(), 0, qMax(0, rowCount() - 1));
 
-    foreach (Primitive primitive, m_primitives) {
+    foreach (const Primitive& primitive, m_primitives) {
       delete primitive.verticesModel;
       delete primitive.materialsModel;
     }
@@ -427,7 +562,7 @@ void ShapeModel::setShape(PrimitivesList& primitives)
 
   beginInsertRows(QModelIndex(), 0, m_primitives.size() - 1);
 
-  foreach (Primitive primitive, m_primitives) {
+  foreach (const Primitive& primitive, m_primitives) {
     primitive.verticesModel->setParent(this);
     primitive.materialsModel->setParent(this);
   }
@@ -474,8 +609,8 @@ Vertex* ShapeModel::boundBox()
 
 void ShapeModel::replaceVertices(const Vertex& curVert, const Vertex& newVert)
 {
-  foreach (Primitive primitive, m_primitives) {
-    primitive.verticesModel->replace(curVert, newVert);
+  foreach (const Primitive& primitive, m_primitives) {
+    primitive.verticesModel->replace(curVert, newVert, (Primitive&)primitive);
   }
 }
 

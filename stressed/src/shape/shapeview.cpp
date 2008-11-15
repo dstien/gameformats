@@ -424,12 +424,12 @@ void ShapeView::drawCullData(const Primitive& primitive)
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   }
 
-  // Horizontal, up
+  // 1+
   glBegin(GL_QUAD_STRIP);
   glVertex3f(radius2 + center.x, center.y, -center.z);
   glVertex3f(radius3 + center.x, center.y, -center.z);
   for (int j = 0; j < steps; j++) {
-    if (primitive.cullHorizontal & (1 << (steps + steps - j + 1))) {
+    if (primitive.cull1 & (1 << (steps + steps - j + 1))) {
       if (j % 2) m_glWidget->qglColor(Qt::darkRed);
       else       m_glWidget->qglColor(Qt::red);
     }
@@ -443,12 +443,12 @@ void ShapeView::drawCullData(const Primitive& primitive)
     glVertex3f(x * radius3 + center.x, center.y, z * radius3 + -center.z);
   }
   glEnd();
-  // Horizontal, down
+  // 1-
   glBegin(GL_QUAD_STRIP);
   glVertex3f(radius2 + center.x, center.y, -center.z);
   glVertex3f(radius3 + center.x, center.y, -center.z);
   for (int j = 0; j < steps; j++) {
-    if (primitive.cullHorizontal & (1 << (j + 2))) {
+    if (primitive.cull1 & (1 << (j + 2))) {
       if (j % 2) m_glWidget->qglColor(Qt::darkRed);
       else       m_glWidget->qglColor(Qt::red);
     }
@@ -462,12 +462,12 @@ void ShapeView::drawCullData(const Primitive& primitive)
     glVertex3f(x * radius3 + center.x, center.y, z * radius3 + -center.z);
   }
   glEnd();
-  // Vertical, up
+  // 2+
   glBegin(GL_QUAD_STRIP);
   glVertex3f(radius1 + center.x, center.y, -center.z);
   glVertex3f(radius2 + center.x, center.y, -center.z);
   for (int j = 0; j < steps; j++) {
-    if (primitive.cullVertical & (1 << (steps + steps - j + 1))) {
+    if (primitive.cull2 & (1 << (steps + steps - j + 1))) {
       if (j % 2) m_glWidget->qglColor(Qt::darkMagenta);
       else       m_glWidget->qglColor(Qt::magenta);
     }
@@ -481,12 +481,12 @@ void ShapeView::drawCullData(const Primitive& primitive)
     glVertex3f(x * radius2 + center.x, center.y, z * radius2 + -center.z);
   }
   glEnd();
-  // Vertical, down
+  // 2-
   glBegin(GL_QUAD_STRIP);
   glVertex3f(radius1 + center.x, center.y, -center.z);
   glVertex3f(radius2 + center.x, center.y, -center.z);
   for (int j = 0; j < steps; j++) {
-    if (primitive.cullVertical & (1 << (j + 2))) {
+    if (primitive.cull2 & (1 << (j + 2))) {
       if (j % 2) m_glWidget->qglColor(Qt::darkMagenta);
       else       m_glWidget->qglColor(Qt::magenta);
     }

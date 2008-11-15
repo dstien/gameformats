@@ -17,6 +17,8 @@ HEADERS += flagdelegate.h \
            shaperesource.h \
            shapeview.h \
            typedelegate.h \
+           types.h \
+           vector3.h \
            verticesmodel.h
 
 SOURCES += flagdelegate.cpp \
@@ -27,4 +29,5 @@ SOURCES += flagdelegate.cpp \
            shaperesource.cpp \
            shapeview.cpp \
            typedelegate.cpp \
+           vector3.cpp \
            verticesmodel.cpp

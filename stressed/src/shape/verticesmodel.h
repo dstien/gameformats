@@ -20,20 +20,14 @@
 
 #include <QAbstractTableModel>
 
-class ShapeModel;
+#include "types.h"
 
-typedef struct {
-  qint16 x;
-  qint16 y;
-  qint16 z;
-} Vertex;
+class ShapeModel;
 
 inline bool operator==(const Vertex& v1, const Vertex& v2)
 {
   return v1.x == v2.x && v1.y == v2.y && v1.z == v2.z;
 }
-
-typedef QList<Vertex> VerticesList;
 
 class VerticesModel : public QAbstractTableModel
 {
@@ -57,7 +51,7 @@ public:
   void              flip();
   void              invertX(bool flip = true);
 
-  void              replace(const Vertex& curVert, const Vertex& newVert);
+  void              replace(const Vertex& curVert, const Vertex& newVert, Primitive& primitive);
   void              resize(int type);
   VerticesList*     verticesList()                                                   { return &m_vertices; }
 

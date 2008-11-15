@@ -34,8 +34,9 @@ public:
   ShapeResource(const ShapeResource& res);
   ShapeResource(QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
 
-  QString           type() const  { return "shape"; }
-  Resource*         clone() const { return new ShapeResource(*this); }
+  QString           type() const       { return "shape"; }
+  Resource*         clone() const      { return new ShapeResource(*this); }
+  Primitive*        currentPrimitive() { return m_currentPrimitive; }
 
 protected:
   void              parse(QDataStream* in);
@@ -57,6 +58,7 @@ private slots:
   void              insertPrimitive();
   void              duplicatePrimitive();
   void              mirrorXPrimitive();
+  void              computeCullPrimitives();
   void              removePrimitives();
   void              primitivesContextMenu(const QPoint& pos);
 
@@ -80,6 +82,7 @@ private:
   Ui::ShapeResource m_ui;
 
   ShapeModel*       m_shapeModel;
+  Primitive*        m_currentPrimitive;
 
   static QString    m_currentFilePath;
   static QString    m_currentFileFilter;

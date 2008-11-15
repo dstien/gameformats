@@ -120,8 +120,11 @@ bool VerticesModel::setData(const QModelIndex &index, const QVariant& value, int
       return false;
   }
 
+  ShapeModel* shapeModel = qobject_cast<ShapeModel*>(QObject::parent());
+  shapeModel->computeCull();
+
   if (m_weld) {
-    qobject_cast<ShapeModel*>(QObject::parent())->replaceVertices(oldVertex, m_vertices[row]);
+    shapeModel->replaceVertices(oldVertex, m_vertices[row]);
   }
 
   emit dataChanged(index, index);
@@ -185,6 +188,8 @@ void VerticesModel::flip()
   for (int i = 1; i < m_vertices.size(); i++) {
     m_vertices.move(i, 0);
   }
+
+  qobject_cast<ShapeModel*>(QObject::parent())->computeCull();
 }
 
 void VerticesModel::invertX(bool flip)
@@ -196,14 +201,24 @@ void VerticesModel::invertX(bool flip)
   if (flip) {
     this->flip();
   }
+  else {
+    qobject_cast<ShapeModel*>(QObject::parent())->computeCull();
+  }
 }
 
-void VerticesModel::replace(const Vertex& curVert, const Vertex& newVert)
+void VerticesModel::replace(const Vertex& curVert, const Vertex& newVert, Primitive& primitive)
 {
+  bool changed = false;
+
   int i;
   while ((i = m_vertices.indexOf(curVert)) >= 0) {
     m_vertices.replace(i, newVert);
     emit dataChanged(index(i, 0), index(i, 2));
+    changed = true;
+  }
+
+  if (changed) {
+    qobject_cast<ShapeModel*>(QObject::parent())->computeCull(primitive);
   }
 }
 

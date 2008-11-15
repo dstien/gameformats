@@ -20,7 +20,7 @@
 
 #include <QAbstractTableModel>
 
-typedef QList<quint8> MaterialsList;
+#include "types.h"
 
 class MaterialsModel : public QAbstractTableModel
 {

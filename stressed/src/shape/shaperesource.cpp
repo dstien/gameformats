@@ -71,6 +71,8 @@ ShapeResource::ShapeResource(QString id, QDataStream* in, QWidget* parent, Qt::W
 
 void ShapeResource::setup()
 {
+  m_currentPrimitive = 0;
+
   m_ui.setupUi(this);
 
   m_ui.primitivesView->horizontalHeader()->setResizeMode(QHeaderView::ResizeToContents);
@@ -115,8 +117,8 @@ void ShapeResource::parse(QDataStream* in)
 
   quint8 numVertices, numPrimitives, numPaintJobs, reserved;
   Vertex* vertices = 0;
-  quint32* cullHorizontal = 0;
-  quint32* cullVertical = 0;
+  quint32* cull1 = 0;
+  quint32* cull2 = 0;
 
   // Header.
   *in >> numVertices >> numPrimitives >> numPaintJobs >> reserved;
@@ -138,18 +140,18 @@ void ShapeResource::parse(QDataStream* in)
     checkError(in, tr("vertices"));
 
     try {
-      cullHorizontal = new quint32[numPrimitives];
-      cullVertical = new quint32[numPrimitives];
+      cull1 = new quint32[numPrimitives];
+      cull2 = new quint32[numPrimitives];
     }
     catch (std::bad_alloc& exc) {
       throw tr("Couldn't allocate memory for shape primitive culling data.");
     }
 
-    in->readRawData(reinterpret_cast<char*>(cullHorizontal), numPrimitives * sizeof(quint32));
-    checkError(in, tr("horizontal primitive culling data"));
+    in->readRawData(reinterpret_cast<char*>(cull1), numPrimitives * sizeof(quint32));
+    checkError(in, tr("primitive culling data 1"));
 
-    in->readRawData(reinterpret_cast<char*>(cullVertical), numPrimitives * sizeof(quint32));
-    checkError(in, tr("vertical primitive culling data"));
+    in->readRawData(reinterpret_cast<char*>(cull2), numPrimitives * sizeof(quint32));
+    checkError(in, tr("primitive culling data 2"));
 
     quint8 type, flags, material, vertexIndex;
     for (int i = 0; i < numPrimitives; i++) {
@@ -186,8 +188,8 @@ void ShapeResource::parse(QDataStream* in)
       primitive.verticesModel = new VerticesModel(verticesList, m_shapeModel);
       primitive.materialsModel = new MaterialsModel(materialsList, m_shapeModel);
 
-      primitive.cullHorizontal = cullHorizontal[i];
-      primitive.cullVertical = cullVertical[i];
+      primitive.cull1 = cull1[i];
+      primitive.cull2 = cull2[i];
 
       primitives.append(primitive);
     }
@@ -195,20 +197,20 @@ void ShapeResource::parse(QDataStream* in)
   catch (QString msg) {
     delete[] vertices;
     vertices = 0;
-    delete[] cullHorizontal;
-    cullHorizontal = 0;
-    delete[] cullVertical;
-    cullVertical = 0;
+    delete[] cull1;
+    cull1 = 0;
+    delete[] cull2;
+    cull2 = 0;
 
     throw msg;
   }
 
   delete[] vertices;
   vertices = 0;
-  delete[] cullHorizontal;
-  cullHorizontal = 0;
-  delete[] cullVertical;
-  cullVertical = 0;
+  delete[] cull1;
+  cull1 = 0;
+  delete[] cull2;
+  cull2 = 0;
 
   m_shapeModel->setShape(primitives);
 }
@@ -231,14 +233,14 @@ void ShapeResource::write(QDataStream* out) const
 
   // Write culling data.
   foreach (const Primitive& primitive, *(m_shapeModel->primitivesList())) {
-    *out << primitive.cullHorizontal;
+    *out << primitive.cull1;
   }
-  checkError(out, tr("horizontal primitive culling data"), true);
+  checkError(out, tr("primitive culling data 1"), true);
 
   foreach (const Primitive& primitive, *(m_shapeModel->primitivesList())) {
-    *out << primitive.cullVertical;
+    *out << primitive.cull2;
   }
-  checkError(out, tr("vertical primitive culling data"), true);
+  checkError(out, tr("primitive culling data 2"), true);
 
   // Write primitives.
   int i = 0;
@@ -273,6 +275,8 @@ void ShapeResource::write(QDataStream* out) const
 
 void ShapeResource::deselectAll()
 {
+  m_currentPrimitive = 0;
+
   m_ui.materialsView->clearSelection();
   m_ui.verticesView->clearSelection();
   m_ui.primitivesView->clearSelection();
@@ -286,10 +290,10 @@ void ShapeResource::setModels(const QModelIndex& index)
     return;
   }
 
-  Primitive currentPrimitive = m_shapeModel->primitivesList()->at(row);
+  m_currentPrimitive = (Primitive*)&m_shapeModel->primitivesList()->at(row);
 
-  m_ui.verticesView->setModel(currentPrimitive.verticesModel);
-  m_ui.materialsView->setModel(currentPrimitive.materialsModel);
+  m_ui.verticesView->setModel(m_currentPrimitive->verticesModel);
+  m_ui.materialsView->setModel(m_currentPrimitive->materialsModel);
 
   m_ui.shapeView->setCurrentIndex(index);
   m_ui.shapeView->setVertexSelectionModel(m_ui.verticesView->selectionModel());
@@ -397,6 +401,12 @@ void ShapeResource::mirrorXPrimitive()
   }
 }
 
+void ShapeResource::computeCullPrimitives()
+{
+  m_shapeModel->computeCullRows(m_ui.primitivesView->selectionModel()->selectedRows());
+  isModified();
+}
+
 void ShapeResource::removePrimitives()
 {
   m_shapeModel->removeRows(m_ui.primitivesView->selectionModel()->selectedRows());
@@ -420,6 +430,7 @@ void ShapeResource::primitivesContextMenu(const QPoint& /*pos*/)
 
     m_ui.duplicatePrimitiveAction->setEnabled(true);
     m_ui.mirrorXPrimitiveAction->setEnabled(true);
+    m_ui.computeCullPrimitivesAction->setEnabled(true);
     m_ui.removePrimitivesAction->setEnabled(true);
   }
   else {
@@ -431,6 +442,7 @@ void ShapeResource::primitivesContextMenu(const QPoint& /*pos*/)
 
     m_ui.duplicatePrimitiveAction->setEnabled(false);
     m_ui.mirrorXPrimitiveAction->setEnabled(false);
+    m_ui.computeCullPrimitivesAction->setEnabled(false);
     m_ui.removePrimitivesAction->setEnabled(false);
   }
 
@@ -703,8 +715,7 @@ void ShapeResource::importFile()
 
                   primitive.verticesModel = new VerticesModel(faceVertices, m_shapeModel);
                   primitive.materialsModel = new MaterialsModel(material, m_shapeModel);
-                  primitive.cullHorizontal = 0xFFFFFFFF;
-                  primitive.cullVertical = 0xFFFFFFFF;
+                  m_shapeModel->computeCull(primitive);
                   primitives.append(primitive);
                 }
                 break;
