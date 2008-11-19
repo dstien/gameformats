@@ -336,7 +336,6 @@ void BitmapResource::importFile()
         delete tmpImage;
       }
 
-
       delete oldImage;
       oldImage = 0;
 
@@ -344,6 +343,20 @@ void BitmapResource::importFile()
 
       delete newImage;
       newImage = 0;
+
+      // Quantize alpha channel to 1 bit and set affected transparent pixels
+      // to palette index 255.
+      if (m_image->hasAlphaChannel()) {
+        QImage alphaChannel = m_image->alphaChannel();
+
+        for (int y = 0; y < m_image->height(); y++) {
+          for (int x = 0; x < m_image->width(); x++) {
+            if (alphaChannel.pixelIndex(x, y) < 0x80) {
+              m_image->setPixel(x, y, ALPHA_INDEX);
+            }
+          }
+        }
+      }
 
       m_ui.editWidth->setText(QString::number(m_image->width()));
       m_ui.editHeight->setText(QString::number(m_image->height()));
@@ -354,7 +367,7 @@ void BitmapResource::importFile()
 
       m_ui.buttonExport->setEnabled(true);
 
-      scale(); // Repaint
+      toggleAlpha(m_ui.checkAlpha->isChecked()); // Repaint
       isModified();
     }
     catch (QString msg) {
