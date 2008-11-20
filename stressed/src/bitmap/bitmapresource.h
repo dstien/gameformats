@@ -46,6 +46,8 @@ private slots:
   void                 importFile();
 
 private:
+  void                 setup();
+
   Ui::BitmapResource   m_ui;
 
   QImage*              m_image;

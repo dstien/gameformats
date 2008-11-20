@@ -84,7 +84,7 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="2" >
+     <item row="1" column="5" >
       <spacer>
        <property name="orientation" >
         <enum>Qt::Horizontal</enum>
@@ -92,6 +92,68 @@
        <property name="sizeHint" >
         <size>
          <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="1" column="3" >
+      <widget class="QLabel" name="labelY" >
+       <property name="text" >
+        <string>Y</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="3" >
+      <widget class="QLabel" name="labelX" >
+       <property name="text" >
+        <string>X</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="4" >
+      <widget class="QLineEdit" name="editX" >
+       <property name="sizePolicy" >
+        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="maximumSize" >
+        <size>
+         <width>50</width>
+         <height>16777215</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="4" >
+      <widget class="QLineEdit" name="editY" >
+       <property name="sizePolicy" >
+        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="maximumSize" >
+        <size>
+         <width>50</width>
+         <height>16777215</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2" >
+      <spacer>
+       <property name="orientation" >
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeType" >
+        <enum>QSizePolicy::Fixed</enum>
+       </property>
+       <property name="sizeHint" >
+        <size>
+         <width>20</width>
          <height>20</height>
         </size>
        </property>
@@ -165,7 +227,7 @@
        </property>
        <property name="maximumSize" >
         <size>
-         <width>50</width>
+         <width>25</width>
          <height>16777215</height>
         </size>
        </property>
@@ -175,7 +237,7 @@
         </font>
        </property>
        <property name="inputMask" >
-        <string>HHHH; </string>
+        <string>HH; </string>
        </property>
        <property name="alignment" >
         <set>Qt::AlignCenter</set>
@@ -192,7 +254,7 @@
        </property>
        <property name="maximumSize" >
         <size>
-         <width>50</width>
+         <width>25</width>
          <height>16777215</height>
         </size>
        </property>
@@ -202,7 +264,7 @@
         </font>
        </property>
        <property name="inputMask" >
-        <string>HHHH; </string>
+        <string>HH; </string>
        </property>
        <property name="alignment" >
         <set>Qt::AlignCenter</set>
@@ -238,60 +300,6 @@
      </item>
      <item>
       <widget class="QLineEdit" name="editUnk6" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="maximumSize" >
-        <size>
-         <width>25</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="font" >
-        <font>
-         <family>Monospace, Courier</family>
-        </font>
-       </property>
-       <property name="inputMask" >
-        <string>HH; </string>
-       </property>
-       <property name="alignment" >
-        <set>Qt::AlignCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLineEdit" name="editUnk7" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="maximumSize" >
-        <size>
-         <width>25</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="font" >
-        <font>
-         <family>Monospace, Courier</family>
-        </font>
-       </property>
-       <property name="inputMask" >
-        <string>HH; </string>
-       </property>
-       <property name="alignment" >
-        <set>Qt::AlignCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLineEdit" name="editUnk8" >
        <property name="sizePolicy" >
         <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
          <horstretch>0</horstretch>
@@ -418,6 +426,18 @@
  <resources/>
  <connections>
   <connection>
+   <sender>editX</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>BitmapResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>editY</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>BitmapResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
    <sender>editUnk1</sender>
    <signal>textChanged(QString)</signal>
    <receiver>BitmapResource</receiver>
@@ -449,18 +469,6 @@
   </connection>
   <connection>
    <sender>editUnk6</sender>
-   <signal>textChanged(QString)</signal>
-   <receiver>BitmapResource</receiver>
-   <slot>isModified()</slot>
-  </connection>
-  <connection>
-   <sender>editUnk7</sender>
-   <signal>textChanged(QString)</signal>
-   <receiver>BitmapResource</receiver>
-   <slot>isModified()</slot>
-  </connection>
-  <connection>
-   <sender>editUnk8</sender>
    <signal>textChanged(QString)</signal>
    <receiver>BitmapResource</receiver>
    <slot>isModified()</slot>
