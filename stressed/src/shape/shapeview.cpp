@@ -122,8 +122,9 @@ void ShapeView::reset()
 
   if (m_shapeModel) {
     Vertex* bound = m_shapeModel->boundBox();
-    m_translation.move(-((bound[4].y + bound[0].y) / 2), Matrix::AXIS_Y);
-    m_translation.move(-distance(bound[2], bound[5]), Matrix::AXIS_Z);
+    m_translation.move(-((bound[4].y + bound[0].y) / 2) * VerticesModel::Y_RATIO, Matrix::AXIS_Y);
+    m_translation.move(-distance(VerticesModel::toInternal(bound[2]),
+          VerticesModel::toInternal(bound[5])), Matrix::AXIS_Z);
     m_rotation.rotate(10.0f, Matrix::AXIS_X);
   }
 
@@ -198,7 +199,7 @@ void ShapeView::draw(bool pick)
   QItemSelectionModel* selections = selectionModel();
 
   foreach (const Primitive& primitive, *m_shapeModel->primitivesList()) {
-    VerticesList* verticesList = primitive.verticesModel->verticesList();
+    VerticesFList* verticesFList = primitive.verticesModel->verticesFList();
     MaterialsList* materialsList = primitive.materialsModel->materialsList();
 
     int material = materialsList->at(m_currentPaintJob);
@@ -212,7 +213,7 @@ void ShapeView::draw(bool pick)
     else {
       if (m_vertexSelection && primitive.verticesModel == m_vertexSelection->model()) {
         foreach (const QModelIndex& index, m_vertexSelection->selectedRows()) {
-          drawHighlightedVertex(verticesList->at(index.row()));
+          drawHighlightedVertex(verticesFList->at(index.row()));
         }
       }
 
@@ -237,35 +238,35 @@ void ShapeView::draw(bool pick)
 
     if (primitive.type == PRIM_TYPE_PARTICLE) {
       glBegin(GL_POINT);
-      glVertex3s(verticesList->at(0).x, verticesList->at(0).y, -verticesList->at(0).z);
+      glVertex3f(verticesFList->at(0).x, verticesFList->at(0).y, verticesFList->at(0).z);
       glEnd();
     }
     else if (primitive.type == PRIM_TYPE_LINE) {
       glBegin(GL_LINES);
-      foreach (const Vertex& vertex, *verticesList) {
-        glVertex3s(vertex.x, vertex.y, -vertex.z);
+      foreach (const VertexF& vertex, *verticesFList) {
+        glVertex3f(vertex.x, vertex.y, vertex.z);
       }
       glEnd();
     }
     else if (primitive.type > PRIM_TYPE_LINE && primitive.type < PRIM_TYPE_SPHERE) { // Polygon
       glBegin(GL_POLYGON);
-      for (int j = verticesList->size() - 1; j >= 0; j--) {
-        glVertex3s(verticesList->at(j).x, verticesList->at(j).y, -verticesList->at(j).z);
+      for (int j = verticesFList->size() - 1; j >= 0; j--) {
+        glVertex3f(verticesFList->at(j).x, verticesFList->at(j).y, verticesFList->at(j).z);
       }
       glEnd();
     }
     else if (m_wireframe && (primitive.type == PRIM_TYPE_SPHERE || primitive.type == PRIM_TYPE_WHEEL)) {
       glBegin(GL_LINE_STRIP);
-      foreach (const Vertex& vertex, *verticesList) {
-        glVertex3s(vertex.x, vertex.y, -vertex.z);
+      foreach (const VertexF& vertex, *verticesFList) {
+        glVertex3f(vertex.x, vertex.y, vertex.z);
       }
       glEnd();
     }
     else if (primitive.type == PRIM_TYPE_SPHERE) {
-      drawSphere(verticesList);
+      drawSphere(verticesFList);
     }
     else if (primitive.type == PRIM_TYPE_WHEEL) {
-      drawWheel(verticesList, material, pattern, selected, pick);
+      drawWheel(verticesFList, material, pattern, selected, pick);
     }
 
     if (primitive.zBias) {
@@ -286,12 +287,12 @@ void ShapeView::draw(bool pick)
   glPopMatrix();
 }
 
-void ShapeView::drawSphere(const VerticesList* vertices)
+void ShapeView::drawSphere(const VerticesFList* vertices)
 {
   float radius = distance(vertices->at(0), vertices->at(1)) * SPHERE_RADIUS_RATIO;
 
   glPushMatrix();
-  glTranslatef(vertices->at(0).x, vertices->at(0).y, -vertices->at(0).z);
+  glTranslatef(vertices->at(0).x, vertices->at(0).y, vertices->at(0).z);
 
   // Billboard face by using inverse shape rotation matrix.
   m_rotation.transpose().multMatrix();
@@ -308,17 +309,17 @@ void ShapeView::drawSphere(const VerticesList* vertices)
   glPopMatrix();
 }
 
-void ShapeView::drawWheel(const VerticesList* vertices, int& material, bool& pattern, const bool& selected, const bool& pick)
+void ShapeView::drawWheel(const VerticesFList* vertices, int& material, bool& pattern, const bool& selected, const bool& pick)
 {
-  float radius2 = distance(vertices->at(0), vertices->at(1));
+  float radius2 = distance(vertices->at(3), vertices->at(5));
   float radius1 = radius2 * 0.6f;
 
-  Vertex center = centroid(vertices->at(0), vertices->at(3));
+  VertexF center = centroid(vertices->at(0), vertices->at(3));
   float halfWidth = distance(vertices->at(0), center);
   float x, y;
 
   glPushMatrix();
-  glTranslatef(center.x, center.y, -center.z);
+  glTranslatef(center.x, center.y, center.z);
 
   // TODO: Check actual rotation.
   if (vertices->at(0).x - vertices->at(3).x) {
@@ -390,22 +391,22 @@ void ShapeView::drawWheel(const VerticesList* vertices, int& material, bool& pat
   glPopMatrix();
 }
 
-void ShapeView::drawHighlightedVertex(const Vertex& vertex)
+void ShapeView::drawHighlightedVertex(const VertexF& vertex)
 {
   glDepthRange(0.0f, 1.0f);
 
   glBegin(GL_LINES);
   m_glWidget->qglColor(Qt::red);
-  glVertex3f(vertex.x, vertex.y + VERTEX_HIGHLIGHT_OFFSET, -vertex.z);
-  glVertex3f(vertex.x, vertex.y - VERTEX_HIGHLIGHT_OFFSET, -vertex.z);
+  glVertex3f(vertex.x, vertex.y + VERTEX_HIGHLIGHT_OFFSET, vertex.z);
+  glVertex3f(vertex.x, vertex.y - VERTEX_HIGHLIGHT_OFFSET, vertex.z);
 
   m_glWidget->qglColor(Qt::blue);
-  glVertex3f(vertex.x + VERTEX_HIGHLIGHT_OFFSET, vertex.y, -vertex.z);
-  glVertex3f(vertex.x - VERTEX_HIGHLIGHT_OFFSET, vertex.y, -vertex.z);
+  glVertex3f(vertex.x + VERTEX_HIGHLIGHT_OFFSET, vertex.y, vertex.z);
+  glVertex3f(vertex.x - VERTEX_HIGHLIGHT_OFFSET, vertex.y, vertex.z);
 
   m_glWidget->qglColor(Qt::green);
-  glVertex3f(vertex.x, vertex.y, -vertex.z + VERTEX_HIGHLIGHT_OFFSET);
-  glVertex3f(vertex.x, vertex.y, -vertex.z - VERTEX_HIGHLIGHT_OFFSET);
+  glVertex3f(vertex.x, vertex.y, vertex.z + VERTEX_HIGHLIGHT_OFFSET);
+  glVertex3f(vertex.x, vertex.y, vertex.z - VERTEX_HIGHLIGHT_OFFSET);
   glEnd();
 
   glDepthRange(0.025f, 1.0f);
@@ -418,7 +419,7 @@ void ShapeView::drawCullData(const Primitive& primitive)
   float radius3 = 80.0f;
   float x, z;
   static const int steps = 15;
-  Vertex center = centroid(primitive);
+  VertexF center = centroid(primitive);
 
   if (m_wireframe) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -426,8 +427,8 @@ void ShapeView::drawCullData(const Primitive& primitive)
 
   // 1+
   glBegin(GL_QUAD_STRIP);
-  glVertex3f(radius2 + center.x, center.y, -center.z);
-  glVertex3f(radius3 + center.x, center.y, -center.z);
+  glVertex3f(radius2 + center.x, center.y, center.z);
+  glVertex3f(radius3 + center.x, center.y, center.z);
   for (int j = 0; j < steps; j++) {
     if (primitive.cull1 & (1 << (steps + steps - j + 1))) {
       if (j % 2) m_glWidget->qglColor(Qt::darkRed);
@@ -439,14 +440,14 @@ void ShapeView::drawCullData(const Primitive& primitive)
     }
     x = cos((PI2 * (j + 1)) / steps);
     z = -sin((PI2 * (j + 1)) / steps);
-    glVertex3f(x * radius2 + center.x, center.y, z * radius2 + -center.z);
-    glVertex3f(x * radius3 + center.x, center.y, z * radius3 + -center.z);
+    glVertex3f(x * radius2 + center.x, center.y, z * radius2 + center.z);
+    glVertex3f(x * radius3 + center.x, center.y, z * radius3 + center.z);
   }
   glEnd();
   // 1-
   glBegin(GL_QUAD_STRIP);
-  glVertex3f(radius2 + center.x, center.y, -center.z);
-  glVertex3f(radius3 + center.x, center.y, -center.z);
+  glVertex3f(radius2 + center.x, center.y, center.z);
+  glVertex3f(radius3 + center.x, center.y, center.z);
   for (int j = 0; j < steps; j++) {
     if (primitive.cull1 & (1 << (j + 2))) {
       if (j % 2) m_glWidget->qglColor(Qt::darkRed);
@@ -458,14 +459,14 @@ void ShapeView::drawCullData(const Primitive& primitive)
     }
     x = cos((PI2 * (j + 1)) / steps);
     z = sin((PI2 * (j + 1)) / steps);
-    glVertex3f(x * radius2 + center.x, center.y, z * radius2 + -center.z);
-    glVertex3f(x * radius3 + center.x, center.y, z * radius3 + -center.z);
+    glVertex3f(x * radius2 + center.x, center.y, z * radius2 + center.z);
+    glVertex3f(x * radius3 + center.x, center.y, z * radius3 + center.z);
   }
   glEnd();
   // 2+
   glBegin(GL_QUAD_STRIP);
-  glVertex3f(radius1 + center.x, center.y, -center.z);
-  glVertex3f(radius2 + center.x, center.y, -center.z);
+  glVertex3f(radius1 + center.x, center.y, center.z);
+  glVertex3f(radius2 + center.x, center.y, center.z);
   for (int j = 0; j < steps; j++) {
     if (primitive.cull2 & (1 << (steps + steps - j + 1))) {
       if (j % 2) m_glWidget->qglColor(Qt::darkMagenta);
@@ -477,14 +478,14 @@ void ShapeView::drawCullData(const Primitive& primitive)
     }
     x = cos((PI2 * (j + 1)) / steps);
     z = -sin((PI2 * (j + 1)) / steps);
-    glVertex3f(x * radius1 + center.x, center.y, z * radius1 + -center.z);
-    glVertex3f(x * radius2 + center.x, center.y, z * radius2 + -center.z);
+    glVertex3f(x * radius1 + center.x, center.y, z * radius1 + center.z);
+    glVertex3f(x * radius2 + center.x, center.y, z * radius2 + center.z);
   }
   glEnd();
   // 2-
   glBegin(GL_QUAD_STRIP);
-  glVertex3f(radius1 + center.x, center.y, -center.z);
-  glVertex3f(radius2 + center.x, center.y, -center.z);
+  glVertex3f(radius1 + center.x, center.y, center.z);
+  glVertex3f(radius2 + center.x, center.y, center.z);
   for (int j = 0; j < steps; j++) {
     if (primitive.cull2 & (1 << (j + 2))) {
       if (j % 2) m_glWidget->qglColor(Qt::darkMagenta);
@@ -496,8 +497,8 @@ void ShapeView::drawCullData(const Primitive& primitive)
     }
     x = cos((PI2 * (j + 1)) / steps);
     z = sin((PI2 * (j + 1)) / steps);
-    glVertex3f(x * radius1 + center.x, center.y, z * radius1 + -center.z);
-    glVertex3f(x * radius2 + center.x, center.y, z * radius2 + -center.z);
+    glVertex3f(x * radius1 + center.x, center.y, z * radius1 + center.z);
+    glVertex3f(x * radius2 + center.x, center.y, z * radius2 + center.z);
   }
   glEnd();
 
@@ -546,47 +547,49 @@ int ShapeView::pick()
   return COLOR2CODE(pixel);
 }
 
-Vertex ShapeView::centroid(const Primitive& primitive)
+VertexF ShapeView::centroid(const Primitive& primitive)
 {
-  Vertex res; // TODO: Use float vertex.
-  res.x = res.y = res.z = 0;
+  VertexF res;
+  res.x = res.y = res.z = 0.0f;
 
   if (primitive.type == PRIM_TYPE_PARTICLE || primitive.type == PRIM_TYPE_SPHERE) {
-    return primitive.verticesModel->verticesList()->at(0);
+    return primitive.verticesModel->verticesFList()->at(0);
   }
   else if (primitive.type == PRIM_TYPE_LINE) {
-    return centroid(primitive.verticesModel->verticesList()->at(0), primitive.verticesModel->verticesList()->at(1));
+    return centroid(primitive.verticesModel->verticesFList()->at(0),
+        primitive.verticesModel->verticesFList()->at(1));
   }
   else if (primitive.type > PRIM_TYPE_LINE && primitive.type < PRIM_TYPE_SPHERE) { // Polygon
-    foreach (Vertex vertex, *primitive.verticesModel->verticesList()) {
+    foreach (VertexF vertex, *primitive.verticesModel->verticesFList()) {
       res.x += vertex.x;
       res.y += vertex.y;
       res.z += vertex.z;
     }
-    res.x /= primitive.verticesModel->verticesList()->size();
-    res.y /= primitive.verticesModel->verticesList()->size();
-    res.z /= primitive.verticesModel->verticesList()->size();
+    res.x /= primitive.verticesModel->verticesFList()->size();
+    res.y /= primitive.verticesModel->verticesFList()->size();
+    res.z /= primitive.verticesModel->verticesFList()->size();
   }
   else if (primitive.type == PRIM_TYPE_WHEEL) {
-    return centroid(primitive.verticesModel->verticesList()->at(0), primitive.verticesModel->verticesList()->at(3));
+    return centroid(primitive.verticesModel->verticesFList()->at(0),
+        primitive.verticesModel->verticesFList()->at(3));
   }
 
   return res;
 }
 
-Vertex ShapeView::centroid(const Vertex& v1, const Vertex& v2)
+VertexF ShapeView::centroid(const VertexF& v1, const VertexF& v2)
 {
-  Vertex res; // TODO: Use float vertex.
-  res.x = res.y = res.z = 0;
+  VertexF res;
+  res.x = res.y = res.z = 0.0f;
 
-  res.x = (v1.x + v2.x) / 2;
-  res.y = (v1.y + v2.y) / 2;
-  res.z = (v1.z + v2.z) / 2;
+  res.x = (v1.x + v2.x) / 2.0f;
+  res.y = (v1.y + v2.y) / 2.0f;
+  res.z = (v1.z + v2.z) / 2.0f;
 
   return res;
 }
 
-float ShapeView::distance(const Vertex& v1, const Vertex& v2)
+float ShapeView::distance(const VertexF& v1, const VertexF& v2)
 {
   float dx = v2.x - v1.x;
   float dy = v2.y - v1.y;

@@ -54,14 +54,19 @@ public:
   void              replace(const Vertex& curVert, const Vertex& newVert, Primitive& primitive);
   void              resize(int type);
   VerticesList*     verticesList()                                                   { return &m_vertices; }
+  VerticesFList*    verticesFList()                                                  { return &m_verticesF; }
 
   static void       toggleWeld(bool enable)                                          { m_weld = enable; }
   static bool       verticesNeeded(int type, int& verticesNeeded);
+  static VertexF    toInternal(const Vertex& vertex);
+
+  static const float Y_RATIO;
 
 private:
   void              setup();
 
   VerticesList      m_vertices;
+  VerticesFList     m_verticesF;
 
   static bool       m_weld;
 

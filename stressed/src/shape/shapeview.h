@@ -66,16 +66,16 @@ protected:
 
 private:
   void              draw(bool pick);
-  inline void       drawSphere(const VerticesList* vertices);
-  inline void       drawWheel(const VerticesList* vertices, int& material, bool& pattern, const bool& selected, const bool& pick);
-  inline void       drawHighlightedVertex(const Vertex& vertex);
+  inline void       drawSphere(const VerticesFList* vertices);
+  inline void       drawWheel(const VerticesFList* vertices, int& material, bool& pattern, const bool& selected, const bool& pick);
+  inline void       drawHighlightedVertex(const VertexF& vertex);
   inline void       drawCullData(const Primitive& primitive);
   void              setMaterial(const int& material, bool& pattern, const bool& selected, const bool& pick);
   int               pick();
 
-  static Vertex     centroid(const Primitive& primitive);
-  static Vertex     centroid(const Vertex& v1, const Vertex& v2);
-  static float      distance(const Vertex& v1, const Vertex& v2);
+  static VertexF    centroid(const Primitive& primitive);
+  static VertexF    centroid(const VertexF& v1, const VertexF& v2);
+  static float      distance(const VertexF& v1, const VertexF& v2);
 
   QGLWidget*        m_glWidget;
   ShapeModel*       m_shapeModel;

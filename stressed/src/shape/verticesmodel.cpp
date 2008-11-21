@@ -21,12 +21,18 @@
 const int VerticesModel::VAL_MIN;
 const int VerticesModel::VAL_MAX;
 
+const float VerticesModel::Y_RATIO = 0.8f;
+
 bool VerticesModel::m_weld = false;
 
 VerticesModel::VerticesModel(const VerticesList& vertices, ShapeModel* parent)
 : QAbstractTableModel(parent),
   m_vertices(vertices)
 {
+  foreach (const Vertex& vertex, m_vertices) {
+    m_verticesF.append(toInternal(vertex));
+  }
+
   setup();
 }
 
@@ -120,6 +126,8 @@ bool VerticesModel::setData(const QModelIndex &index, const QVariant& value, int
       return false;
   }
 
+  m_verticesF[row] = toInternal(m_vertices[row]);
+
   ShapeModel* shapeModel = qobject_cast<ShapeModel*>(QObject::parent());
   shapeModel->computeCull();
 
@@ -164,6 +172,7 @@ bool VerticesModel::insertRows(int position, int rows, const QModelIndex& index)
     vertex.z = 0;
 
     m_vertices.insert(position, vertex);
+    m_verticesF.insert(position, toInternal(vertex));
   }
 
   endInsertRows();
@@ -176,6 +185,7 @@ bool VerticesModel::removeRows(int position, int rows, const QModelIndex& index)
   
   for (int row = 0; row < rows; row++) {
     m_vertices.removeAt(position);
+    m_verticesF.removeAt(position);
   }
 
   endRemoveRows();
@@ -187,6 +197,7 @@ void VerticesModel::flip()
 {
   for (int i = 1; i < m_vertices.size(); i++) {
     m_vertices.move(i, 0);
+    m_verticesF.move(i, 0);
   }
 
   qobject_cast<ShapeModel*>(QObject::parent())->computeCull();
@@ -196,6 +207,7 @@ void VerticesModel::invertX(bool flip)
 {
   for (int i = 0; i < m_vertices.size(); i++) {
     m_vertices[i].x = -m_vertices[i].x;
+    m_verticesF[i].x = -m_verticesF[i].x;
   }
 
   if (flip) {
@@ -213,6 +225,7 @@ void VerticesModel::replace(const Vertex& curVert, const Vertex& newVert, Primit
   int i;
   while ((i = m_vertices.indexOf(curVert)) >= 0) {
     m_vertices.replace(i, newVert);
+    m_verticesF.replace(i, toInternal(newVert));
     emit dataChanged(index(i, 0), index(i, 2));
     changed = true;
   }
@@ -256,6 +269,15 @@ bool VerticesModel::verticesNeeded(int type, int& num)
   }
 
   return true;
+}
+
+VertexF VerticesModel::toInternal(const Vertex& vertex)
+{
+  VertexF vertexf;
+  vertexf.x = vertex.x;
+  vertexf.y = (float)vertex.y * Y_RATIO;
+  vertexf.z = -vertex.z;
+  return vertexf;
 }
 
 void VerticesModel::setup()

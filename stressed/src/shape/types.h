@@ -28,6 +28,14 @@ typedef struct {
 
 typedef QList<Vertex> VerticesList;
 
+typedef struct {
+  float x;
+  float y;
+  float z;
+} VertexF;
+
+typedef QList<VertexF> VerticesFList;
+
 class VerticesModel;
 
 typedef QList<quint8> MaterialsList;
