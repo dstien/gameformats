@@ -29,6 +29,11 @@ Vector3::Vector3(const Vertex& vert)
 {
 }
 
+Vector3::Vector3(const VertexF& vert)
+: x(vert.x), y(vert.y), z(vert.z)
+{
+}
+
 float Vector3::magnitude() const
 {
   return sqrt(x * x + y * y + z * z);

@@ -27,6 +27,7 @@ public:
 
   Vector3(float x = 0.0f, float y = 0.0f, float z = 0.0f);
   Vector3(const Vertex& vert);
+  Vector3(const VertexF& vert);
 
   float             magnitude() const;
   Vector3&          normalize();

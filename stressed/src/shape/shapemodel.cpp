@@ -430,8 +430,6 @@ void ShapeModel::computeCull()
 
 void ShapeModel::computeCull(Primitive& primitive)
 {
-  quint32 oldCull1 = primitive.cull1, oldCull2 = primitive.cull2;
-
   if (primitive.twoSided || (primitive.type <= PRIM_TYPE_LINE) || (primitive.type == PRIM_TYPE_SPHERE)) {
     primitive.cull1 = primitive.cull2 = 0xFFFFFFFF;
   }
@@ -536,8 +534,6 @@ void ShapeModel::computeCull(Primitive& primitive)
       }
     }
   }
-
-  qWarning("%08X => %08X    %08X => %08X", oldCull1, primitive.cull1, oldCull2, primitive.cull2);
 }
 
 void ShapeModel::setShape(PrimitivesList& primitives)

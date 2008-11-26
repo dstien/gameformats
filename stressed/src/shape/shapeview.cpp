@@ -22,6 +22,7 @@
 #include "app/settings.h"
 #include "materialsmodel.h"
 #include "shapeview.h"
+#include "vector3.h"
 #include "verticesmodel.h"
 
 // Convert 8-bit primitive index to unique RGB color used for picking.
@@ -87,6 +88,7 @@ const quint8 ShapeView::PATTERNS[6][0x80] = {
 const float ShapeView::VERTEX_HIGHLIGHT_OFFSET = 20.0f;
 const float ShapeView::PI2 = M_PI * 2.0f;
 const float ShapeView::SPHERE_RADIUS_RATIO = 2.0f / 3.0f;
+const float ShapeView::WHEEL_TYRE_RATIO = 3.0f / 5.0f;
 
 ShapeView::ShapeView(QWidget* parent)
 : QAbstractItemView(parent)
@@ -311,30 +313,42 @@ void ShapeView::drawSphere(const VerticesFList* vertices)
 
 void ShapeView::drawWheel(const VerticesFList* vertices, int& material, bool& pattern, const bool& selected, const bool& pick)
 {
-  float radius2 = distance(vertices->at(3), vertices->at(5));
-  float radius1 = radius2 * 0.6f;
+  float radius2h = distance(vertices->at(3), vertices->at(5));
+  float radius2v = distance(vertices->at(0), vertices->at(1));
+  float radius1h = radius2h * WHEEL_TYRE_RATIO;
+  float radius1v = radius2v * WHEEL_TYRE_RATIO;
 
   VertexF center = centroid(vertices->at(0), vertices->at(3));
   float halfWidth = distance(vertices->at(0), center);
-  float x, y;
 
   glPushMatrix();
   glTranslatef(center.x, center.y, center.z);
 
-  // TODO: Check actual rotation.
-  if (vertices->at(0).x - vertices->at(3).x) {
-    glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+  // Wheel rotation
+  Vector3 edge1 = Vector3(vertices->at(1)) - Vector3(vertices->at(0));
+  Vector3 edge2 = Vector3(vertices->at(2)) - Vector3(vertices->at(0));
+  Vector3 normal = edge1.crossProduct(edge2).normalize();
+  float rotation  = atan2(normal.x, normal.z) * (180.0f / M_PI);
+  glRotatef(rotation, 0.0f, 1.0f, 0.0f);
+
+  // X/Y coordinates
+  float x1[CIRCLE_STEPS], y1[CIRCLE_STEPS], x2[CIRCLE_STEPS], y2[CIRCLE_STEPS];
+  for (int i = 0; i < CIRCLE_STEPS; i++) {
+    float x = cos((PI2 * (i + 1)) / CIRCLE_STEPS);
+    float y = sin((PI2 * (i + 1)) / CIRCLE_STEPS);
+    x1[i] = x * radius1h;
+    y1[i] = y * radius1v;
+    x2[i] = x * radius2h;
+    y2[i] = y * radius2v;
   }
 
   // Tyre tread
   glBegin(GL_QUAD_STRIP);
-  glVertex3f(radius2, 0.0f, halfWidth);
-  glVertex3f(radius2, 0.0f, -halfWidth);
+  glVertex3f(radius2h, 0.0f, halfWidth);
+  glVertex3f(radius2h, 0.0f, -halfWidth);
   for (int i = 0; i < CIRCLE_STEPS; i++) {
-    x = cos((PI2 * (i + 1)) / CIRCLE_STEPS) * radius2;
-    y = sin((PI2 * (i + 1)) / CIRCLE_STEPS) * radius2;
-    glVertex3f(x, y, halfWidth);
-    glVertex3f(x, y, -halfWidth);
+    glVertex3f(x2[i], y2[i], halfWidth);
+    glVertex3f(x2[i], y2[i], -halfWidth);
   }
   glEnd();
 
@@ -344,24 +358,20 @@ void ShapeView::drawWheel(const VerticesFList* vertices, int& material, bool& pa
 
   // Inner tyre
   glBegin(GL_QUAD_STRIP);
-  glVertex3f(radius1, 0.0f, -halfWidth);
-  glVertex3f(radius2, 0.0f, -halfWidth);
+  glVertex3f(radius1h, 0.0f, -halfWidth);
+  glVertex3f(radius2h, 0.0f, -halfWidth);
   for (int i = 0; i < CIRCLE_STEPS; i++) {
-    x = cos((PI2 * (i + 1)) / CIRCLE_STEPS);
-    y = -sin((PI2 * (i + 1)) / CIRCLE_STEPS);
-    glVertex3f(x * radius1, y * radius1, -halfWidth);
-    glVertex3f(x * radius2, y * radius2, -halfWidth);
+    glVertex3f(x1[i], -y1[i], -halfWidth);
+    glVertex3f(x2[i], -y2[i], -halfWidth);
   }
   glEnd();
   // Outer tyre
   glBegin(GL_QUAD_STRIP);
-  glVertex3f(radius1, 0.0f, halfWidth);
-  glVertex3f(radius2, 0.0f, halfWidth);
+  glVertex3f(radius1h, 0.0f, halfWidth);
+  glVertex3f(radius2h, 0.0f, halfWidth);
   for (int i = 0; i < CIRCLE_STEPS; i++) {
-    x = cos((PI2 * (i + 1)) / CIRCLE_STEPS);
-    y = sin((PI2 * (i + 1)) / CIRCLE_STEPS);
-    glVertex3f(x * radius1, y * radius1, halfWidth);
-    glVertex3f(x * radius2, y * radius2, halfWidth);
+    glVertex3f(x1[i], y1[i], halfWidth);
+    glVertex3f(x2[i], y2[i], halfWidth);
   }
   glEnd();
 
@@ -371,20 +381,14 @@ void ShapeView::drawWheel(const VerticesFList* vertices, int& material, bool& pa
 
   // Inner rim
   glBegin(GL_TRIANGLE_FAN);
-  for (int i = 0; i < CIRCLE_STEPS; i++) {
-    glVertex3f(
-        sin((PI2 * (i + 1)) / CIRCLE_STEPS) * radius1,
-        cos((PI2 * (i + 1)) / CIRCLE_STEPS) * radius1,
-        -halfWidth);
+  for (int i = CIRCLE_STEPS - 1; i >= 0; i--) {
+    glVertex3f(x1[i], y1[i], -halfWidth);
   }
   glEnd();
   // Outer rim
   glBegin(GL_TRIANGLE_FAN);
   for (int i = 0; i < CIRCLE_STEPS; i++) {
-    glVertex3f(
-        cos((PI2 * (i + 1)) / CIRCLE_STEPS) * radius1,
-        sin((PI2 * (i + 1)) / CIRCLE_STEPS) * radius1,
-        halfWidth);
+    glVertex3f(x1[i], y1[i], halfWidth);
   }
   glEnd();
 
@@ -414,11 +418,12 @@ void ShapeView::drawHighlightedVertex(const VertexF& vertex)
 
 void ShapeView::drawCullData(const Primitive& primitive)
 {
-  float radius1 = 40.0f;
-  float radius2 = 60.0f;
-  float radius3 = 80.0f;
+  const float radius1 = 40.0f;
+  const float radius2 = 60.0f;
+  const float radius3 = 80.0f;
+  const int steps = 15;
   float x, z;
-  static const int steps = 15;
+
   VertexF center = centroid(primitive);
 
   if (m_wireframe) {

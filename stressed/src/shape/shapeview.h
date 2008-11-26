@@ -93,6 +93,7 @@ private:
   static const float  VERTEX_HIGHLIGHT_OFFSET;
   static const float  PI2;
   static const float  SPHERE_RADIUS_RATIO;
+  static const float  WHEEL_TYRE_RATIO;
   static const int    CIRCLE_STEPS = 16;
 };
 
