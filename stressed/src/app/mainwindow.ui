@@ -182,11 +182,20 @@
     <property name="title" >
      <string>&amp;Help</string>
     </property>
+    <action name="action_Manual" >
+     <property name="text" >
+      <string>Online &amp;manual</string>
+     </property>
+     <property name="shortcut" >
+      <string>F1</string>
+     </property>
+    </action>
     <action name="action_About" >
      <property name="text" >
       <string>&amp;About</string>
      </property>
     </action>
+    <addaction name="action_Manual" />
     <addaction name="action_About" />
    </widget>
    <addaction name="menu_Help" />
@@ -223,6 +232,12 @@
    <signal>triggered()</signal>
    <receiver>MainWindow</receiver>
    <slot>close()</slot>
+  </connection>
+  <connection>
+   <sender>action_Manual</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>manual()</slot>
   </connection>
   <connection>
    <sender>action_About</sender>

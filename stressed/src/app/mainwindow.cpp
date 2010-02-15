@@ -16,9 +16,11 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 #include <QCloseEvent>
+#include <QDesktopServices>
 #include <QFileDialog>
 #include <QLabel>
 #include <QMessageBox>
+#include <QUrl>
 
 #include "mainwindow.h"
 #include "resourcesmodel.h"
@@ -189,6 +191,11 @@ void MainWindow::saveAs()
     Settings().setFilePath(FILE_SETTINGS_PATH, m_currentFilePath = fileName);
     saveFile(fileName);
   }
+}
+
+void MainWindow::manual()
+{
+  QDesktopServices::openUrl(QUrl(Settings::MAN_URL));
 }
 
 void MainWindow::about()

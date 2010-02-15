@@ -28,6 +28,7 @@ const char      Settings::APP_CONTACT[] = "daniel@stien.org";
 
 const char      Settings::ORG_NAME[] = "stuntstools";
 const char      Settings::ORG_URL[]  = "http://stuntstools.googlecode.com/";
+const char      Settings::MAN_URL[]  = "http://wiki.stunts.hu/index.php/Stressed_user_reference";
 
 const char      Settings::DEFAULTS[] = ":/conf/defaults.conf";
 const Palette   Settings::PALETTE    = Settings().getPalette("palettes/vga");

@@ -44,6 +44,7 @@ private slots:
   void              save();
   void              saveAs();
 
+  void              manual();
   void              about();
 
   void              setCurrent(const QModelIndex& index);
