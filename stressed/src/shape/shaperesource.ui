@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0" >
  <class>ShapeResource</class>
  <widget class="QWidget" name="shapeResource" >
@@ -189,57 +190,57 @@
     </widget>
    </item>
   </layout>
-  <action name="moveFirstPrimitivesAction" >
-   <property name="text" >
-    <string>Move &amp;first</string>
-   </property>
-  </action>
-  <action name="moveUpPrimitivesAction" >
-   <property name="text" >
-    <string>Move &amp;up</string>
-   </property>
-  </action>
-  <action name="moveToPrimitivesAction" >
-   <property name="text" >
-    <string>Move &amp;to...</string>
-   </property>
-  </action>
-  <action name="moveDownPrimitivesAction" >
-   <property name="text" >
-    <string>Move &amp;down</string>
-   </property>
-  </action>
-  <action name="moveLastPrimitivesAction" >
-   <property name="text" >
-    <string>Move &amp;last</string>
-   </property>
-  </action>
-  <action name="insertPrimitiveAction" >
-   <property name="text" >
-    <string>&amp;Insert</string>
-   </property>
-  </action>
-  <action name="duplicatePrimitiveAction" >
-   <property name="text" >
-    <string>Du&amp;plicate</string>
-   </property>
-  </action>
-  <action name="mirrorXPrimitiveAction" >
-   <property name="text" >
-    <string>Mirror &amp;X</string>
-   </property>
-  </action>
-  <action name="computeCullPrimitivesAction" >
-   <property name="text" >
-    <string>&amp;Compute cull data</string>
-   </property>
-  </action>
-  <action name="removePrimitivesAction" >
-   <property name="text" >
-    <string>&amp;Remove</string>
-   </property>
-  </action>
   <widget class="QMenu" name="primitivesMenu" >
+   <action name="moveFirstPrimitivesAction" >
+    <property name="text" >
+     <string>Move &amp;first</string>
+    </property>
+   </action>
+   <action name="moveUpPrimitivesAction" >
+    <property name="text" >
+     <string>Move &amp;up</string>
+    </property>
+   </action>
+   <action name="moveToPrimitivesAction" >
+    <property name="text" >
+     <string>Move &amp;to...</string>
+    </property>
+   </action>
+   <action name="moveDownPrimitivesAction" >
+    <property name="text" >
+     <string>Move &amp;down</string>
+    </property>
+   </action>
+   <action name="moveLastPrimitivesAction" >
+    <property name="text" >
+     <string>Move &amp;last</string>
+    </property>
+   </action>
+   <action name="insertPrimitiveAction" >
+    <property name="text" >
+     <string>&amp;Insert</string>
+    </property>
+   </action>
+   <action name="duplicatePrimitiveAction" >
+    <property name="text" >
+     <string>Du&amp;plicate</string>
+    </property>
+   </action>
+   <action name="mirrorXPrimitiveAction" >
+    <property name="text" >
+     <string>Mirror &amp;X</string>
+    </property>
+   </action>
+   <action name="computeCullPrimitivesAction" >
+    <property name="text" >
+     <string>&amp;Compute cull data</string>
+    </property>
+   </action>
+   <action name="removePrimitivesAction" >
+    <property name="text" >
+     <string>&amp;Remove</string>
+    </property>
+   </action>
    <addaction name="moveFirstPrimitivesAction" />
    <addaction name="moveUpPrimitivesAction" />
    <addaction name="moveToPrimitivesAction" />
@@ -253,26 +254,26 @@
    <addaction name="separator" />
    <addaction name="removePrimitivesAction" />
   </widget>
-  <action name="flipVerticesAction" >
-   <property name="text" >
-    <string>&amp;Flip</string>
-   </property>
-  </action>
-  <action name="invertXVerticesAction" >
-   <property name="text" >
-    <string>Invert &amp;X</string>
-   </property>
-  </action>
   <widget class="QMenu" name="verticesMenu" >
+   <action name="flipVerticesAction" >
+    <property name="text" >
+     <string>&amp;Flip</string>
+    </property>
+   </action>
+   <action name="invertXVerticesAction" >
+    <property name="text" >
+     <string>Invert &amp;X</string>
+    </property>
+   </action>
    <addaction name="flipVerticesAction" />
    <addaction name="invertXVerticesAction" />
   </widget>
-  <action name="replaceMaterialsAction" >
-   <property name="text" >
-    <string>&amp;Replace all...</string>
-   </property>
-  </action>
   <widget class="QMenu" name="materialsMenu" >
+   <action name="replaceMaterialsAction" >
+    <property name="text" >
+     <string>&amp;Replace all...</string>
+    </property>
+   </action>
    <addaction name="replaceMaterialsAction" />
   </widget>
  </widget>

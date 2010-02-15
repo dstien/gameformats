@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0" >
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow" >
@@ -42,6 +43,64 @@
       <property name="selectionMode" >
        <enum>QAbstractItemView::ExtendedSelection</enum>
       </property>
+      <widget class="QMenu" name="resourcesMenu" >
+       <action name="moveFirstResourcesAction" >
+        <property name="text" >
+         <string>Move &amp;first</string>
+        </property>
+       </action>
+       <action name="moveUpResourcesAction" >
+        <property name="text" >
+         <string>Move &amp;up</string>
+        </property>
+       </action>
+       <action name="moveDownResourcesAction" >
+        <property name="text" >
+         <string>Move &amp;down</string>
+        </property>
+       </action>
+       <action name="moveLastResourcesAction" >
+        <property name="text" >
+         <string>Move &amp;last</string>
+        </property>
+       </action>
+       <action name="sortResourcesAction" >
+        <property name="text" >
+         <string>&amp;Sort</string>
+        </property>
+       </action>
+       <action name="insertResourceAction" >
+        <property name="text" >
+         <string>&amp;Insert</string>
+        </property>
+       </action>
+       <action name="duplicateResourceAction" >
+        <property name="text" >
+         <string>Du&amp;plicate</string>
+        </property>
+       </action>
+       <action name="renameResourceAction" >
+        <property name="text" >
+         <string>Re&amp;name</string>
+        </property>
+       </action>
+       <action name="removeResourcesAction" >
+        <property name="text" >
+         <string>&amp;Remove</string>
+        </property>
+       </action>
+       <addaction name="moveFirstResourcesAction" />
+       <addaction name="moveUpResourcesAction" />
+       <addaction name="moveDownResourcesAction" />
+       <addaction name="moveLastResourcesAction" />
+       <addaction name="sortResourcesAction" />
+       <addaction name="separator" />
+       <addaction name="insertResourceAction" />
+       <addaction name="duplicateResourceAction" />
+       <addaction name="renameResourceAction" />
+       <addaction name="separator" />
+       <addaction name="removeResourcesAction" />
+      </widget>
      </widget>
     </item>
     <item>
@@ -65,56 +124,51 @@
    </layout>
   </widget>
   <widget class="QStatusBar" name="statusBar" />
-  <action name="action_New" >
-   <property name="text" >
-    <string>&amp;New</string>
-   </property>
-   <property name="shortcut" >
-    <string>Ctrl+N</string>
-   </property>
-  </action>
-  <action name="action_Open" >
-   <property name="text" >
-    <string>&amp;Open...</string>
-   </property>
-   <property name="shortcut" >
-    <string>Ctrl+O</string>
-   </property>
-  </action>
-  <action name="action_Save" >
-   <property name="text" >
-    <string>&amp;Save</string>
-   </property>
-   <property name="shortcut" >
-    <string>Ctrl+S</string>
-   </property>
-  </action>
-  <action name="action_SaveAs" >
-   <property name="text" >
-    <string>Save &amp;As...</string>
-   </property>
-   <property name="shortcut" >
-    <string>Ctrl+Shift+S</string>
-   </property>
-  </action>
-  <action name="action_Quit" >
-   <property name="text" >
-    <string>&amp;Quit</string>
-   </property>
-   <property name="shortcut" >
-    <string>Ctrl+Q</string>
-   </property>
-  </action>
-  <action name="action_About" >
-   <property name="text" >
-    <string>&amp;About</string>
-   </property>
-  </action>
   <widget class="QMenuBar" name="menubar" >
    <widget class="QMenu" name="menu_File" >
     <property name="title" >
      <string>&amp;File</string>
     </property>
+    <action name="action_New" >
+     <property name="text" >
+      <string>&amp;New</string>
+     </property>
+     <property name="shortcut" >
+      <string>Ctrl+N</string>
+     </property>
+    </action>
+    <action name="action_Open" >
+     <property name="text" >
+      <string>&amp;Open...</string>
+     </property>
+     <property name="shortcut" >
+      <string>Ctrl+O</string>
+     </property>
+    </action>
+    <action name="action_Save" >
+     <property name="text" >
+      <string>&amp;Save</string>
+     </property>
+     <property name="shortcut" >
+      <string>Ctrl+S</string>
+     </property>
+    </action>
+    <action name="action_SaveAs" >
+     <property name="text" >
+      <string>Save &amp;As...</string>
+     </property>
+     <property name="shortcut" >
+      <string>Ctrl+Shift+S</string>
+     </property>
+    </action>
+    <action name="action_Quit" >
+     <property name="text" >
+      <string>&amp;Quit</string>
+     </property>
+     <property name="shortcut" >
+      <string>Ctrl+Q</string>
+     </property>
+    </action>
     <addaction name="action_New" />
     <addaction name="action_Open" />
     <addaction name="separator" />
@@ -128,67 +182,14 @@
     <property name="title" >
      <string>&amp;Help</string>
     </property>
+    <action name="action_About" >
+     <property name="text" >
+      <string>&amp;About</string>
+     </property>
+    </action>
     <addaction name="action_About" />
    </widget>
    <addaction name="menu_Help" />
-  </widget>
-  <action name="moveFirstResourcesAction" >
-   <property name="text" >
-    <string>Move &amp;first</string>
-   </property>
-  </action>
-  <action name="moveUpResourcesAction" >
-   <property name="text" >
-    <string>Move &amp;up</string>
-   </property>
-  </action>
-  <action name="moveDownResourcesAction" >
-   <property name="text" >
-    <string>Move &amp;down</string>
-   </property>
-  </action>
-  <action name="moveLastResourcesAction" >
-   <property name="text" >
-    <string>Move &amp;last</string>
-   </property>
-  </action>
-  <action name="sortResourcesAction" >
-   <property name="text" >
-    <string>&amp;Sort</string>
-   </property>
-  </action>
-  <action name="insertResourceAction" >
-   <property name="text" >
-    <string>&amp;Insert</string>
-   </property>
-  </action>
-  <action name="duplicateResourceAction" >
-   <property name="text" >
-    <string>Du&amp;plicate</string>
-   </property>
-  </action>
-  <action name="renameResourceAction" >
-   <property name="text" >
-    <string>Re&amp;name</string>
-   </property>
-  </action>
-  <action name="removeResourcesAction" >
-   <property name="text" >
-    <string>&amp;Remove</string>
-   </property>
-  </action>
-  <widget class="QMenu" name="resourcesMenu" >
-   <addaction name="moveFirstResourcesAction" />
-   <addaction name="moveUpResourcesAction" />
-   <addaction name="moveDownResourcesAction" />
-   <addaction name="moveLastResourcesAction" />
-   <addaction name="sortResourcesAction" />
-   <addaction name="separator" />
-   <addaction name="insertResourceAction" />
-   <addaction name="duplicateResourceAction" />
-   <addaction name="renameResourceAction" />
-   <addaction name="separator" />
-   <addaction name="removeResourcesAction" />
   </widget>
  </widget>
  <resources/>
