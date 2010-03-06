@@ -1,29 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ui version="4.0" >
+<ui version="4.0">
  <class>TextResource</class>
- <widget class="QWidget" name="TextResource" >
-  <layout class="QHBoxLayout" >
-   <property name="leftMargin" >
-    <number>0</number>
-   </property>
-   <property name="topMargin" >
-    <number>0</number>
-   </property>
-   <property name="rightMargin" >
-    <number>0</number>
-   </property>
-   <property name="bottomMargin" >
+ <widget class="QWidget" name="TextResource">
+  <layout class="QHBoxLayout">
+   <property name="margin">
     <number>0</number>
    </property>
    <item>
-    <widget class="QTextEdit" name="textEdit" >
-     <property name="font" >
+    <widget class="QPlainTextEdit" name="textEdit">
+     <property name="font">
       <font>
        <family>Monospace, Courier</family>
       </font>
-     </property>
-     <property name="acceptRichText" >
-      <bool>false</bool>
      </property>
     </widget>
    </item>
