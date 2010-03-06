@@ -1,96 +1,75 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ui version="4.0" >
+<ui version="4.0">
  <class>BitmapResource</class>
- <widget class="QWidget" name="BitmapResource" >
-  <layout class="QVBoxLayout" >
-   <property name="leftMargin" >
-    <number>0</number>
-   </property>
-   <property name="topMargin" >
-    <number>0</number>
-   </property>
-   <property name="rightMargin" >
-    <number>0</number>
-   </property>
-   <property name="bottomMargin" >
+ <widget class="QWidget" name="BitmapResource">
+  <layout class="QVBoxLayout">
+   <property name="margin">
     <number>0</number>
    </property>
    <item>
-    <layout class="QGridLayout" >
-     <item row="0" column="0" >
-      <widget class="QLabel" name="labelWidth" >
-       <property name="text" >
+    <layout class="QGridLayout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="labelWidth">
+       <property name="text">
         <string>Width</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="1" >
-      <widget class="QLineEdit" name="editWidth" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="maximumSize" >
+     <item row="0" column="1">
+      <widget class="QLineEdit" name="editWidth">
+       <property name="maximumSize">
         <size>
          <width>50</width>
          <height>16777215</height>
         </size>
        </property>
-       <property name="font" >
+       <property name="font">
         <font>
          <family>Monospace, Courier</family>
         </font>
        </property>
-       <property name="alignment" >
+       <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
        </property>
-       <property name="readOnly" >
+       <property name="readOnly">
         <bool>true</bool>
        </property>
       </widget>
      </item>
-     <item row="1" column="0" >
-      <widget class="QLabel" name="labelHeight" >
-       <property name="text" >
+     <item row="1" column="0">
+      <widget class="QLabel" name="labelHeight">
+       <property name="text">
         <string>Height</string>
        </property>
       </widget>
      </item>
-     <item row="1" column="1" >
-      <widget class="QLineEdit" name="editHeight" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="maximumSize" >
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="editHeight">
+       <property name="maximumSize">
         <size>
          <width>50</width>
          <height>16777215</height>
         </size>
        </property>
-       <property name="font" >
+       <property name="font">
         <font>
          <family>Monospace, Courier</family>
         </font>
        </property>
-       <property name="alignment" >
+       <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
        </property>
-       <property name="readOnly" >
+       <property name="readOnly">
         <bool>true</bool>
        </property>
       </widget>
      </item>
-     <item row="1" column="5" >
+     <item row="1" column="5">
       <spacer>
-       <property name="orientation" >
+       <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="sizeHint" >
+       <property name="sizeHint">
         <size>
          <width>40</width>
          <height>20</height>
@@ -98,29 +77,23 @@
        </property>
       </spacer>
      </item>
-     <item row="1" column="3" >
-      <widget class="QLabel" name="labelY" >
-       <property name="text" >
+     <item row="1" column="3">
+      <widget class="QLabel" name="labelY">
+       <property name="text">
         <string>Y</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="3" >
-      <widget class="QLabel" name="labelX" >
-       <property name="text" >
+     <item row="0" column="3">
+      <widget class="QLabel" name="labelX">
+       <property name="text">
         <string>X</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="4" >
-      <widget class="QLineEdit" name="editX" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="maximumSize" >
+     <item row="0" column="4">
+      <widget class="QLineEdit" name="editX">
+       <property name="maximumSize">
         <size>
          <width>50</width>
          <height>16777215</height>
@@ -128,15 +101,9 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="4" >
-      <widget class="QLineEdit" name="editY" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="maximumSize" >
+     <item row="1" column="4">
+      <widget class="QLineEdit" name="editY">
+       <property name="maximumSize">
         <size>
          <width>50</width>
          <height>16777215</height>
@@ -144,15 +111,15 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="2" >
+     <item row="1" column="2">
       <spacer>
-       <property name="orientation" >
+       <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="sizeType" >
+       <property name="sizeType">
         <enum>QSizePolicy::Fixed</enum>
        </property>
-       <property name="sizeHint" >
+       <property name="sizeHint">
         <size>
          <width>20</width>
          <height>20</height>
@@ -163,175 +130,139 @@
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" >
+    <layout class="QHBoxLayout">
      <item>
-      <widget class="QLineEdit" name="editUnk1" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="maximumSize" >
+      <widget class="QLineEdit" name="editUnk1">
+       <property name="maximumSize">
         <size>
          <width>50</width>
          <height>16777215</height>
         </size>
        </property>
-       <property name="font" >
+       <property name="font">
         <font>
          <family>Monospace, Courier</family>
         </font>
        </property>
-       <property name="inputMask" >
-        <string>HHHH; </string>
+       <property name="inputMask">
+        <string>HHHH;</string>
        </property>
-       <property name="alignment" >
+       <property name="alignment">
         <set>Qt::AlignCenter</set>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="editUnk2" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="maximumSize" >
+      <widget class="QLineEdit" name="editUnk2">
+       <property name="maximumSize">
         <size>
          <width>50</width>
          <height>16777215</height>
         </size>
        </property>
-       <property name="font" >
+       <property name="font">
         <font>
          <family>Monospace, Courier</family>
         </font>
        </property>
-       <property name="inputMask" >
-        <string>HHHH; </string>
+       <property name="inputMask">
+        <string>HHHH;</string>
        </property>
-       <property name="alignment" >
+       <property name="alignment">
         <set>Qt::AlignCenter</set>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="editUnk3" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="maximumSize" >
+      <widget class="QLineEdit" name="editUnk3">
+       <property name="maximumSize">
         <size>
          <width>25</width>
          <height>16777215</height>
         </size>
        </property>
-       <property name="font" >
+       <property name="font">
         <font>
          <family>Monospace, Courier</family>
         </font>
        </property>
-       <property name="inputMask" >
-        <string>HH; </string>
+       <property name="inputMask">
+        <string>HH;</string>
        </property>
-       <property name="alignment" >
+       <property name="alignment">
         <set>Qt::AlignCenter</set>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="editUnk4" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="maximumSize" >
+      <widget class="QLineEdit" name="editUnk4">
+       <property name="maximumSize">
         <size>
          <width>25</width>
          <height>16777215</height>
         </size>
        </property>
-       <property name="font" >
+       <property name="font">
         <font>
          <family>Monospace, Courier</family>
         </font>
        </property>
-       <property name="inputMask" >
-        <string>HH; </string>
+       <property name="inputMask">
+        <string>HH;</string>
        </property>
-       <property name="alignment" >
+       <property name="alignment">
         <set>Qt::AlignCenter</set>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="editUnk5" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="maximumSize" >
+      <widget class="QLineEdit" name="editUnk5">
+       <property name="maximumSize">
         <size>
          <width>25</width>
          <height>16777215</height>
         </size>
        </property>
-       <property name="font" >
+       <property name="font">
         <font>
          <family>Monospace, Courier</family>
         </font>
        </property>
-       <property name="inputMask" >
-        <string>HH; </string>
+       <property name="inputMask">
+        <string>HH;</string>
        </property>
-       <property name="alignment" >
+       <property name="alignment">
         <set>Qt::AlignCenter</set>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="editUnk6" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="maximumSize" >
+      <widget class="QLineEdit" name="editUnk6">
+       <property name="maximumSize">
         <size>
          <width>25</width>
          <height>16777215</height>
         </size>
        </property>
-       <property name="font" >
+       <property name="font">
         <font>
          <family>Monospace, Courier</family>
         </font>
        </property>
-       <property name="inputMask" >
-        <string>HH; </string>
+       <property name="inputMask">
+        <string>HH;</string>
        </property>
-       <property name="alignment" >
+       <property name="alignment">
         <set>Qt::AlignCenter</set>
        </property>
       </widget>
      </item>
      <item>
       <spacer>
-       <property name="orientation" >
+       <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="sizeHint" >
+       <property name="sizeHint">
         <size>
          <width>40</width>
          <height>20</height>
@@ -342,60 +273,54 @@
     </layout>
    </item>
    <item>
-    <widget class="QScrollArea" native="1" name="scrollArea" >
-     <property name="sizePolicy" >
-      <sizepolicy vsizetype="Expanding" hsizetype="Expanding" >
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="backgroundRole" >
+    <widget class="QScrollArea" native="1" name="scrollArea">
+     <property name="backgroundRole">
       <enum>QPalette::Dark</enum>
      </property>
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" >
+    <layout class="QHBoxLayout">
      <item>
-      <widget class="QCheckBox" name="checkAlpha" >
-       <property name="text" >
+      <widget class="QCheckBox" name="checkAlpha">
+       <property name="text">
         <string>&amp;Alpha</string>
        </property>
-       <property name="checked" >
+       <property name="checked">
         <bool>true</bool>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QRadioButton" name="radioScale1" >
-       <property name="text" >
+      <widget class="QRadioButton" name="radioScale1">
+       <property name="text">
         <string>&amp;1X</string>
        </property>
-       <property name="checked" >
+       <property name="checked">
         <bool>true</bool>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QRadioButton" name="radioScale2" >
-       <property name="text" >
+      <widget class="QRadioButton" name="radioScale2">
+       <property name="text">
         <string>&amp;2X</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QRadioButton" name="radioScale4" >
-       <property name="text" >
+      <widget class="QRadioButton" name="radioScale4">
+       <property name="text">
         <string>&amp;4X</string>
        </property>
       </widget>
      </item>
      <item>
       <spacer>
-       <property name="orientation" >
+       <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="sizeHint" >
+       <property name="sizeHint">
         <size>
          <width>40</width>
          <height>20</height>
@@ -404,18 +329,18 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="buttonExport" >
-       <property name="enabled" >
+      <widget class="QPushButton" name="buttonExport">
+       <property name="enabled">
         <bool>false</bool>
        </property>
-       <property name="text" >
+       <property name="text">
         <string>&amp;Export...</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="buttonImport" >
-       <property name="text" >
+      <widget class="QPushButton" name="buttonImport">
+       <property name="text">
         <string>&amp;Import...</string>
        </property>
       </widget>

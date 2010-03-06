@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ui version="4.0" >
+<ui version="4.0">
  <class>MainWindow</class>
- <widget class="QMainWindow" name="MainWindow" >
-  <property name="geometry" >
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
@@ -10,82 +10,79 @@
     <height>600</height>
    </rect>
   </property>
-  <property name="windowTitle" >
-   <string/>
-  </property>
-  <property name="windowIcon" >
+  <property name="windowIcon">
    <iconset>:/stressed-icon.svg</iconset>
   </property>
-  <widget class="QWidget" name="centralwidget" >
-   <layout class="QHBoxLayout" >
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout">
     <item>
-     <widget class="QListView" name="resourcesView" >
-      <property name="sizePolicy" >
-       <sizepolicy vsizetype="Expanding" hsizetype="Fixed" >
+     <widget class="QListView" name="resourcesView">
+      <property name="sizePolicy">
+       <sizepolicy vsizetype="Expanding" hsizetype="Fixed">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
-      <property name="maximumSize" >
+      <property name="maximumSize">
        <size>
         <width>75</width>
         <height>16777215</height>
        </size>
       </property>
-      <property name="font" >
+      <property name="font">
        <font>
         <family>Monospace, Courier</family>
        </font>
       </property>
-      <property name="contextMenuPolicy" >
+      <property name="contextMenuPolicy">
        <enum>Qt::CustomContextMenu</enum>
       </property>
-      <property name="selectionMode" >
+      <property name="selectionMode">
        <enum>QAbstractItemView::ExtendedSelection</enum>
       </property>
-      <widget class="QMenu" name="resourcesMenu" >
-       <action name="moveFirstResourcesAction" >
-        <property name="text" >
+      <widget class="QMenu" name="resourcesMenu">
+       <action name="moveFirstResourcesAction">
+        <property name="text">
          <string>Move &amp;first</string>
         </property>
        </action>
-       <action name="moveUpResourcesAction" >
-        <property name="text" >
+       <action name="moveUpResourcesAction">
+        <property name="text">
          <string>Move &amp;up</string>
         </property>
        </action>
-       <action name="moveDownResourcesAction" >
-        <property name="text" >
+       <action name="moveDownResourcesAction">
+        <property name="text">
          <string>Move &amp;down</string>
         </property>
        </action>
-       <action name="moveLastResourcesAction" >
-        <property name="text" >
+       <action name="moveLastResourcesAction">
+        <property name="text">
          <string>Move &amp;last</string>
         </property>
        </action>
-       <action name="sortResourcesAction" >
-        <property name="text" >
+       <action name="sortResourcesAction">
+        <property name="text">
          <string>&amp;Sort</string>
         </property>
        </action>
-       <action name="insertResourceAction" >
-        <property name="text" >
+       <action name="insertResourceAction">
+        <property name="text">
          <string>&amp;Insert</string>
         </property>
        </action>
-       <action name="duplicateResourceAction" >
-        <property name="text" >
+       <action name="duplicateResourceAction">
+        <property name="text">
          <string>Du&amp;plicate</string>
         </property>
        </action>
-       <action name="renameResourceAction" >
-        <property name="text" >
+       <action name="renameResourceAction">
+        <property name="text">
          <string>Re&amp;name</string>
         </property>
        </action>
-       <action name="removeResourcesAction" >
-        <property name="text" >
+       <action name="removeResourcesAction">
+        <property name="text">
          <string>&amp;Remove</string>
         </property>
        </action>
@@ -104,18 +101,18 @@
      </widget>
     </item>
     <item>
-     <widget class="QWidget" native="1" name="container" >
-      <layout class="QVBoxLayout" >
-       <property name="leftMargin" >
+     <widget class="QWidget" native="1" name="container">
+      <layout class="QVBoxLayout">
+       <property name="leftMargin">
         <number>0</number>
        </property>
-       <property name="topMargin" >
+       <property name="topMargin">
         <number>0</number>
        </property>
-       <property name="rightMargin" >
+       <property name="rightMargin">
         <number>0</number>
        </property>
-       <property name="bottomMargin" >
+       <property name="bottomMargin">
         <number>0</number>
        </property>
       </layout>
@@ -124,48 +121,48 @@
    </layout>
   </widget>
   <widget class="QStatusBar" name="statusBar" />
-  <widget class="QMenuBar" name="menubar" >
-   <widget class="QMenu" name="menu_File" >
-    <property name="title" >
+  <widget class="QMenuBar" name="menubar">
+   <widget class="QMenu" name="menu_File">
+    <property name="title">
      <string>&amp;File</string>
     </property>
-    <action name="action_New" >
-     <property name="text" >
+    <action name="action_New">
+     <property name="text">
       <string>&amp;New</string>
      </property>
-     <property name="shortcut" >
+     <property name="shortcut">
       <string>Ctrl+N</string>
      </property>
     </action>
-    <action name="action_Open" >
-     <property name="text" >
+    <action name="action_Open">
+     <property name="text">
       <string>&amp;Open...</string>
      </property>
-     <property name="shortcut" >
+     <property name="shortcut">
       <string>Ctrl+O</string>
      </property>
     </action>
-    <action name="action_Save" >
-     <property name="text" >
+    <action name="action_Save">
+     <property name="text">
       <string>&amp;Save</string>
      </property>
-     <property name="shortcut" >
+     <property name="shortcut">
       <string>Ctrl+S</string>
      </property>
     </action>
-    <action name="action_SaveAs" >
-     <property name="text" >
+    <action name="action_SaveAs">
+     <property name="text">
       <string>Save &amp;As...</string>
      </property>
-     <property name="shortcut" >
+     <property name="shortcut">
       <string>Ctrl+Shift+S</string>
      </property>
     </action>
-    <action name="action_Quit" >
-     <property name="text" >
+    <action name="action_Quit">
+     <property name="text">
       <string>&amp;Quit</string>
      </property>
-     <property name="shortcut" >
+     <property name="shortcut">
       <string>Ctrl+Q</string>
      </property>
     </action>
@@ -178,20 +175,20 @@
     <addaction name="action_Quit" />
    </widget>
    <addaction name="menu_File" />
-   <widget class="QMenu" name="menu_Help" >
-    <property name="title" >
+   <widget class="QMenu" name="menu_Help">
+    <property name="title">
      <string>&amp;Help</string>
     </property>
-    <action name="action_Manual" >
-     <property name="text" >
+    <action name="action_Manual">
+     <property name="text">
       <string>Online &amp;manual</string>
      </property>
-     <property name="shortcut" >
+     <property name="shortcut">
       <string>F1</string>
      </property>
     </action>
-    <action name="action_About" >
-     <property name="text" >
+    <action name="action_About">
+     <property name="text">
       <string>&amp;About</string>
      </property>
     </action>

@@ -22,16 +22,12 @@ const int SpeedResource::NUM_VALUES;
 SpeedResource::SpeedResource(QString id, QWidget* parent, Qt::WFlags flags)
 : Resource(id, parent, flags)
 {
-  m_ui.setupUi(this);
-
   setup();
 }
 
 SpeedResource::SpeedResource(const SpeedResource& res)
 : Resource(res.id(), qobject_cast<QWidget*>(res.parent()), res.windowFlags())
 {
-  m_ui.setupUi(this);
-
   setup();
 
   for (int i = 0; i < NUM_VALUES; ++i) {
@@ -42,8 +38,6 @@ SpeedResource::SpeedResource(const SpeedResource& res)
 SpeedResource::SpeedResource(QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags)
 : Resource(id, parent, flags)
 {
-  m_ui.setupUi(this);
-
   setup();
 
   parse(in);
@@ -72,6 +66,8 @@ void SpeedResource::write(QDataStream* out) const
 
 void SpeedResource::setup()
 {
+  m_ui.setupUi(this);
+
   m_spinBoxes[ 0] = m_ui.spinBoxPavedRoad;
   m_spinBoxes[ 1] = m_ui.spinBoxDirtRoad;
   m_spinBoxes[ 2] = m_ui.spinBoxIcyRoad;
