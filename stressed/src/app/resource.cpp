@@ -21,6 +21,7 @@
 #include <QInputDialog>
 #include <QListWidget>
 
+#include "animation/animationresource.h"
 #include "bitmap/bitmapresource.h"
 #include "shape/shaperesource.h"
 #include "text/textresource.h"
@@ -29,7 +30,7 @@
 #include "settings.h"
 #include "stunpack.h"
 
-const QStringList Resource::TYPES = (QStringList() << tr("Bitmap") << tr("Shape") << tr("Text"));
+const QStringList Resource::TYPES = (QStringList() << tr("Animation") << tr("Bitmap") << tr("Shape") << tr("Text"));
 const QStringList Resource::LOAD_TYPES = (QStringList() << tr("Ignore this resource") << Resource::TYPES);
 
 QString Resource::m_fileName;
@@ -177,6 +178,9 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel, QW
         else if (type == "bitmap") {
           resource = new BitmapResource(ids[i], &in);
         }
+        else if (type == "animation") {
+          resource = new AnimationResource(ids[i], &in);
+        }
         else {
           type = tr("unknown");
           throw tr("Unknown type.");
@@ -190,7 +194,10 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel, QW
             LOAD_TYPES, 0, false, &ok);
 
         if (ok && !item.isEmpty()) {
-          if (item == tr("Bitmap")) {
+          if (item == tr("Animation")) {
+            type = "animation";
+          }
+          else if (item == tr("Bitmap")) {
             type = "bitmap";
           }
           else if (item == tr("Shape")) {
@@ -316,7 +323,10 @@ Resource* Resource::typeDialog(QWidget* parent)
   Resource* resource = 0;
 
   if (ok && !item.isEmpty()) {
-    if (item == tr("Bitmap")) {
+    if (item == tr("Animation")) {
+      resource = new AnimationResource("anim");
+    }
+    else if (item == tr("Bitmap")) {
       resource = new BitmapResource("bmap");
     }
     else if (item == tr("Shape")) {

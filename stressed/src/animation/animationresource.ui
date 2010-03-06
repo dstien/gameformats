@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>AnimationResource</class>
+ <widget class="QWidget" name="AnimationResource">
+  <layout class="QHBoxLayout">
+   <property name="margin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QPlainTextEdit" name="framesEdit">
+     <property name="font">
+      <font>
+       <family>Monospace, Courier</family>
+      </font>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>framesEdit</sender>
+   <signal>textChanged()</signal>
+   <receiver>AnimationResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+ </connections>
+</ui>
