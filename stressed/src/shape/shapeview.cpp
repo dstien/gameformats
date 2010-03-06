@@ -1,5 +1,5 @@
 // stressed - Stunts/4D [Sports] Driving resource editor
-// Copyright (C) 2008 Daniel Stien <daniel@stien.org>
+// Copyright (C) 2008-2010 Daniel Stien <daniel@stien.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
