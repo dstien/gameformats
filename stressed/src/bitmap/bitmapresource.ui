@@ -273,10 +273,11 @@
     </layout>
    </item>
    <item>
-    <widget class="QScrollArea" native="1" name="scrollArea">
+    <widget class="QScrollArea" name="scrollArea">
      <property name="backgroundRole">
       <enum>QPalette::Dark</enum>
      </property>
+     <widget class="QLabel" name="imageLabel" />
     </widget>
    </item>
    <item>

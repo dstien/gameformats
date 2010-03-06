@@ -103,7 +103,6 @@ void BitmapResource::setup()
   m_ui.editY->setValidator(posValidator);
 
   m_image = 0;
-  m_ui.scrollArea->setWidget(new QLabel());
 }
 
 void BitmapResource::parse(QDataStream* in)
@@ -244,23 +243,21 @@ void BitmapResource::toggleAlpha(bool alpha)
 
 void BitmapResource::scale()
 {
-  QLabel* label = qobject_cast<QLabel*>(m_ui.scrollArea->widget());
-
-  if (!label || !m_image) {
+  if (!m_image) {
     return;
   }
 
   if (m_ui.radioScale1->isChecked()) {
-    label->setPixmap(QPixmap::fromImage(*m_image));
+    m_ui.imageLabel->setPixmap(QPixmap::fromImage(*m_image));
   }
   else if (m_ui.radioScale2->isChecked()) {
-    label->setPixmap(QPixmap::fromImage(m_image->scaled(m_image->width() * 2, m_image->height() * 2)));
+    m_ui.imageLabel->setPixmap(QPixmap::fromImage(m_image->scaled(m_image->width() * 2, m_image->height() * 2)));
   }
   else if (m_ui.radioScale4->isChecked()) {
-    label->setPixmap(QPixmap::fromImage(m_image->scaled(m_image->width() * 4, m_image->height() * 4)));
+    m_ui.imageLabel->setPixmap(QPixmap::fromImage(m_image->scaled(m_image->width() * 4, m_image->height() * 4)));
   }
 
-  label->adjustSize();
+  m_ui.imageLabel->adjustSize();
 }
 
 void BitmapResource::exportFile()
