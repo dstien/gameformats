@@ -23,6 +23,7 @@
 
 #include "animation/animationresource.h"
 #include "bitmap/bitmapresource.h"
+#include "raw/rawresource.h"
 #include "shape/shaperesource.h"
 #include "speed/speedresource.h"
 #include "text/textresource.h"
@@ -31,7 +32,7 @@
 #include "settings.h"
 #include "stunpack.h"
 
-const QStringList Resource::TYPES = (QStringList() << tr("Animation") << tr("Bitmap") << tr("Shape") << tr("Speed") << tr("Text"));
+const QStringList Resource::TYPES = (QStringList() << tr("Animation") << tr("Bitmap") << tr("Path") << tr("Shape") << tr("Speed") << tr("Text") << tr("Tuning"));
 const QStringList Resource::LOAD_TYPES = (QStringList() << tr("Ignore this resource") << Resource::TYPES);
 
 QString Resource::m_fileName;
@@ -185,6 +186,12 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel, QW
         else if (type == "speed") {
           resource = new SpeedResource(ids[i], &in);
         }
+        else if (type == "path") {
+          resource = new RawResource(ids[i], "path", RawResource::LENGTH_PATH, &in);
+        }
+        else if (type == "tuning") {
+          resource = new RawResource(ids[i], "tuning", RawResource::LENGTH_TUNING, &in);
+        }
         else {
           type = tr("unknown");
           throw tr("Unknown type.");
@@ -204,6 +211,9 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel, QW
           else if (item == tr("Bitmap")) {
             type = "bitmap";
           }
+          else if (item == tr("Path")) {
+            type = "path";
+          }
           else if (item == tr("Shape")) {
             type = "shape";
           }
@@ -212,6 +222,9 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel, QW
           }
           else if (item == tr("Text")) {
             type = "text";
+          }
+          else if (item == tr("Tuning")) {
+            type = "tuning";
           }
 
           if (item != tr("Ignore this resource")) {
@@ -336,6 +349,9 @@ Resource* Resource::typeDialog(QWidget* parent)
     else if (item == tr("Bitmap")) {
       resource = new BitmapResource("bmap");
     }
+    else if (item == tr("Path")) {
+      resource = new RawResource("path", "path", RawResource::LENGTH_PATH);
+    }
     else if (item == tr("Shape")) {
       resource = new ShapeResource("shpe");
     }
@@ -344,6 +360,9 @@ Resource* Resource::typeDialog(QWidget* parent)
     }
     else if (item == tr("Text")) {
       resource = new TextResource("text");
+    }
+    else if (item == tr("Tuning")) {
+      resource = new RawResource("simd", "tuning", RawResource::LENGTH_TUNING);
     }
   }
 

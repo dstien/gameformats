@@ -13,6 +13,7 @@ win32 {
   CONFIG(release, debug|release) {
     PRE_TARGETDEPS += ../animation/release/libanimation.a \
                       ../bitmap/release/libbitmap.a \
+                      ../raw/relase/libraw.a \
                       ../shape/release/libshape.a \
                       ../speed/release/libspeed.a \
                       ../text/release/libtext.a
@@ -20,6 +21,7 @@ win32 {
   else {
     PRE_TARGETDEPS += ../animation/debug/libanimation.a \
                       ../bitmap/debug/libbitmap.a \
+                      ../raw/debug/libraw.a \
                       ../shape/debug/libshape.a \
                       ../speed/debug/libspeed.a \
                       ../text/debug/libtext.a
@@ -31,6 +33,7 @@ win32 {
 else {
   PRE_TARGETDEPS += ../animation/libanimation.a \
                     ../bitmap/libbitmap.a \
+                    ../raw/libraw.a \
                     ../shape/libshape.a \
                     ../speed/libspeed.a \
                     ../text/libtext.a
