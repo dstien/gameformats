@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>SpeedResource</class>
+ <widget class="QWidget" name="SpeedResource">
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="margin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QWidget" name="gridWidget">
+     <layout class="QGridLayout" name="gridLayout">
+      <property name="sizeConstraint">
+       <enum>QLayout::SetFixedSize</enum>
+      </property>
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelPavedRoad">
+        <property name="text">
+         <string>Paved road</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QSpinBox" name="spinBoxPavedRoad">
+        <property name="maximum">
+         <number>255</number>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QLabel" name="labelPavedCorner">
+        <property name="text">
+         <string>Paved corner</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="3">
+       <widget class="QSpinBox" name="spinBoxPavedCorner">
+        <property name="maximum">
+         <number>255</number>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="4">
+       <widget class="QLabel" name="labelPavedSharpCorner">
+        <property name="text">
+         <string>Paved sharp corner</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="5">
+       <widget class="QSpinBox" name="spinBoxPavedSharpCorner">
+        <property name="maximum">
+         <number>255</number>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelDirtRoad">
+        <property name="text">
+         <string>Dirt road</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QSpinBox" name="spinBoxDirtRoad">
+        <property name="maximum">
+         <number>255</number>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QLabel" name="labelDirtCorner">
+        <property name="text">
+         <string>Dirt corner</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="3">
+       <widget class="QSpinBox" name="spinBoxDirtCorner">
+        <property name="maximum">
+         <number>255</number>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="4">
+       <widget class="QLabel" name="labelDirtSharpCorner">
+        <property name="text">
+         <string>Dirt sharp corner</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="5">
+       <widget class="QSpinBox" name="spinBoxDirtSharpCorner">
+        <property name="maximum">
+         <number>255</number>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelIcyRoad">
+        <property name="text">
+         <string>Icy road</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QSpinBox" name="spinBoxIcyRoad">
+        <property name="maximum">
+         <number>255</number>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="QLabel" name="labelIcyCorner">
+        <property name="text">
+         <string>Icy corner</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="3">
+       <widget class="QSpinBox" name="spinBoxIcyCorner">
+        <property name="maximum">
+         <number>255</number>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="4">
+       <widget class="QLabel" name="labelIcySharpCorner">
+        <property name="text">
+         <string>Icy sharp corner</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="5">
+       <widget class="QSpinBox" name="spinBoxIcySharpCorner">
+        <property name="maximum">
+         <number>255</number>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="labelBankedCorner">
+        <property name="text">
+         <string>Banked corner</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QSpinBox" name="spinBoxBankedCorner">
+        <property name="maximum">
+         <number>255</number>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2">
+       <widget class="QLabel" name="labelChicane">
+        <property name="text">
+         <string>Chicane</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="3">
+       <widget class="QSpinBox" name="spinBoxChicane">
+        <property name="maximum">
+         <number>255</number>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="4">
+       <widget class="QLabel" name="labelSlalom">
+        <property name="text">
+         <string>Slalom</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="5">
+       <widget class="QSpinBox" name="spinBoxSlalom">
+        <property name="maximum">
+         <number>255</number>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="labelCorkLR">
+        <property name="text">
+         <string>Corkscrew left/right</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QSpinBox" name="spinBoxCorkLR">
+        <property name="maximum">
+         <number>255</number>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="2">
+       <widget class="QLabel" name="labelCorkUD">
+        <property name="text">
+         <string>Corkscrew up/down</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="3">
+       <widget class="QSpinBox" name="spinBoxCorkUD">
+        <property name="maximum">
+         <number>255</number>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="labelLoop">
+        <property name="text">
+         <string>Loop</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QSpinBox" name="spinBoxLoop">
+        <property name="maximum">
+         <number>255</number>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="2">
+       <widget class="QLabel" name="labelBridge">
+        <property name="text">
+         <string>Bridge</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="3">
+       <widget class="QSpinBox" name="spinBoxBridge">
+        <property name="maximum">
+         <number>255</number>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <spacer>
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>spinBoxPavedRoad</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>SpeedResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>spinBoxPavedCorner</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>SpeedResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>spinBoxPavedSharpCorner</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>SpeedResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>spinBoxDirtRoad</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>SpeedResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>spinBoxDirtCorner</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>SpeedResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>spinBoxDirtSharpCorner</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>SpeedResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>spinBoxIcyRoad</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>SpeedResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>spinBoxIcyCorner</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>SpeedResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>spinBoxIcySharpCorner</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>SpeedResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>spinBoxBankedCorner</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>SpeedResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>spinBoxChicane</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>SpeedResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>spinBoxSlalom</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>SpeedResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>spinBoxCorkLR</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>SpeedResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>spinBoxCorkUD</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>SpeedResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>spinBoxLoop</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>SpeedResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>spinBoxBridge</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>SpeedResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+ </connections>
+</ui>
