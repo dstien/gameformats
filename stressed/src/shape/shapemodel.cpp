@@ -447,7 +447,7 @@ void ShapeModel::computeCull(Primitive& primitive)
 
     float yAngle = normal.angle(Vector3(0.0f, 1.0f, 0.0f)) * (180.0f / M_PI);
 
-    if (!isnan(yAngle)) {
+    if (!std::isnan(yAngle)) {
       // C1 flags
       if (yAngle >= 0.0f && yAngle < 135.0f) {   // C1+
         primitive.cull1 |= PRIM_CULL_POS_FLAG;
