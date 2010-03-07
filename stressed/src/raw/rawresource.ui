@@ -8,14 +8,8 @@
    </property>
    <item>
     <widget class="QScrollArea" name="scrollArea">
-     <property name="frameShape">
-      <enum>QFrame::NoFrame</enum>
-     </property>
      <widget class="QWidget" name="scrollAreaWidgetContents">
       <layout class="QGridLayout" name="gridLayout">
-       <property name="margin">
-        <number>0</number>
-       </property>
        <property name="sizeConstraint">
         <enum>QLayout::SetFixedSize</enum>
        </property>
