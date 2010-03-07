@@ -90,7 +90,7 @@ void RawResource::setup()
   for (unsigned int i = 0; i < m_length; ++i) {
     // Row label.
     if (!(i % 16)) {
-      QLabel* lbl = new QLabel(QString("%1").arg(i / 16, 4, 16, QLatin1Char('0')).toUpper(), this);
+      QLabel* lbl = new QLabel(QString("%1").arg(i / 16, 3, 16, QLatin1Char('0')).toUpper().append('0'), this);
       lbl->setFont(*font);
       m_ui.gridLayout->addWidget(lbl, 1 + (i / 16), 0, 1, 1);
     }
