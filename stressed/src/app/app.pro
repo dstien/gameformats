@@ -38,7 +38,7 @@ else {
                     ../speed/libspeed.a \
                     ../text/libtext.a
 
-  LIBS += $$PRE_TARGETDEPS
+  LIBS += $$PRE_TARGETDEPS -lGLU
 }
 
 RESOURCES +=  ../../resources/resources.qrc
