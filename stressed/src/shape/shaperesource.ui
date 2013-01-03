@@ -262,7 +262,32 @@
      <string>&amp;Replace all...</string>
     </property>
    </action>
+   <action name="moveUpPaintJobsAction">
+    <property name="text">
+     <string>Move &amp;up</string>
+    </property>
+   </action>
+   <action name="moveDownPaintJobsAction">
+    <property name="text">
+     <string>Move &amp;down</string>
+    </property>
+   </action>
+   <action name="moveFirstPaintJobsAction">
+    <property name="text">
+     <string>Move &amp;first</string>
+    </property>
+   </action>
+   <action name="moveLastPaintJobsAction">
+    <property name="text">
+     <string>Move &amp;last</string>
+    </property>
+   </action>
    <addaction name="replaceMaterialsAction" />
+   <addaction name="separator" />
+   <addaction name="moveFirstPaintJobsAction" />
+   <addaction name="moveUpPaintJobsAction" />
+   <addaction name="moveDownPaintJobsAction" />
+   <addaction name="moveLastPaintJobsAction" />
   </widget>
  </widget>
  <customwidgets>
@@ -417,6 +442,42 @@
    <signal>triggered()</signal>
    <receiver>shapeResource</receiver>
    <slot>replaceMaterials()</slot>
+  </connection>
+  <connection>
+   <sender>moveUpPaintJobsAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>moveUpPaintJobs()</slot>
+  </connection>
+  <connection>
+   <sender>moveDownPaintJobsAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>moveDownPaintJobs()</slot>
+  </connection>
+  <connection>
+   <sender>moveFirstPaintJobsAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>moveFirstPaintJobs()</slot>
+  </connection>
+  <connection>
+   <sender>moveLastPaintJobsAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>moveLastPaintJobs()</slot>
+  </connection>
+  <connection>
+   <sender>shapeResource</sender>
+   <signal>paintJobMoved(int, int)</signal>
+   <receiver>shapeView</receiver>
+   <slot>adjustCurrentPaintJobAfterMove(int, int)</slot>
+  </connection>
+  <connection>
+   <sender>shapeView</sender>
+   <signal>selectedPaintJobChangeRequested(int)</signal>
+   <receiver>paintJobSpinBox</receiver>
+   <slot>setValue(int)</slot>
   </connection>
  </connections>
 </ui>

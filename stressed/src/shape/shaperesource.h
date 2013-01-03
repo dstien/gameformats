@@ -38,6 +38,9 @@ public:
   Resource*         clone() const      { return new ShapeResource(*this); }
   Primitive*        currentPrimitive() { return m_currentPrimitive; }
 
+signals:
+  void              paintJobMoved(int oldPosition, int newPosition);
+
 protected:
   void              parse(QDataStream* in);
   void              write(QDataStream* out) const;
@@ -67,6 +70,11 @@ private slots:
   void              verticesContextMenu(const QPoint& pos);
 
   void              replaceMaterials();
+  void              movePaintJobs(int direction);
+  void              moveFirstPaintJobs();
+  void              moveUpPaintJobs();
+  void              moveDownPaintJobs();
+  void              moveLastPaintJobs();
   void              materialsContextMenu(const QPoint& pos);
 
   void              exportFile();

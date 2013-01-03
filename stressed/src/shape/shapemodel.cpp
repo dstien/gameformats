@@ -638,6 +638,57 @@ void ShapeModel::replaceMaterials(quint8 paintJob, quint8 curMaterial, quint8 ne
   }
 }
 
+void ShapeModel::movePaintJobs(QItemSelectionModel* selectionModel, int direction)
+{
+  // Using persistent indices since row removal/insertion will invalidate current selection.
+  QList<QPersistentModelIndex> curPersistentRows;
+  foreach (QModelIndex row, selectionModel->selectedRows()) {
+    curPersistentRows.append(QPersistentModelIndex(row));
+  }
+
+  // Sort by direction to make the move "stable" upon reaching the ends of the list.
+  if (direction < 0) {
+    qSort(curPersistentRows);
+  }
+  else {
+    qSort(curPersistentRows.begin(), curPersistentRows.end(), qGreater<QPersistentModelIndex>());
+  }
+
+  QPersistentModelIndex persistentCurrent = selectionModel->currentIndex();
+  QModelIndex current = persistentCurrent;
+
+  int selectionBound = direction < 0 ? 0 : numPaintJobs() - 1;
+
+  foreach (QPersistentModelIndex row, curPersistentRows) {
+    int curRow = row.row();
+    int newRow = direction < 0
+        ? std::max(curRow + direction, selectionBound)
+        : std::min(curRow + direction, selectionBound);
+
+    if (curRow != newRow) {
+      emit paintJobMoved(curRow, newRow);
+      foreach (Primitive primitive, m_primitives) {
+        //moveMaterialTo handles the index changes.
+        primitive.materialsModel->moveMaterialTo(curRow, newRow);
+      }
+    }
+
+    if (direction < 0 && newRow <= selectionBound) {
+      selectionBound++;
+    }
+    else if (direction > 0 && newRow >= selectionBound){
+      selectionBound--;
+    }
+  }
+
+  selectionModel->reset();
+  selectionModel->setCurrentIndex(current, QItemSelectionModel::Current);
+
+  foreach (QPersistentModelIndex row, curPersistentRows) {
+    selectionModel->select(row, (QItemSelectionModel::Select | QItemSelectionModel::Rows));
+  }
+}
+
 void ShapeModel::isModified()
 {
   emit dataChanged(QModelIndex(), QModelIndex());

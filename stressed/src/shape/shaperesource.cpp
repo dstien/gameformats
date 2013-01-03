@@ -101,6 +101,8 @@ void ShapeResource::setup()
 
   connect(m_shapeModel, SIGNAL(dataChanged(QModelIndex, QModelIndex)),
       this, SLOT(isModified()));
+  connect(m_shapeModel, SIGNAL(paintJobMoved(int, int)),
+      this, SIGNAL(paintJobMoved(int, int)));
   connect(m_ui.primitivesView->selectionModel(), SIGNAL(currentChanged(QModelIndex, QModelIndex)),
       this, SLOT(setModels(QModelIndex)));
 }
@@ -528,13 +530,53 @@ void ShapeResource::replaceMaterials()
   }
 }
 
+void ShapeResource::movePaintJobs(int direction)
+{
+  if (m_ui.materialsView->model()) {
+    QItemSelectionModel* materialsSelectionModel = m_ui.materialsView->selectionModel();
+
+    if (materialsSelectionModel->hasSelection()) {
+      m_shapeModel->movePaintJobs(materialsSelectionModel, direction);
+      isModified();
+    }
+  }
+}
+
+void ShapeResource::moveFirstPaintJobs()
+{
+  movePaintJobs(-ShapeModel::ROWS_MAX);
+}
+
+void ShapeResource::moveUpPaintJobs()
+{
+  movePaintJobs(-1);
+}
+
+void ShapeResource::moveDownPaintJobs()
+{
+  movePaintJobs(1);
+}
+
+void ShapeResource::moveLastPaintJobs()
+{
+  movePaintJobs(ShapeModel::ROWS_MAX);
+}
+
 void ShapeResource::materialsContextMenu(const QPoint& /*pos*/)
 {
   if (m_ui.materialsView->model() && m_ui.materialsView->selectionModel()->hasSelection()) {
     m_ui.replaceMaterialsAction->setEnabled(true);
+    m_ui.moveFirstPaintJobsAction->setEnabled(true);
+    m_ui.moveUpPaintJobsAction->setEnabled(true);
+    m_ui.moveDownPaintJobsAction->setEnabled(true);
+    m_ui.moveLastPaintJobsAction->setEnabled(true);
   }
   else {
     m_ui.replaceMaterialsAction->setEnabled(false);
+    m_ui.moveFirstPaintJobsAction->setEnabled(false);
+    m_ui.moveUpPaintJobsAction->setEnabled(false);
+    m_ui.moveDownPaintJobsAction->setEnabled(false);
+    m_ui.moveLastPaintJobsAction->setEnabled(false);
   }
 
   m_ui.materialsMenu->exec(QCursor::pos());

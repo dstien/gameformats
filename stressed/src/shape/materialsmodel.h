@@ -39,6 +39,8 @@ public:
   bool              insertRows(int position, int rows, const QModelIndex& index = QModelIndex());
   bool              removeRows(int position, int rows, const QModelIndex& index = QModelIndex());
 
+  void              moveMaterialTo(int row, int newPosition);
+
   int               rowCount(const QModelIndex& /*parent*/ = QModelIndex()) const    { return m_materials.size(); }
   int               columnCount(const QModelIndex& /*parent*/ = QModelIndex()) const { return 1; }
 

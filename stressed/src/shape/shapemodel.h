@@ -87,10 +87,14 @@ public:
   bool              setNumPaintJobs(int& num);
   int               numPaintJobs() const                                             { return m_numPaintJobs; }
   void              replaceMaterials(quint8 paintJob, quint8 curMaterial, quint8 newMaterial);
+  void              movePaintJobs(QItemSelectionModel* selectionModel, int direction);
 
   static const QStringList TYPES;
 
   static const int  ROWS_MAX = 256;
+
+signals:
+  void              paintJobMoved(int oldPosition, int newPosition);
 
 public slots:
   void              isModified();

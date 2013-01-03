@@ -140,6 +140,19 @@ void ShapeView::setCurrentPaintJob(int paintJob)
   viewport()->update();
 }
 
+void ShapeView::adjustCurrentPaintJobAfterMove(int oldPosition, int newPosition)
+{
+  if (m_currentPaintJob == oldPosition) {
+    emit selectedPaintJobChangeRequested(newPosition + 1);
+  }
+  else if (m_currentPaintJob < oldPosition && m_currentPaintJob >= newPosition) {
+    emit selectedPaintJobChangeRequested(m_currentPaintJob + 1 + 1);
+  }
+  else if (m_currentPaintJob > oldPosition && m_currentPaintJob <= newPosition) {
+    emit selectedPaintJobChangeRequested(m_currentPaintJob - 1 + 1);
+  }
+}
+
 void ShapeView::toggleWireframe(bool enable)
 {
   m_wireframe = enable;

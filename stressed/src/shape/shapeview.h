@@ -42,8 +42,12 @@ public:
 public slots:
   void              reset();
 
+signals:
+  void              selectedPaintJobChangeRequested(int paintJob);
+
 protected slots:
   void              setCurrentPaintJob(int paintJob);
+  void              adjustCurrentPaintJobAfterMove(int oldPosition, int newPosition);
   void              toggleWireframe(bool enable);
   void              toggleShowCullData(bool enable);
 

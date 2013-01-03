@@ -138,6 +138,34 @@ bool MaterialsModel::removeRows(int position, int rows, const QModelIndex& index
   return true;
 }
 
+void MaterialsModel::moveMaterialTo(int row, int newPosition)
+{
+  int boundedPosition = qBound(0, newPosition, rowCount() - 1);
+  if (row != boundedPosition) {
+    emit layoutAboutToBeChanged();
+
+    QModelIndex oldIndex = index(row, 0);
+    QModelIndex newIndex = index(boundedPosition, 0);
+
+    m_materials.move(row, boundedPosition);
+
+    if (row < boundedPosition) {
+      for (int i = row + 1; i <= boundedPosition; i++) {
+        changePersistentIndex(index(i, 0), index(i - 1, 0));
+      }
+    }
+    else {
+      for (int i = row - 1; i >= boundedPosition; i = i - 1) {
+        changePersistentIndex(index(i, 0), index(i + 1, 0));
+      }
+    }
+
+    changePersistentIndex(oldIndex, newIndex);
+
+    emit layoutChanged();
+  }
+}
+
 void MaterialsModel::resize(int num)
 {
   if (num == rowCount()) {
