@@ -1,0 +1,16 @@
+syntax:glob
+
+moc_*.cpp
+ui_*.h
+qrc_resources.cpp
+
+
+Makefile
+*.o
+*.a
+stressed
+
+*.pro.user
+*.swp
+*~
+
