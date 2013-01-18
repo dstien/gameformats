@@ -17,7 +17,7 @@
 
 #include "animationresource.h"
 
-AnimationResource::AnimationResource(QString id, QWidget* parent, Qt::WFlags flags)
+AnimationResource::AnimationResource(QString id, QWidget* parent, Qt::WindowFlags flags)
 : Resource(id, parent, flags)
 {
   m_ui.setupUi(this);
@@ -31,7 +31,7 @@ AnimationResource::AnimationResource(const AnimationResource& res)
   m_ui.framesEdit->setPlainText(res.m_ui.framesEdit->toPlainText());
 }
 
-AnimationResource::AnimationResource(QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags)
+AnimationResource::AnimationResource(QString id, QDataStream* in, QWidget* parent, Qt::WindowFlags flags)
 : Resource(id, parent, flags)
 {
   m_ui.setupUi(this);

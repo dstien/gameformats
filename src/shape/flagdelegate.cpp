@@ -29,7 +29,7 @@ FlagDelegate::FlagDelegate(QObject *parent)
 void FlagDelegate::drawCheck(QPainter* painter, const QStyleOptionViewItem& option, const QRect& /*rect*/, Qt::CheckState state) const
 {
   const int textMargin = QApplication::style()->pixelMetric(QStyle::PM_FocusFrameHMargin) + 1;
-  QRect checkRect = QStyle::alignedRect(option.direction, Qt::AlignCenter, check(option, option.rect, Qt::Checked).size(),
+  QRect checkRect = QStyle::alignedRect(option.direction, Qt::AlignCenter, doCheck(option, option.rect, Qt::Checked).size(),
       QRect(option.rect.x() + textMargin, option.rect.y(), option.rect.width() - (textMargin * 2), option.rect.height()));
 
   QItemDelegate::drawCheck(painter, option, checkRect, state);
@@ -54,7 +54,7 @@ bool FlagDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, const Q
 
   if (event->type() == QEvent::MouseButtonRelease) {
     const int textMargin = QApplication::style()->pixelMetric(QStyle::PM_FocusFrameHMargin) + 1;
-    QRect checkRect = QStyle::alignedRect(option.direction, Qt::AlignCenter, check(option, option.rect, Qt::Checked).size(),
+    QRect checkRect = QStyle::alignedRect(option.direction, Qt::AlignCenter, doCheck(option, option.rect, Qt::Checked).size(),
         QRect(option.rect.x() + textMargin, option.rect.y(), option.rect.width() - (textMargin * 2), option.rect.height()));
 
     if (!checkRect.contains(static_cast<QMouseEvent*>(event)->pos())) {

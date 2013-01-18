@@ -27,9 +27,9 @@ class BitmapResource : public Resource
   Q_OBJECT
 
 public:
-  BitmapResource(QString id, QWidget* parent = 0, Qt::WFlags flags = 0);
+  BitmapResource(QString id, QWidget* parent = 0, Qt::WindowFlags flags = 0);
   BitmapResource(const BitmapResource& res);
-  BitmapResource(QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
+  BitmapResource(QString id, QDataStream* in, QWidget* parent = 0, Qt::WindowFlags flags = 0);
   ~BitmapResource();
 
   QString              type() const  { return "bitmap"; }

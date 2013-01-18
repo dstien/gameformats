@@ -35,7 +35,7 @@ const char BitmapResource::FILE_FILTERS[] =
     "Joint Photographic Experts Group (*.jpg *.jpeg);;"
     "All files (*)";
 
-BitmapResource::BitmapResource(QString id, QWidget* parent, Qt::WFlags flags)
+BitmapResource::BitmapResource(QString id, QWidget* parent, Qt::WindowFlags flags)
 : Resource(id, parent, flags)
 {
   setup();
@@ -81,7 +81,7 @@ BitmapResource::BitmapResource(const BitmapResource& res)
   toggleAlpha(m_ui.checkAlpha->isChecked());
 }
 
-BitmapResource::BitmapResource(QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags)
+BitmapResource::BitmapResource(QString id, QDataStream* in, QWidget* parent, Qt::WindowFlags flags)
 : Resource(id, parent, flags)
 {
   setup();
@@ -330,7 +330,7 @@ void BitmapResource::importFile()
       // Qt will not upsample color space on images with less than 256 colors.
       // We'll have to increase the color depth to 32 bits before downsampling
       // in order to avoid palette corruption.
-      if (newImage->numColors() && newImage->numColors() < 256) {
+      if (newImage->colorCount() && newImage->colorCount() < 256) {
         QImage* tmpImage = newImage;
         newImage =  new QImage(newImage->convertToFormat(QImage::Format_ARGB32));
         delete tmpImage;

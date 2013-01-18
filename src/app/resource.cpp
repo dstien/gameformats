@@ -37,7 +37,7 @@ const QStringList Resource::LOAD_TYPES = (QStringList() << tr("Ignore this resou
 
 QString Resource::m_fileName;
 
-Resource::Resource(QString id, QWidget* parent, Qt::WFlags flags)
+Resource::Resource(QString id, QWidget* parent, Qt::WindowFlags flags)
 : QWidget(parent, flags),
   m_id(id)
 {
@@ -288,7 +288,7 @@ void Resource::write(const QString& fileName, const ResourcesModel* resourcesMod
   checkError(&out, tr("header"), true);
 
   for (int i = 0; i < numResources; i++) {
-    QByteArray id = (QString("%1").arg(resourcesModel->at(i)->id().left(4), 4, '\0')).toAscii();
+    QByteArray id = (QString("%1").arg(resourcesModel->at(i)->id().left(4), 4, '\0')).toLatin1();
     out << (qint8)id[0] << (qint8)id[1] << (qint8)id[2] << (qint8)id[3];
   }
 

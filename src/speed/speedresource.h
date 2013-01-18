@@ -27,9 +27,9 @@ class SpeedResource : public Resource
   Q_OBJECT
 
 public:
-  SpeedResource(QString id, QWidget* parent = 0, Qt::WFlags flags = 0);
+  SpeedResource(QString id, QWidget* parent = 0, Qt::WindowFlags flags = 0);
   SpeedResource(const SpeedResource& res);
-  SpeedResource(QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
+  SpeedResource(QString id, QDataStream* in, QWidget* parent = 0, Qt::WindowFlags flags = 0);
 
   QString            type() const  { return "speed"; }
   Resource*          clone() const { return new SpeedResource(*this); }

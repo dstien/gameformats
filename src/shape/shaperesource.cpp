@@ -47,7 +47,7 @@ const QRegExp ShapeResource::OBJ_REGEXP_WHITESPACE = QRegExp("\\s+");
 const QRegExp ShapeResource::OBJ_REGEXP_VERTEX     = QRegExp("^v(\\s+([+-]?\\d*\\.?\\d*)){3,4}\\s*$");
 const QRegExp ShapeResource::OBJ_REGEXP_FACE       = QRegExp("^(fo?|[lp])((\\s+-?\\d+)(/-?\\d*){,2}){1,10}\\s*$");
 
-ShapeResource::ShapeResource(QString id, QWidget* parent, Qt::WFlags flags)
+ShapeResource::ShapeResource(QString id, QWidget* parent, Qt::WindowFlags flags)
 : Resource(id, parent, flags)
 {
   m_shapeModel = new ShapeModel(this);
@@ -61,7 +61,7 @@ ShapeResource::ShapeResource(const ShapeResource& res)
   setup();
 }
 
-ShapeResource::ShapeResource(QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags)
+ShapeResource::ShapeResource(QString id, QDataStream* in, QWidget* parent, Qt::WindowFlags flags)
 : Resource(id, parent, flags)
 {
   m_shapeModel = new ShapeModel(this);
@@ -75,12 +75,12 @@ void ShapeResource::setup()
 
   m_ui.setupUi(this);
 
-  m_ui.primitivesView->horizontalHeader()->setResizeMode(QHeaderView::ResizeToContents);
+  m_ui.primitivesView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   m_ui.primitivesView->verticalHeader()->setDefaultSectionSize(20);
-  m_ui.primitivesView->verticalHeader()->setResizeMode(QHeaderView::Fixed);
+  m_ui.primitivesView->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
 
-  m_ui.verticesView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
-  m_ui.materialsView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
+  m_ui.verticesView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  m_ui.materialsView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
   m_ui.primitivesView->setItemDelegateForColumn(0, new TypeDelegate(m_ui.primitivesView));
 
@@ -340,7 +340,7 @@ void ShapeResource::moveToPrimitives()
 {
   bool success;
   int curPosition = m_ui.primitivesView->currentIndex().row();
-  int newPosition = QInputDialog::getInteger(
+  int newPosition = QInputDialog::getInt(
       this,
       tr("Move primitive"),
       tr("New position (1 - %1):").arg(m_ui.primitivesView->model()->rowCount()),
@@ -706,7 +706,7 @@ void ShapeResource::importFile()
           while (!(line = in.readLine()).isNull()) {
             lineNum++;
 
-            switch (line[0].toAscii()) {
+            switch (line[0].toLatin1()) {
               case 'v':
                 if (line.contains(OBJ_REGEXP_VERTEX)) {
                   QStringList tokens = line.split(OBJ_REGEXP_WHITESPACE);
@@ -732,7 +732,7 @@ void ShapeResource::importFile()
                   Primitive primitive;
                   int numVertices = tokens.size() - 1;
 
-                  if (line[0].toAscii() == 'l' && numVertices == 6) {
+                  if (line[0].toLatin1() == 'l' && numVertices == 6) {
                     primitive.type = PRIM_TYPE_WHEEL;
                   }
                   else {

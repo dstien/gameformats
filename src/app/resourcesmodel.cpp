@@ -185,17 +185,22 @@ void ResourcesModel::duplicateRow(int position)
 
 void ResourcesModel::clear()
 {
+  beginResetModel();
+
   foreach(Resource* resource, m_resources) {
     delete resource;
   }
 
   m_resources.clear();
 
-  reset();
+  endResetModel();
 }
 
 void ResourcesModel::sort(int /*column*/, Qt::SortOrder order)
 {
+  beginResetModel();
+
   qSort(m_resources.begin(), m_resources.end(), (order == Qt::AscendingOrder ? Resource::lessThan : Resource::greaterThan));
-  reset();
+
+  endResetModel();
 }

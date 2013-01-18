@@ -2,7 +2,7 @@ TEMPLATE = lib
 
 CONFIG += staticlib warn_on qt
 
-QT += opengl
+QT += opengl widgets
 
 DEPENDPATH  += ..
 INCLUDEPATH += $$DEPENDPATH

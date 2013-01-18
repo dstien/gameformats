@@ -2,7 +2,7 @@ TEMPLATE = app
 
 CONFIG += warn_on qt
 
-QT += opengl
+QT += opengl widgets
 
 TARGET = stressed
 

@@ -29,9 +29,9 @@ class RawResource : public Resource
   Q_OBJECT
 
 public:
-  RawResource(QString id, QString type, unsigned int length, QWidget* parent = 0, Qt::WFlags flags = 0);
+  RawResource(QString id, QString type, unsigned int length, QWidget* parent = 0, Qt::WindowFlags flags = 0);
   RawResource(const RawResource& res);
-  RawResource(QString id, QString type, unsigned int length, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
+  RawResource(QString id, QString type, unsigned int length, QDataStream* in, QWidget* parent = 0, Qt::WindowFlags flags = 0);
 
   QString           type() const  { return m_type; }
   Resource*         clone() const { return new RawResource(*this); }

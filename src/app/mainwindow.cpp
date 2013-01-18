@@ -38,7 +38,7 @@ const char MainWindow::FILE_FILTERS[] =
     "Misc (*.res *.pre);;"
     "All files (*)";
 
-MainWindow::MainWindow(QWidget* parent, Qt::WFlags flags)
+MainWindow::MainWindow(QWidget* parent, Qt::WindowFlags flags)
 : QMainWindow(parent, flags)
 {
   m_ui.setupUi(this);

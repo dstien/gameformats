@@ -29,7 +29,7 @@ class Resource : public QWidget
   Q_OBJECT
 
 public:
-  Resource(QString id, QWidget* parent = 0, Qt::WFlags flags = 0);
+  Resource(QString id, QWidget* parent = 0, Qt::WindowFlags flags = 0);
   virtual ~Resource() {};
 
   static bool       parse(const QString& fileName, ResourcesModel* resourcesModel, QWidget* parent = 0);

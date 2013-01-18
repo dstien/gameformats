@@ -17,7 +17,7 @@
 
 #include "textresource.h"
 
-TextResource::TextResource(QString id, QWidget* parent, Qt::WFlags flags)
+TextResource::TextResource(QString id, QWidget* parent, Qt::WindowFlags flags)
 : Resource(id, parent, flags)
 {
   m_ui.setupUi(this);
@@ -31,7 +31,7 @@ TextResource::TextResource(const TextResource& res)
   m_ui.textEdit->setPlainText(res.m_ui.textEdit->toPlainText());
 }
 
-TextResource::TextResource(QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags)
+TextResource::TextResource(QString id, QDataStream* in, QWidget* parent, Qt::WindowFlags flags)
 : Resource(id, parent, flags)
 {
   m_ui.setupUi(this);
@@ -64,7 +64,7 @@ void TextResource::parse(QDataStream* in)
 // Write NULL-terminated C-string to QDataStream.
 void TextResource::write(QDataStream* out) const
 {
-  QByteArray content = m_ui.textEdit->toPlainText().toAscii();
+  QByteArray content = m_ui.textEdit->toPlainText().toLatin1();
 
   for (int i = 0; i < content.count(); i++) {
     if (content[i] == '\n') {

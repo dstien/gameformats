@@ -22,7 +22,7 @@
 const int RawResource::LENGTH_PATH;
 const int RawResource::LENGTH_TUNING;
 
-RawResource::RawResource(QString id, QString type, unsigned int length, QWidget* parent, Qt::WFlags flags)
+RawResource::RawResource(QString id, QString type, unsigned int length, QWidget* parent, Qt::WindowFlags flags)
 : Resource(id, parent, flags),
   m_type(type),
   m_length(length)
@@ -46,7 +46,7 @@ RawResource::RawResource(const RawResource& res)
   }
 }
 
-RawResource::RawResource(QString id, QString type, unsigned int length, QDataStream* in, QWidget* parent, Qt::WFlags flags)
+RawResource::RawResource(QString id, QString type, unsigned int length, QDataStream* in, QWidget* parent, Qt::WindowFlags flags)
 : Resource(id, parent, flags),
   m_type(type),
   m_length(length)

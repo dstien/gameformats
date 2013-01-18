@@ -27,9 +27,9 @@ class AnimationResource : public Resource
   Q_OBJECT
 
 public:
-  AnimationResource(QString id, QWidget* parent = 0, Qt::WFlags flags = 0);
+  AnimationResource(QString id, QWidget* parent = 0, Qt::WindowFlags flags = 0);
   AnimationResource(const AnimationResource& res);
-  AnimationResource(QString id, QDataStream* in, QWidget* parent = 0, Qt::WFlags flags = 0);
+  AnimationResource(QString id, QDataStream* in, QWidget* parent = 0, Qt::WindowFlags flags = 0);
 
   QString                type() const  { return "animation"; }
   Resource*              clone() const { return new AnimationResource(*this); }

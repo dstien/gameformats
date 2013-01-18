@@ -19,7 +19,7 @@
 
 const int SpeedResource::NUM_VALUES;
 
-SpeedResource::SpeedResource(QString id, QWidget* parent, Qt::WFlags flags)
+SpeedResource::SpeedResource(QString id, QWidget* parent, Qt::WindowFlags flags)
 : Resource(id, parent, flags)
 {
   setup();
@@ -35,7 +35,7 @@ SpeedResource::SpeedResource(const SpeedResource& res)
   }
 }
 
-SpeedResource::SpeedResource(QString id, QDataStream* in, QWidget* parent, Qt::WFlags flags)
+SpeedResource::SpeedResource(QString id, QDataStream* in, QWidget* parent, Qt::WindowFlags flags)
 : Resource(id, parent, flags)
 {
   setup();
