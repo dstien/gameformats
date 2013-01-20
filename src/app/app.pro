@@ -13,7 +13,7 @@ win32 {
   CONFIG(release, debug|release) {
     PRE_TARGETDEPS += ../animation/release/libanimation.a \
                       ../bitmap/release/libbitmap.a \
-                      ../raw/relase/libraw.a \
+                      ../raw/release/libraw.a \
                       ../shape/release/libshape.a \
                       ../speed/release/libspeed.a \
                       ../text/release/libtext.a
@@ -27,6 +27,8 @@ win32 {
                       ../text/debug/libtext.a
   }
   LIBS += $$PRE_TARGETDEPS -lopengl32 -lglu32
+
+  QMAKE_LFLAGS += -static-libgcc -static-libstdc++
 
   RC_FILE = ../../resources/resources-win32.rc
 }
