@@ -217,8 +217,8 @@ void MainWindow::setCurrent(const QModelIndex& index)
   if (m_currentResource != NULL) {
     disconnect(m_currentResource, SIGNAL(dataChanged()), this, SLOT(isModified()));
 
-    m_ui.vboxLayout->removeWidget(m_currentResource);
     m_currentResource->hide();
+    m_ui.vboxLayout->removeWidget(m_currentResource);
     m_currentResource->setParent(0);
   }
 
@@ -226,8 +226,8 @@ void MainWindow::setCurrent(const QModelIndex& index)
   {
     m_currentResource = m_resourcesModel->at(index);
     m_currentResource->setParent(m_ui.container);
-    m_currentResource->show();
     m_ui.vboxLayout->addWidget(m_currentResource);
+    m_currentResource->show();
 
     connect(m_currentResource, SIGNAL(dataChanged()), this, SLOT(isModified()));
   }
