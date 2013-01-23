@@ -17,12 +17,12 @@
 
 #include <QItemSelectionModel>
 #include <QStringList>
+#include <QVector3D>
 #include <cmath>
 
 #include "materialsmodel.h"
 #include "shapemodel.h"
 #include "shaperesource.h"
-#include "vector3.h"
 #include "verticesmodel.h"
 
 const int ShapeModel::ROWS_MAX;
@@ -441,11 +441,12 @@ void ShapeModel::computeCull(Primitive& primitive)
     primitive.cull1 = primitive.cull2 = 0;
 
     VerticesList* vertices = primitive.verticesModel->verticesList();
-    Vector3 edge1 = Vector3(vertices->at(1)) - Vector3(vertices->at(0));
-    Vector3 edge2 = Vector3(vertices->at(2)) - Vector3(vertices->at(0));
-    Vector3 normal = edge1.crossProduct(edge2).normalize();
 
-    float yAngle = normal.angle(Vector3(0.0f, 1.0f, 0.0f)) * (180.0f / M_PI);
+    QVector3D edge1 = vertices->at(1).toQ() - vertices->at(0).toQ();
+    QVector3D edge2 = vertices->at(2).toQ() - vertices->at(0).toQ();
+    QVector3D normal = QVector3D::normal(edge1, edge2);
+
+    float yAngle = std::acos(QVector3D::dotProduct(normal, QVector3D(0.0f, 1.0f, 0.0f))) * (180.0f / M_PI);
 
     if (!std::isnan(yAngle)) {
       // C1 flags
@@ -505,7 +506,7 @@ void ShapeModel::computeCull(Primitive& primitive)
       }
 
       // Rotate fields
-      int rotation  = (int)(((M_PI + atan2(normal.x, normal.z)) / (2.0f * M_PI)) * 15.0f + 0.5f);
+      int rotation  = (int)(((M_PI + std::atan2(normal.x(), normal.z())) / (2.0f * M_PI)) * 15.0f + 0.5f);
 
       if (c1p) {
         if (c1p == PRIM_CULL_15BITS) {

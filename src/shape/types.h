@@ -19,11 +19,14 @@
 #define TYPES_H
 
 #include <QList>
+#include <QVector3D>
 
 typedef struct {
   qint16 x;
   qint16 y;
   qint16 z;
+
+  inline QVector3D toQ() const { return QVector3D(x, y, z); }
 } Vertex;
 
 typedef QList<Vertex> VerticesList;
@@ -32,6 +35,8 @@ typedef struct {
   float x;
   float y;
   float z;
+
+  inline QVector3D toQ() const { return QVector3D(x, y, z); }
 } VertexF;
 
 typedef QList<VertexF> VerticesFList;
