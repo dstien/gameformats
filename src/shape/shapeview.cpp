@@ -120,15 +120,20 @@ void ShapeView::setModel(QAbstractItemModel* model)
 
 void ShapeView::reset()
 {
-  m_translation.reset();
-  m_rotation.reset();
+  m_translation.setToIdentity();
+  m_rotation.setToIdentity();
 
   if (m_shapeModel) {
     Vertex* bound = m_shapeModel->boundBox();
-    m_translation.move(-((bound[4].y + bound[0].y) / 2) * VerticesModel::Y_RATIO, Matrix::AXIS_Y);
-    m_translation.move(-distance(VerticesModel::toInternal(bound[2]),
-          VerticesModel::toInternal(bound[5])), Matrix::AXIS_Z);
-    m_rotation.rotate(10.0f, Matrix::AXIS_X);
+    m_translation.translate(
+        0.0f,
+        -((bound[4].y + bound[0].y) / 2) * VerticesModel::Y_RATIO,
+        0.0f);
+    m_translation.translate(
+        0.0f,
+        0.0f,
+        -distance(VerticesModel::toInternal(bound[2]), VerticesModel::toInternal(bound[5])));
+    m_rotation.rotate(10.0f, 1.0f, 0.0f, 0.0f);
   }
 
   QAbstractItemView::reset();
@@ -208,8 +213,8 @@ void ShapeView::draw(bool pick)
   glLoadIdentity();
 
   glPushMatrix();
-  m_translation.multMatrix();
-  m_rotation.multMatrix();
+  glMultMatrixf(m_translation.constData());
+  glMultMatrixf(m_rotation.constData());
 
   int i = 0;
   QItemSelectionModel* selections = selectionModel();
@@ -311,7 +316,7 @@ void ShapeView::drawSphere(const VerticesFList* vertices)
   glTranslatef(vertices->at(0).x, vertices->at(0).y, vertices->at(0).z);
 
   // Billboard face by using inverse shape rotation matrix.
-  m_rotation.transpose().multMatrix();
+  glMultMatrixf(m_rotation.transposed().constData());
 
   glBegin(GL_TRIANGLE_FAN);
   for (int j = 0; j < CIRCLE_STEPS; j++) {
@@ -638,18 +643,17 @@ void ShapeView::mouseMoveEvent(QMouseEvent* event)
   m_lastMousePosition = event->pos();
 
   if ((event->buttons() & Qt::LeftButton) && (event->buttons() & Qt::RightButton)) {
-    m_translation.move(delta.y() * 5.0f, Matrix::AXIS_Y);
+    m_translation.translate(0.0f, delta.y() * 5.0f, 0.0f);
   }
   else if (event->buttons() & Qt::LeftButton) {
-    m_rotation.rotate(-delta.x() * 0.25f, Matrix::AXIS_Y);
-    m_rotation.rotate(-delta.y() * 0.25f, Matrix::AXIS_X);
+    m_rotation.rotate(-delta.x() * 0.25f, 0.0f, 1.0f, 0.0f);
+    m_rotation.rotate(-delta.y() * 0.25f, 1.0f, 0.0f, 0.0f);
   }
   else if (event->buttons() & Qt::RightButton) {
-    m_rotation.rotate(delta.x() * 0.25f, Matrix::AXIS_Z);
+    m_rotation.rotate(delta.x() * 0.25f, 0.0f, 0.0f, 1.0f);
   }
   else if (event->buttons() & Qt::MidButton) {
-    m_translation.move(delta.x() * 5.0f, Matrix::AXIS_X);
-    m_translation.move(-delta.y() * 5.0f, Matrix::AXIS_Z);
+    m_translation.translate(delta.x() * 5.0f, 0.0f, -delta.y() * 5.0f);
   }
 
   viewport()->update();

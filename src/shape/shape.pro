@@ -12,7 +12,6 @@ FORMS   += shaperesource.ui
 HEADERS += flagdelegate.h \
            materialdelegate.h \
            materialsmodel.h \
-           matrix.h \
            shapemodel.h \
            shaperesource.h \
            shapeview.h \
@@ -23,7 +22,6 @@ HEADERS += flagdelegate.h \
 SOURCES += flagdelegate.cpp \
            materialdelegate.cpp \
            materialsmodel.cpp \
-           matrix.cpp \
            shapemodel.cpp \
            shaperesource.cpp \
            shapeview.cpp \

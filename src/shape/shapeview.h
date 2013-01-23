@@ -19,8 +19,8 @@
 #define SHAPEVIEW_H
 
 #include <QAbstractItemView>
+#include <QMatrix4x4>
 
-#include "matrix.h"
 #include "shapemodel.h"
 
 class QGLWidget;
@@ -84,8 +84,8 @@ private:
   QGLWidget*        m_glWidget;
   ShapeModel*       m_shapeModel;
   QPoint            m_lastMousePosition;
-  Matrix            m_rotation;
-  Matrix            m_translation;
+  QMatrix4x4        m_rotation;
+  QMatrix4x4        m_translation;
   int               m_currentPaintJob;
   bool              m_wireframe;
   bool              m_showCullData;
