@@ -27,7 +27,7 @@
 #include "settings.h"
 
 const char MainWindow::FILE_SETTINGS_PATH[] = "paths/resource";
-const char MainWindow::FILE_FILTERS[] =
+const char MainWindow::FILE_FILTERS_LOAD[] =
     "All known resource files (*.vsh *.pvs *.esh *.pes *.3sh *.p3s *.vce *.pvc *.kms *.pkm *.sfx *.psf *.res *.pre);;"
     "Bitmaps (*.vsh *.pvs);;"
     "Icons (*.esh *.pes);;"
@@ -36,6 +36,17 @@ const char MainWindow::FILE_FILTERS[] =
     "Music (*.kms *.pkm);;"
     "Sound effects (*.sfx *.psf);;"
     "Misc (*.res *.pre);;"
+    "All files (*)";
+
+const char MainWindow::FILE_FILTERS_SAVE[] =
+    "Unpacked resource files (*.vsh *.esh *.3sh *.vce *.kms *.sfx *.res);;"
+    "Bitmaps (*.vsh);;"
+    "Icons (*.esh);;"
+    "3d shapes (*.3sh);;"
+    "Voices (*.vce);;"
+    "Music (*.kms);;"
+    "Sound effects (*.sfx);;"
+    "Misc (*.res);;"
     "All files (*)";
 
 MainWindow::MainWindow(QWidget* parent, Qt::WindowFlags flags)
@@ -158,7 +169,7 @@ void MainWindow::open()
       this,
       tr("Open file"),
       m_currentFilePath,
-      FILE_FILTERS,
+      FILE_FILTERS_LOAD,
       &m_currentFileFilter);
 
   if (!fileName.isEmpty()) {
@@ -172,11 +183,30 @@ void MainWindow::save()
     saveAs();
   }
   else {
-    saveFile(m_currentFileName);
+    QString safeName = unpackedPathlessName(m_currentFileName);
+
+    if (safeName != QFileInfo(m_currentFileName).fileName()) {
+      if (changeToSafeFileName(safeName)) {
+        saveAsAsIs(true);
+      }
+    }
+    else {
+      saveFile(m_currentFileName);
+    }
   }
 }
 
 void MainWindow::saveAs()
+{
+  QString safeName = unpackedPathlessName(m_currentFileName);
+
+  bool nameWillChange = safeName != QFileInfo(m_currentFileName).fileName();
+  if (!nameWillChange || changeToSafeFileName(safeName)) {
+    saveAsAsIs(nameWillChange);
+  }
+}
+
+void MainWindow::saveAsAsIs(bool nameWasChanged)
 {
   m_currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
 
@@ -184,12 +214,97 @@ void MainWindow::saveAs()
       this,
       tr("Save file"),
       m_currentFilePath,
-      FILE_FILTERS,
+      FILE_FILTERS_SAVE,
       &m_currentFileFilter);
 
   if (!fileName.isEmpty()) {
     Settings().setFilePath(FILE_SETTINGS_PATH, m_currentFilePath = fileName);
     saveFile(fileName);
+
+    if (nameWasChanged) {
+      QFileInfo fileInfo = QFileInfo(fileName);
+      QString extension = fileInfo.suffix().toLower();
+
+      if (extension == "3sh" || extension == "vsh" || extension == "esh")
+      {
+        QMessageBox::information(
+              this,
+              QCoreApplication::applicationName(),
+              tr("Be sure to rename or move any %1 file from the Stunts "
+                 "directory, or the file just saved will not be loaded by "
+                 "the game.")
+                .arg(fileInfo.completeBaseName() + ".p" + extension.left(2)));
+      }
+    }
+  }
+}
+
+bool MainWindow::changeToSafeFileName(const QString& safeFileName)
+{
+  int ret = QMessageBox::question(
+      this,
+      QCoreApplication::applicationName(),
+      tr("As stressed creates unpacked resource files, "
+         "the file name will be changed to %1 by default. "
+         "Continue saving?")
+        .arg(safeFileName),
+      QMessageBox::Ok | QMessageBox::Cancel);
+
+
+  switch (ret) {
+  case QMessageBox::Ok: {
+    QDir path = QDir(QFileInfo(m_currentFileName).path());
+    Settings().setFilePath(FILE_SETTINGS_PATH,
+                           m_currentFilePath = QFileInfo(path, safeFileName).filePath());
+    return true;
+  }
+  default:
+    return false;
+  }
+}
+
+QString MainWindow::unpackedPathlessName(const QString& fileName)
+{
+  QFileInfo fileInfo = QFileInfo(fileName);
+  if (fileName != "")
+  {
+    QString baseName = fileInfo.completeBaseName();
+    QString extension = fileInfo.suffix();
+    return baseName + "." + unpackedExtension(extension);
+  }
+  else
+  {
+    return fileInfo.fileName();
+  }
+}
+
+QString MainWindow::unpackedExtension(const QString& extension)
+{
+  QString lowerExtension = extension.toLower();
+
+  if (lowerExtension == "pre") {
+    return "res";
+  }
+  else if (lowerExtension == "pvs") {
+    return "vsh";
+  }
+  else if (lowerExtension == "pes") {
+    return "esh";
+  }
+  else if (lowerExtension == "p3s") {
+    return "3sh";
+  }
+  else if (lowerExtension == "pkm") {
+    return "kms";
+  }
+  else if (lowerExtension == "pvc") {
+    return "vce";
+  }
+  else if (lowerExtension == "psf") {
+    return "svx";
+  }
+  else {
+    return extension;
   }
 }
 

@@ -68,6 +68,10 @@ private:
   void              saveFile(const QString& fileName);
   void              updateWindowTitle();
   void              updateStatusBar();
+  QString           unpackedExtension(const QString& extension);
+  QString           unpackedPathlessName(const QString& fileName);
+  bool              changeToSafeFileName(const QString& safeFileName);
+  void              saveAsAsIs(bool nameWasChanged);
 
   Ui::MainWindow    m_ui;
 
@@ -83,7 +87,8 @@ private:
   bool              m_modified;
 
   static const char FILE_SETTINGS_PATH[];
-  static const char FILE_FILTERS[];
+  static const char FILE_FILTERS_LOAD[];
+  static const char FILE_FILTERS_SAVE[];
 };
 
 #endif
