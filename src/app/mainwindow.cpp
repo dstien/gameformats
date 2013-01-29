@@ -301,7 +301,7 @@ QString MainWindow::unpackedExtension(const QString& extension)
     return "vce";
   }
   else if (lowerExtension == "psf") {
-    return "svx";
+    return "sfx";
   }
   else {
     return extension;
