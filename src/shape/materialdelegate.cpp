@@ -86,14 +86,14 @@ void MaterialDelegate::setup()
   for (unsigned int i = 0; i < NUM_MATERIALS; i++) {
     QPixmap icon(16, 16);
 
-    if (Settings::MATERIALS[i].pattern == 1) {
+    if (Settings::m_loadedMaterials[i].pattern == 1) {
       icon.fill(QColor(Qt::black));
     }
     else {
-      icon.fill(QColor(Settings::PALETTE[Settings::MATERIALS[i].color]));
+      icon.fill(QColor(Settings::m_loadedPalette[Settings::m_loadedMaterials[i].color]));
     }
 
-    switch (Settings::MATERIALS[i].pattern) {
+    switch (Settings::m_loadedMaterials[i].pattern) {
       case 1:
         icon.setMask(QBitmap(":/shape/icon_pattern_transparent.png"));
         break;

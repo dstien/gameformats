@@ -535,7 +535,7 @@ void ShapeView::drawCullData(const Primitive& primitive)
 void ShapeView::setMaterial(const int& material, bool& pattern, const bool& selected, const bool& pick)
 {
   if (!pick) {
-    QColor color = Settings::PALETTE[Settings::MATERIALS[material].color];
+    QColor color = Settings::m_loadedPalette[Settings::m_loadedMaterials[material].color];
 
     if (selected) {
       color.setRed(qMin(0xFF, color.red() + 0x7F));
@@ -547,12 +547,12 @@ void ShapeView::setMaterial(const int& material, bool& pattern, const bool& sele
   }
 
   if (!m_wireframe) {
-    if (Settings::MATERIALS[material].pattern && (Settings::MATERIALS[material].pattern <= 6)) {
+    if (Settings::m_loadedMaterials[material].pattern && (Settings::m_loadedMaterials[material].pattern <= 6)) {
       if (!pattern) {
         glEnable(GL_POLYGON_STIPPLE);
       }
       pattern = true;
-      glPolygonStipple(PATTERNS[Settings::MATERIALS[material].pattern - 1]);
+      glPolygonStipple(PATTERNS[Settings::m_loadedMaterials[material].pattern - 1]);
     }
     else if (pattern) {
       glDisable(GL_POLYGON_STIPPLE);

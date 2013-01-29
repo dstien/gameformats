@@ -151,7 +151,7 @@ void BitmapResource::parse(QDataStream* in)
 
     // Process data.
     m_image = new QImage(width, height, QImage::Format_Indexed8);
-    m_image->setColorTable(Settings::PALETTE);
+    m_image->setColorTable(Settings::m_loadedPalette);
 
     int ry = 0;
     for (int y = 0; y < height; y++) {
@@ -339,7 +339,7 @@ void BitmapResource::importFile()
       delete oldImage;
       oldImage = 0;
 
-      m_image = new QImage(newImage->convertToFormat(QImage::Format_Indexed8, Settings::PALETTE));
+      m_image = new QImage(newImage->convertToFormat(QImage::Format_Indexed8, Settings::m_loadedPalette));
 
       delete newImage;
       newImage = 0;

@@ -64,13 +64,25 @@ public:
   static const char ORG_URL[];
   static const char MAN_URL[];
 
-  static const char       DEFAULTS[];
-  static const Palette    PALETTE;
-  static const Materials  MATERIALS;
+  static const char DEFAULTS[];
+
+  static const char PATH_MAIN_CONF_VERSION[];
+  static const char PATH_MATERIALS_COLORS[];
+  static const char PATH_MATERIALS_PATTERNS[];
+  static const char PATH_PALETTES_VGA[];
+  static const char PATH_TYPES[];
+  static const char PATH_PATHS_RESOURCE[];
+
+  static Palette    m_loadedPalette;
+  static Materials  m_loadedMaterials;
 
 private:
+  void              mergeDefaults();
+
   Palette           parsePalette(const QStringList& colorList);
   Materials         parseMaterials(const QStringList& colors, const QStringList& patterns);
+
+  static bool       m_initialized;
 };
 
 #endif

@@ -73,7 +73,7 @@ MainWindow::MainWindow(QWidget* parent, Qt::WindowFlags flags)
 
 void MainWindow::loadFile(const QString& fileName)
 {
-  Settings().setFilePath(FILE_SETTINGS_PATH, m_currentFilePath = fileName);
+  Settings().setFilePath(Settings::PATH_PATHS_RESOURCE, m_currentFilePath = fileName);
 
   try {
     m_modified = (!Resource::parse(fileName, m_resourcesModel, this));
@@ -162,7 +162,7 @@ void MainWindow::open()
   }
 
   if (m_currentFilePath.isEmpty()) {
-    m_currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
+    m_currentFilePath = Settings().getFilePath(Settings::PATH_PATHS_RESOURCE);
   }
 
   QString fileName = QFileDialog::getOpenFileName(
@@ -208,7 +208,7 @@ void MainWindow::saveAs()
 
 void MainWindow::saveAsAsIs(bool nameWasChanged)
 {
-  m_currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
+  m_currentFilePath = Settings().getFilePath(Settings::PATH_PATHS_RESOURCE);
 
   QString fileName = QFileDialog::getSaveFileName(
       this,
@@ -218,7 +218,7 @@ void MainWindow::saveAsAsIs(bool nameWasChanged)
       &m_currentFileFilter);
 
   if (!fileName.isEmpty()) {
-    Settings().setFilePath(FILE_SETTINGS_PATH, m_currentFilePath = fileName);
+    Settings().setFilePath(Settings::PATH_PATHS_RESOURCE, m_currentFilePath = fileName);
     saveFile(fileName);
 
     if (nameWasChanged) {

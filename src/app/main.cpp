@@ -35,6 +35,10 @@ int main(int argc, char** argv)
     }
   }
 
+  // Init settings.
+  Settings();
+
+  // Init main window.
   MainWindow mainWindow;
   mainWindow.show();
 
