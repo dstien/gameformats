@@ -199,6 +199,8 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel, QW
       }
       // Let user cancel/ignore/retry if parsing failed.
       catch (QString msg) {
+        in.resetStatus(); // Clear errors for retry/next.
+
         bool ok;
         QString item = QInputDialog::getItem(parent, tr("Error"),
             tr("Parsing %1 resource \"%2\" failed: %3\n\nCancel, ignore or retry with another type:").arg(type).arg(ids[i]).arg(msg),
