@@ -33,7 +33,7 @@
 #include "stunpack.h"
 
 const QStringList Resource::TYPES = (QStringList() << tr("Animation") << tr("Bitmap") << tr("Path") << tr("Shape") << tr("Speed") << tr("Text") << tr("Tuning"));
-const QStringList Resource::LOAD_TYPES = (QStringList() << tr("Ignore this resource") << Resource::TYPES);
+const QStringList Resource::LOAD_TYPES = (QStringList() << tr("Ignore this resource") << tr("Raw data") << Resource::TYPES);
 
 QString Resource::m_fileName;
 
@@ -213,6 +213,9 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel, QW
         else if (type == "tuning") {
           resource = new RawResource(toc[i].id, "tuning", RawResource::LENGTH_TUNING, &in);
         }
+        else if (type == "raw") {
+          resource = new RawResource(toc[i].id, "unknown", toc[i].size, &in);
+        }
         else {
           type = tr("unknown");
           throw tr("Unknown type.");
@@ -225,10 +228,13 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel, QW
         bool ok;
         QString item = QInputDialog::getItem(parent, tr("Error"),
             tr("Parsing %1 resource \"%2\" failed: %3\n\nCancel, ignore or retry with another type:").arg(type).arg(toc[i].id).arg(msg),
-            LOAD_TYPES, 0, false, &ok);
+            LOAD_TYPES, 1, false, &ok);
 
         if (ok && !item.isEmpty()) {
-          if (item == tr("Animation")) {
+          if (item == tr("Raw data")) {
+            type = "raw";
+          }
+          else if (item == tr("Animation")) {
             type = "animation";
           }
           else if (item == tr("Bitmap")) {
