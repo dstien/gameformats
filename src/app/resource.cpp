@@ -162,7 +162,7 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel, QW
     for (int i = 0; i < toc.size(); i++) {
       // Last entry ends at EOF.
       if (i == toc.size() - 1) {
-        toc[i].size = in.device()->size() - toc[i].offset;
+        toc[i].size = in.device()->size() - baseOffset - toc[i].offset;
       }
       // Other entries ends at start of the following resource.
       else {
