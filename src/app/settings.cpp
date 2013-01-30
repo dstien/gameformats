@@ -111,8 +111,6 @@ void Settings::mergeDefaults()
     // Bump user config version.
     setValue(PATH_MAIN_CONF_VERSION, targetVersion);
   }
-
-  restorePalette(PATH_PALETTES_VGA);
 }
 
 QString Settings::getFilePath(const QString& path)
