@@ -24,6 +24,15 @@ class QDataStream;
 class QListWidget;
 class ResourcesModel;
 
+typedef struct {
+  int      pos;
+  QString id;
+  quint32 offset;
+  quint32 size;
+} TocEntry;
+
+typedef QList<TocEntry> TocList;
+
 class Resource : public QWidget
 {
   Q_OBJECT
@@ -60,6 +69,9 @@ protected:
   virtual void      write(QDataStream* out) const = 0;
 
 private:
+  static bool       tocOffsetLessThan(const TocEntry &e1, const TocEntry &e2);
+  static bool       tocPositionLessThan(const TocEntry &e1, const TocEntry &e2);
+
   QString           m_id;
 
   static QString    m_fileName;

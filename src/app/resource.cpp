@@ -51,8 +51,8 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel, QW
   compSrc.data = compDst.data = NULL;
   QBuffer buf;
 
-  QString* ids = NULL;
-  quint32* offsets = NULL;
+  TocList toc;
+
   quint32 baseOffset;
 
   QFile file(fileName);
@@ -133,36 +133,57 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel, QW
     checkError(&in, tr("header"));
 
     // Table of contents.
-    ids = new QString[numResources];
+    toc.reserve(numResources);
 
     char tmpId[5];
     tmpId[4] = '\0';
 
     for (int i = 0; i < numResources; i++) {
       in.readRawData(tmpId, 4);
-      ids[i] = tmpId;
+
+      toc.append(TocEntry());
+      toc[i].id = tmpId;
+      toc[i].pos = i;
     }
 
-    offsets = new quint32[numResources];
     for (int i = 0; i < numResources; i++) {
-      in >> offsets[i];
+      in >> toc[i].offset;
     }
 
     checkError(&in, tr("table of contents"));
 
-    // Resource data.
+    // Base location of resource data.
     baseOffset = in.device()->pos();
 
+    // Sort by offset so that the sequential data positions can be used to guess the size.
+    qSort(toc.begin(), toc.end(), tocOffsetLessThan);
+
+    // Set sizes.
+    for (int i = 0; i < toc.size(); i++) {
+      // Last entry ends at EOF.
+      if (i == toc.size() - 1) {
+        toc[i].size = in.device()->size() - toc[i].offset;
+      }
+      // Other entries ends at start of the following resource.
+      else {
+        toc[i].size = toc[i + 1].offset - toc[i].offset;
+      }
+    }
+
+    // Restore original order.
+    qSort(toc.begin(), toc.end(), tocPositionLessThan);
+
+    // Get type mapping for registered ids.
     StringMap types = Settings().getStringMap("types");
     Resource* resource;
     QString type;
     bool typeOverride = false;
 
     for (int i = 0; i < numResources; i++) {
-      in.device()->seek(baseOffset + offsets[i]);
+      in.device()->seek(baseOffset + toc[i].offset);
 
       if (!typeOverride) {
-        type = types[ids[i]];
+        type = types[toc[i].id];
       }
       else {
         typeOverride = false;
@@ -172,25 +193,25 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel, QW
 
       try {
         if (type == "text") {
-          resource = new TextResource(ids[i], &in);
+          resource = new TextResource(toc[i].id, &in);
         }
         else if (type == "shape") {
-          resource = new ShapeResource(ids[i], &in);
+          resource = new ShapeResource(toc[i].id, &in);
         }
         else if (type == "bitmap") {
-          resource = new BitmapResource(ids[i], &in);
+          resource = new BitmapResource(toc[i].id, &in);
         }
         else if (type == "animation") {
-          resource = new AnimationResource(ids[i], &in);
+          resource = new AnimationResource(toc[i].id, &in);
         }
         else if (type == "speed") {
-          resource = new SpeedResource(ids[i], &in);
+          resource = new SpeedResource(toc[i].id, &in);
         }
         else if (type == "path") {
-          resource = new RawResource(ids[i], "path", RawResource::LENGTH_PATH, &in);
+          resource = new RawResource(toc[i].id, "path", RawResource::LENGTH_PATH, &in);
         }
         else if (type == "tuning") {
-          resource = new RawResource(ids[i], "tuning", RawResource::LENGTH_TUNING, &in);
+          resource = new RawResource(toc[i].id, "tuning", RawResource::LENGTH_TUNING, &in);
         }
         else {
           type = tr("unknown");
@@ -203,7 +224,7 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel, QW
 
         bool ok;
         QString item = QInputDialog::getItem(parent, tr("Error"),
-            tr("Parsing %1 resource \"%2\" failed: %3\n\nCancel, ignore or retry with another type:").arg(type).arg(ids[i]).arg(msg),
+            tr("Parsing %1 resource \"%2\" failed: %3\n\nCancel, ignore or retry with another type:").arg(type).arg(toc[i].id).arg(msg),
             LOAD_TYPES, 0, false, &ok);
 
         if (ok && !item.isEmpty()) {
@@ -247,9 +268,6 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel, QW
       }
     }
 
-    delete[] ids;
-    delete[] offsets;
-
     in.unsetDevice();
     file.close();
   }
@@ -260,9 +278,6 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel, QW
     delete[] compSrc.data;
     delete[] compDst.data;
 
-    delete[] ids;
-    delete[] offsets;
-
     throw msg;
   }
 
@@ -270,6 +285,16 @@ bool Resource::parse(const QString& fileName, ResourcesModel* resourcesModel, QW
   m_fileName = fileInfo.fileName();
 
   return !modified;
+}
+
+bool Resource::tocOffsetLessThan(const TocEntry &e1, const TocEntry &e2)
+{
+  return e1.offset < e2.offset;
+}
+
+bool Resource::tocPositionLessThan(const TocEntry &e1, const TocEntry &e2)
+{
+  return e1.pos < e2.pos;
 }
 
 void Resource::write(const QString& fileName, const ResourcesModel* resourcesModel)
