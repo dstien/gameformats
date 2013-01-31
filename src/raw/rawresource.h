@@ -43,6 +43,10 @@ protected:
   void              parse(QDataStream* in);
   void              write(QDataStream* out) const;
 
+private slots:
+  void              exportFile();
+  void              importFile();
+
 private:
   void              setup();
 
@@ -52,6 +56,11 @@ private:
   unsigned int      m_length;
   quint8*           m_data;
   QLineEdit**       m_lineEdits;
+
+  static QString    m_currentFilePath;
+
+  static const char FILE_SETTINGS_PATH[];
+  static const char FILE_FILTERS[];
 };
 
 #endif

@@ -15,12 +15,20 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+#include <QFileDialog>
 #include <QLineEdit>
+#include <QMessageBox>
 
+#include "app/settings.h"
 #include "rawresource.h"
+
+QString RawResource::m_currentFilePath;
 
 const int RawResource::LENGTH_PATH;
 const int RawResource::LENGTH_TUNING;
+
+const char RawResource::FILE_SETTINGS_PATH[] = "paths/raw";
+const char RawResource::FILE_FILTERS[] = "All files (*)";
 
 RawResource::RawResource(QString id, QString type, unsigned int length, QWidget* parent, Qt::WindowFlags flags)
 : Resource(id, parent, flags),
@@ -106,4 +114,58 @@ void RawResource::setup()
 
     connect(le, SIGNAL(textChanged(QString)), this, SLOT(isModified()));
   }
+}
+
+void RawResource::exportFile()
+{
+  if (m_currentFilePath.isEmpty()) {
+    m_currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
+  }
+
+  // Suggest file name based on previously used path and current file and id.
+  QFileInfo fileInfo(m_currentFilePath);
+  fileInfo.setFile(
+      fileInfo.absolutePath() +
+      QDir::separator() +
+      QString("%1-%2").arg(QString(fileName()).replace('.', '_'), id()) +
+      ".bin");
+  m_currentFilePath = fileInfo.absoluteFilePath();
+
+  // Prompt for name and location.
+  QString outFileName = QFileDialog::getSaveFileName(
+      this,
+      tr("Export raw binary"),
+      m_currentFilePath,
+      FILE_FILTERS);
+
+  // Write file.
+  if (!outFileName.isEmpty()) {
+    Settings().setFilePath(FILE_SETTINGS_PATH, m_currentFilePath = outFileName);
+
+    QFile file(outFileName);
+
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+      QMessageBox::critical(
+          this,
+          QCoreApplication::applicationName(),
+          tr("Could not open file \"%1\" for writing.").arg(outFileName));
+      return;
+    }
+
+    QDataStream out(&file);
+    out.setByteOrder(QDataStream::LittleEndian);
+
+    write(&out);
+
+    out.unsetDevice();
+    file.close();
+  }
+}
+
+void RawResource::importFile()
+{
+  QMessageBox::critical(
+      this,
+      QCoreApplication::applicationName(),
+      tr("Not implemented."));
 }

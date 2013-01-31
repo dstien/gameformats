@@ -257,8 +257,52 @@
      </widget>
     </widget>
    </item>
+   <item>
+    <layout class="QHBoxLayout">
+     <item>
+      <spacer>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="buttonExport">
+       <property name="text">
+        <string>&amp;Export...</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="buttonImport">
+       <property name="text">
+        <string>&amp;Import...</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>buttonExport</sender>
+   <signal>clicked()</signal>
+   <receiver>RawResource</receiver>
+   <slot>exportFile()</slot>
+  </connection>
+  <connection>
+   <sender>buttonImport</sender>
+   <signal>clicked()</signal>
+   <receiver>RawResource</receiver>
+   <slot>importFile()</slot>
+  </connection>
+ </connections>
 </ui>
