@@ -282,10 +282,16 @@
      <string>Move &amp;last</string>
     </property>
    </action>
+   <action name="moveToPaintJobsAction">
+    <property name="text">
+     <string>Move &amp;to...</string>
+    </property>
+   </action>
    <addaction name="replaceMaterialsAction" />
    <addaction name="separator" />
    <addaction name="moveFirstPaintJobsAction" />
    <addaction name="moveUpPaintJobsAction" />
+   <addaction name="moveToPaintJobsAction" />
    <addaction name="moveDownPaintJobsAction" />
    <addaction name="moveLastPaintJobsAction" />
   </widget>
@@ -466,6 +472,12 @@
    <signal>triggered()</signal>
    <receiver>shapeResource</receiver>
    <slot>moveLastPaintJobs()</slot>
+  </connection>
+  <connection>
+   <sender>moveToPaintJobsAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>moveToPaintJobs()</slot>
   </connection>
   <connection>
    <sender>shapeResource</sender>

@@ -75,6 +75,7 @@ private slots:
   void              moveUpPaintJobs();
   void              moveDownPaintJobs();
   void              moveLastPaintJobs();
+  void              moveToPaintJobs();
   void              materialsContextMenu(const QPoint& pos);
 
   void              exportFile();

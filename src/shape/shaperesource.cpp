@@ -562,6 +562,23 @@ void ShapeResource::moveLastPaintJobs()
   movePaintJobs(ShapeModel::ROWS_MAX);
 }
 
+void ShapeResource::moveToPaintJobs()
+{
+  bool success;
+  int curPosition = m_ui.materialsView->currentIndex().row();
+  int newPosition = QInputDialog::getInt(
+      this,
+      tr("Move paint-jobs"),
+      tr("New position (1 - %1):").arg(m_ui.materialsView->model()->rowCount()),
+      curPosition + 1, 1, m_ui.materialsView->model()->rowCount(), 1, &success) - 1;
+
+  //Implemented so that the behaviour is consistent with move first/last.
+  if (success) {
+    moveFirstPaintJobs();
+    movePaintJobs(newPosition);
+  }
+}
+
 void ShapeResource::materialsContextMenu(const QPoint& /*pos*/)
 {
   if (m_ui.materialsView->model() && m_ui.materialsView->selectionModel()->hasSelection()) {
@@ -570,6 +587,7 @@ void ShapeResource::materialsContextMenu(const QPoint& /*pos*/)
     m_ui.moveUpPaintJobsAction->setEnabled(true);
     m_ui.moveDownPaintJobsAction->setEnabled(true);
     m_ui.moveLastPaintJobsAction->setEnabled(true);
+    m_ui.moveToPaintJobsAction->setEnabled(true);
   }
   else {
     m_ui.replaceMaterialsAction->setEnabled(false);
@@ -577,6 +595,7 @@ void ShapeResource::materialsContextMenu(const QPoint& /*pos*/)
     m_ui.moveUpPaintJobsAction->setEnabled(false);
     m_ui.moveDownPaintJobsAction->setEnabled(false);
     m_ui.moveLastPaintJobsAction->setEnabled(false);
+    m_ui.moveToPaintJobsAction->setEnabled(false);
   }
 
   m_ui.materialsMenu->exec(QCursor::pos());
