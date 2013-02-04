@@ -49,6 +49,7 @@ private slots:
 
 private:
   void              setup();
+  void              cleanup();
 
   Ui::RawResource   m_ui;
 

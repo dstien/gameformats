@@ -35,6 +35,8 @@ RawResource::RawResource(QString id, QString type, unsigned int length, QWidget*
   m_type(type),
   m_length(length)
 {
+  m_ui.setupUi(this);
+
   setup();
 
   for (unsigned int i = 0; i < m_length; ++i) {
@@ -47,6 +49,8 @@ RawResource::RawResource(const RawResource& res)
   m_type(res.m_type),
   m_length(res.m_length)
 {
+  m_ui.setupUi(this);
+
   setup();
 
   for (unsigned int i = 0; i < m_length; ++i) {
@@ -59,6 +63,8 @@ RawResource::RawResource(QString id, QString type, unsigned int length, QDataStr
   m_type(type),
   m_length(length)
 {
+  m_ui.setupUi(this);
+
   setup();
 
   parse(in);
@@ -90,8 +96,6 @@ void RawResource::write(QDataStream* out) const
 
 void RawResource::setup()
 {
-  m_ui.setupUi(this);
-
   const QFont* font = &m_ui.labelCol0->font();
 
   m_lineEdits = new QLineEdit*[m_length];
@@ -114,6 +118,23 @@ void RawResource::setup()
 
     connect(le, SIGNAL(textChanged(QString)), this, SLOT(isModified()));
   }
+}
+
+void RawResource::cleanup()
+{
+  for (unsigned int i = 0; i < m_length; ++i) {
+    delete m_lineEdits[i];
+
+    // Row label.
+    if (!(i % 16)) {
+      QLayoutItem* lbl = m_ui.gridLayout->itemAtPosition(1 + (i / 16), 0);
+      if (lbl) {
+        delete lbl->widget();
+      }
+    }
+  }
+
+  delete[] m_lineEdits;
 }
 
 void RawResource::exportFile()
@@ -164,8 +185,42 @@ void RawResource::exportFile()
 
 void RawResource::importFile()
 {
-  QMessageBox::critical(
-      this,
-      QCoreApplication::applicationName(),
-      tr("Not implemented."));
+ if (m_currentFilePath.isEmpty()) {
+    m_currentFilePath = Settings().getFilePath(FILE_SETTINGS_PATH);
+  }
+
+ // Prompt for name and location.
+ QString inFileName = QFileDialog::getOpenFileName(
+     this,
+     tr("Import raw binary"),
+     m_currentFilePath,
+     FILE_FILTERS);
+
+ // Read file.
+ if (!inFileName.isEmpty()) {
+   Settings().setFilePath(FILE_SETTINGS_PATH, m_currentFilePath = inFileName);
+
+   QFile file(inFileName);
+
+   if (!file.open(QIODevice::ReadOnly)) {
+      QMessageBox::critical(
+          this,
+          QCoreApplication::applicationName(),
+          tr("Could not open file \"%1\" for reading.").arg(inFileName));
+      return;
+ 
+   }
+
+   // Find length and re-setup widget.
+   cleanup();
+   m_length = file.size();
+   setup();
+
+   QDataStream in(&file);
+   in.setByteOrder(QDataStream::LittleEndian);
+
+   parse(&in);
+ 
+   file.close();
+ }
 }
