@@ -15,6 +15,7 @@
 #define CDDS_USAGE           "Usage: decdds [-v] [-q] infile.cdds [outfile.dds]\n"
 
 #define CDDS_MAGIC           0x990F44C8
+#define CDDS_DDS_MAGIC       0x20534444
 #define CDDS_FLG_ALPHA       0x00000001
 #define CDDS_FLG_FOURCC      0x00000004
 #define CDDS_FLG_RGB         0x00000040
@@ -907,7 +908,11 @@ int cdds_decode(const uint8_t *srcData, uint32_t srcLen, uint8_t **dstData, uint
     if (retval < -1) {
         return CDDS_ERR_EOFHDR;
     }
-    else if (retval > 3) {
+    else if (retval > -1) {
+        return CDDS_ERR_INVALIDHDR;
+    }
+
+    if (hdr.magic != CDDS_DDS_MAGIC) {
         return CDDS_ERR_INVALIDHDR;
     }
 
@@ -967,6 +972,10 @@ int cdds_decode(const uint8_t *srcData, uint32_t srcLen, uint8_t **dstData, uint
             break;
 
         default:
+            if (hdr.pxfmt.flags & CDDS_FLG_FOURCC) {
+                return CDDS_ERR_UNSUPPFMT;
+            }
+
             tab1 = g_tab1_rgb;
             tab2 = g_tab2_rgb;
             bpp = hdr.pxfmt.rgbbits;
@@ -1021,7 +1030,7 @@ int cdds_decode(const uint8_t *srcData, uint32_t srcLen, uint8_t **dstData, uint
     if (retval < -1) {
         return CDDS_ERR_EOFIMG;
     }
-    else if (retval > 3) {
+    else if (retval > 0) {
         return CDDS_ERR_INVALIDIMG;
     }
 
