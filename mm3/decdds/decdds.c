@@ -35,10 +35,11 @@
 #define CDDS_BUFLEN          0x40
 #define CDDS_BUFMASK         (CDDS_BUFLEN - 1)
 #define CDDS_TAB1_MAX        0x01FF
-#define CDDS_TAB2_BITS(x)    (x >> 12)
-#define CDDS_TAB2_CODE(x)    (x & 0x0FFF)
-#define CDDS_SEQ_LOOKBACK(x) ((x - 0x100) >> 3)
-#define CDDS_SEQ_LENGTH(x)   ((x - 0x100) & 7)
+#define CDDS_TAB2_BITS(x)    ((x) >> 12)
+#define CDDS_TAB2_CODE(x)    ((x) & 0x0FFF)
+#define CDDS_SEQ_LOOKBACK(x) (((x) - 0x100) >> 3)
+#define CDDS_SEQ_LENGTH(x)   (((x) - 0x100) & 7)
+#define CDDS_MAX(x, y)       ((x) > (y) ? (x) : (y))
 
 #define CDDS_ERR_USAGE        -1
 #define CDDS_ERR_MEM          -2
@@ -934,19 +935,19 @@ int cdds_decode(const uint8_t *srcData, uint32_t srcLen, uint8_t **dstData, uint
         printf("    caps\n");
         printf("      caps1:   %#.8x\n",    hdr.caps.caps1);
         printf("      caps2:   %#.8x\n\n",  hdr.caps.caps2);
-
-        printf("  image data (%u bytes)\n\n", *dstLen);
     }
 
     const uint32_t *tab1;
     const uint16_t *tab2;
     int bpp;
+    int texel;
 
     switch (hdr.pxfmt.fourcc) {
         case CDDS_FMT_DXT1:
             tab1 = g_tab1_dxt1;
             tab2 = g_tab2_dxt1;
             bpp = 4;
+            texel = 1;
             break;
 
         case CDDS_FMT_DXT2:
@@ -954,6 +955,7 @@ int cdds_decode(const uint8_t *srcData, uint32_t srcLen, uint8_t **dstData, uint
             tab1 = g_tab1_dxt23;
             tab2 = g_tab2_dxt23;
             bpp = 8;
+            texel = 1;
             break;
 
         case CDDS_FMT_DXT4:
@@ -961,12 +963,14 @@ int cdds_decode(const uint8_t *srcData, uint32_t srcLen, uint8_t **dstData, uint
             tab1 = g_tab1_dxt45;
             tab2 = g_tab2_dxt45;
             bpp = 8;
+            texel = 1;
             break;
 
         default:
             tab1 = g_tab1_rgb;
             tab2 = g_tab2_rgb;
             bpp = hdr.pxfmt.rgbbits;
+            texel = 0;
             break;
     }
 
@@ -987,11 +991,20 @@ int cdds_decode(const uint8_t *srcData, uint32_t srcLen, uint8_t **dstData, uint
     uint32_t mips = hdr.mips ? hdr.mips : 1;
 
     for (uint32_t mip = 0; mip < mips; ++mip) {
-        uint32_t width  = (hdr.width  >> mip) ? (hdr.width  >> mip) : 1;
-        uint32_t height = (hdr.height >> mip) ? (hdr.height >> mip) : 1;
+        uint32_t width  = CDDS_MAX(hdr.width  >> mip, 1);
+        uint32_t height = CDDS_MAX(hdr.height >> mip, 1);
         uint32_t slices = (hdr.caps.caps2 & CDDS_CAP_VOLUME) && (hdr.depth >> mip) ? (hdr.depth >> mip) : 1;
 
-        imglen += (width * height * bpp) / 8 * slices * images;
+        if (texel) {
+            imglen += ((width + 3) / 4) * ((height + 3) / 4) * bpp * 2 * slices * images;
+        }
+        else {
+            imglen += (width * height * bpp) / 8 * slices * images;
+        }
+    }
+
+    if (verbosity > 1) {
+        printf("  image data (%u bytes)\n\n", imglen);
     }
 
     *dstLen = sizeof(hdr) + imglen;
