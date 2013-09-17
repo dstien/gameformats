@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define CDDS_BANNER          "decdds - Midtown Madness 3 CDDS extractor (2013-09-16)\n\n"
+#define CDDS_BANNER          "decdds - Midtown Madness 3 CDDS extractor (2013-09-17)\n\n"
 #define CDDS_USAGE           "Usage: decdds [-v] [-q] infile.cdds [outfile.dds]\n"
 
 #define CDDS_MAGIC           0x990F44C8
@@ -1051,11 +1051,37 @@ int main(int argc, const char* argv[])
 
     // Parse options.
     for (int i = 1; i < argc; ++i) {
-        if (!strcmp(argv[i], "-v")) {
-            ++verbosity;
-        }
-        else if (!strcmp(argv[i], "-q")) {
-            verbosity = 0;
+        // Switches
+        if (argv[i][0] == '-') {
+            for (int j = 1; argv[i][j] != 0; ++j) {
+                switch (argv[i][j]) {
+                    case 'h':
+                    case '?':
+                        printf(CDDS_BANNER);
+                        printf(CDDS_USAGE"\n");
+                        printf("Options:\n");
+                        printf("  -v    increase verbosity\n");
+                        printf("  -q    quiet\n");
+                        printf("  -?    this helpful output\n\n");
+                        return 0;
+
+                    case 'v':
+                        ++verbosity;
+                        break;
+
+                    case 'q':
+                        verbosity = 0;
+                        break;
+
+                    default:
+                        usage();
+                }
+                if (argv[i][j] == 'h' || argv[i][j] == '?') {
+                    printf(CDDS_BANNER);
+                    printf(CDDS_USAGE"\n");
+                    return 0;
+                }
+            }
         }
         else if (srcFileName == NULL) {
             srcFileName = (char*)argv[i];
