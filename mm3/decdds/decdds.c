@@ -1085,11 +1085,6 @@ int main(int argc, const char* argv[])
                     default:
                         usage();
                 }
-                if (argv[i][j] == 'h' || argv[i][j] == '?') {
-                    printf(CDDS_BANNER);
-                    printf(CDDS_USAGE"\n");
-                    return 0;
-                }
             }
         }
         else if (srcFileName == NULL) {
