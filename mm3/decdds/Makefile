@@ -1,13 +1,18 @@
 CC = cc
 STRIP = strip
-CFLAGS = -std=c99 -O2 -Wall
+CFLAGS = -std=c99 -O2 -Wall -Wextra
 BINDIR = /usr/local/bin
 
-IN = decdds.c
+OBJS = decdds.o main.o
 OUT = decdds
 
-all $(OUT):
-	$(CC) $(CFLAGS) $(IN) -o $(OUT)
+all: $(OUT)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OUT): $(OBJS)
+	$(CC) -o $(OUT) $(OBJS)
 	$(STRIP) $(OUT)
 
 install: $(OUT)
@@ -17,4 +22,5 @@ uninstall:
 	rm -f $(BINDIR)/$(OUT)
 
 clean:
+	rm -f $(OBJS)
 	rm -f $(OUT)

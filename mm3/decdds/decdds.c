@@ -1,110 +1,16 @@
 /*
  * decdds - Midtown Madness 3 CDDS extractor
- * 
+ *
  * License: As is
  * Author:  Daniel Stien <daniel@stien.org>
  * URL:     https://github.com/dstien/gameformats
  */
 
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define CDDS_BANNER          "decdds - Midtown Madness 3 CDDS extractor (2013-09-17)\n\n"
-#define CDDS_USAGE           "Usage: decdds [-v] [-q] infile.cdds [outfile.dds]\n"
-
-#define CDDS_MAGIC           0x990F44C8
-#define CDDS_DDS_MAGIC       0x20534444
-#define CDDS_FLG_ALPHA       0x00000001
-#define CDDS_FLG_FOURCC      0x00000004
-#define CDDS_FLG_RGB         0x00000040
-#define CDDS_FMT_DXT1        0x31545844
-#define CDDS_FMT_DXT2        0x32545844
-#define CDDS_FMT_DXT3        0x33545844
-#define CDDS_FMT_DXT4        0x34545844
-#define CDDS_FMT_DXT5        0x35545844
-#define CDDS_CAP_CUBE        0x00000200
-#define CDDS_CAP_CUBE_POSX   0x00000400
-#define CDDS_CAP_CUBE_NEGX   0x00000800
-#define CDDS_CAP_CUBE_POSY   0x00001000
-#define CDDS_CAP_CUBE_NEGY   0x00002000
-#define CDDS_CAP_CUBE_POSZ   0x00004000
-#define CDDS_CAP_CUBE_NEGZ   0x00008000
-#define CDDS_CAP_VOLUME      0x00200000
-
-#define CDDS_BUFLEN          0x40
-#define CDDS_BUFMASK         (CDDS_BUFLEN - 1)
-#define CDDS_TAB1_MAX        0x01FF
-#define CDDS_TAB2_BITS(x)    ((x) >> 12)
-#define CDDS_TAB2_CODE(x)    ((x) & 0x0FFF)
-#define CDDS_SEQ_LOOKBACK(x) (((x) - 0x100) >> 3)
-#define CDDS_SEQ_LENGTH(x)   (((x) - 0x100) & 7)
-#define CDDS_MAX(x, y)       ((x) > (y) ? (x) : (y))
-
-#define CDDS_ERR_USAGE        -1
-#define CDDS_ERR_MEM          -2
-#define CDDS_ERR_OPEN         -3
-#define CDDS_ERR_READ         -4
-#define CDDS_ERR_WRITE        -5
-#define CDDS_ERR_WRONGTYPE    -6
-#define CDDS_ERR_UNSUPPFMT    -7
-#define CDDS_ERR_EOFHDR       -8
-#define CDDS_ERR_EOFIMG       -9
-#define CDDS_ERR_INVALIDHDR  -10
-#define CDDS_ERR_INVALIDIMG  -11
-
-// Context variables for decompression routine.
-typedef struct ctx_t {
-    const uint8_t  *srcptr;
-    uint32_t        srcdword;
-    int32_t         srcbits;
-
-    const uint32_t *tab1;
-    const uint16_t *tab2;
-
-    uint32_t        numbits;
-    uint32_t        lookupmask;
-    uint32_t        idxcode;
-    uint32_t        idxbits;
-
-    uint8_t         buf[CDDS_BUFLEN];
-    uint32_t        buflen;
-    uint32_t        bufend;
-    uint32_t        bufpos;
-} ctx_t;
-
-// DDS file header. Must be parsed in order to determine data size.
-typedef struct ddshdr_t {
-    uint32_t magic;
-    uint32_t size;
-    uint32_t flags;
-    uint32_t height;
-    uint32_t width;
-    uint32_t plsize;
-    uint32_t depth;
-    uint32_t mips;
-    uint32_t reserved1[11];
-
-    struct {
-        uint32_t size;
-        uint32_t flags;
-        uint32_t fourcc;
-        uint32_t rgbbits;
-        uint32_t rmask;
-        uint32_t gmask;
-        uint32_t bmask;
-        uint32_t amask;
-    } pxfmt;
-
-    struct {
-        uint32_t caps1;
-        uint32_t caps2;
-        uint32_t reserved[2];
-    } caps;
-
-    uint32_t reserved2;
-} ddshdr_t;
+#include "decdds.h"
 
 // Data type specific compression code lookup tables.
 static const uint32_t g_tab1_hdr[] = {
@@ -777,7 +683,7 @@ static const uint16_t g_tab2_dxt45[] = {
     0x7003, 0x7003, 0x7003, 0x7003, 0x7003, 0x7003, 0x7003, 0x7003, 0x90D3, 0x90D3, 0x903E, 0x903E, 0x906F, 0x906F, 0x90CD, 0x90CD
 };
 
-void ctx_init(ctx_t *ctx, uint32_t offset, const uint8_t *srcptr)
+void decdds_ctx_init(decdds_ctx_t *ctx, uint32_t offset, const uint8_t *srcptr)
 {
     uint8_t shift = offset & (32 - 1);
 
@@ -790,7 +696,7 @@ void ctx_init(ctx_t *ctx, uint32_t offset, const uint8_t *srcptr)
     ctx->idxbits = 0;
 }
 
-void ctx_reset(ctx_t *ctx, int32_t numbits, const uint32_t *tab1, const uint16_t *tab2)
+void decdds_ctx_reset(decdds_ctx_t *ctx, int32_t numbits, const uint32_t *tab1, const uint16_t *tab2)
 {
     ctx->tab1 = tab1;
     ctx->tab2 = tab2;
@@ -801,7 +707,7 @@ void ctx_reset(ctx_t *ctx, int32_t numbits, const uint32_t *tab1, const uint16_t
     ctx->bufpos = 0;
 }
 
-uint32_t readbits(ctx_t *ctx, int32_t numbits)
+uint32_t readbits(decdds_ctx_t *ctx, int32_t numbits)
 {
     uint32_t result;
 
@@ -824,7 +730,7 @@ uint32_t readbits(ctx_t *ctx, int32_t numbits)
     return result;
 }
 
-int decode(ctx_t *ctx, int numbytes, uint8_t *dst)
+int decdds_decode(decdds_ctx_t *ctx, int numbytes, uint8_t *dst)
 {
     uint32_t curcode = 0, curbits = 0;
     uint8_t *curdst = dst;
@@ -839,11 +745,11 @@ int decode(ctx_t *ctx, int numbytes, uint8_t *dst)
             ctx->idxcode |= readbits(ctx, ctx->numbits - ctx->idxbits);
 
             ctx->idxbits = ctx->numbits;
-            curbits = CDDS_TAB2_BITS(ctx->tab2[ctx->idxcode & ctx->lookupmask]);
-            curcode = CDDS_TAB2_CODE(ctx->tab2[ctx->idxcode & ctx->lookupmask]);
+            curbits = DECDDS_TAB2_BITS(ctx->tab2[ctx->idxcode & ctx->lookupmask]);
+            curcode = DECDDS_TAB2_CODE(ctx->tab2[ctx->idxcode & ctx->lookupmask]);
 
             if (curbits > ctx->numbits) {
-                while (curcode < CDDS_TAB1_MAX) {
+                while (curcode < DECDDS_TAB1_MAX) {
                     if (readbits(ctx, 1) == 1) {
                         curcode += (uint16_t)(ctx->tab1[curcode] >> 16) + 1;
                     }
@@ -863,19 +769,19 @@ int decode(ctx_t *ctx, int numbytes, uint8_t *dst)
             if (curcode < 0x100) {
                 *(++curdst) = (uint8_t)curcode;
                 ctx->buf[ctx->buflen] = (uint8_t)curcode;
-                ctx->buflen = (ctx->buflen + 1) & CDDS_BUFMASK;
+                ctx->buflen = (ctx->buflen + 1) & DECDDS_BUFMASK;
             }
             // Copy from buffer.
             else {
-                ctx->bufpos = (ctx->buflen - CDDS_SEQ_LOOKBACK(curcode) - 1) & CDDS_BUFMASK;
-                ctx->bufend = (ctx->bufpos + CDDS_SEQ_LENGTH(curcode)   + 2) & CDDS_BUFMASK;
+                ctx->bufpos = (ctx->buflen - DECDDS_SEQ_LOOKBACK(curcode) - 1) & DECDDS_BUFMASK;
+                ctx->bufend = (ctx->bufpos + DECDDS_SEQ_LENGTH(curcode)   + 2) & DECDDS_BUFMASK;
                 ++numbytes;
 
                 while (numbytes && (ctx->bufpos != ctx->bufend)) {
                     *(++curdst) = ctx->buf[ctx->bufpos];
                     ctx->buf[ctx->buflen] = ctx->buf[ctx->bufpos];
-                    ctx->bufpos = (ctx->bufpos + 1) & CDDS_BUFMASK;
-                    ctx->buflen = (ctx->buflen + 1) & CDDS_BUFMASK;
+                    ctx->bufpos = (ctx->bufpos + 1) & DECDDS_BUFMASK;
+                    ctx->buflen = (ctx->buflen + 1) & DECDDS_BUFMASK;
                     --numbytes;
                 }
 
@@ -889,31 +795,35 @@ int decode(ctx_t *ctx, int numbytes, uint8_t *dst)
     return numbytes;
 }
 
-int cdds_decode(const uint8_t *srcData, uint32_t srcLen, uint8_t **dstData, uint32_t *dstLen, int verbosity)
+int decdds_extract(const uint8_t *srcData, uint32_t srcLen, uint8_t **dstData, uint32_t *dstLen, int verbosity)
 {
-    ctx_t ctx;
-    ddshdr_t hdr;
+    decdds_ctx_t ctx;
+    decdds_ddshdr_t hdr;
     int retval = 0;
 
-    ctx_init(&ctx, 0, srcData);
-    ctx_reset(&ctx, 10, g_tab1_hdr, g_tab2_hdr);
+    if (!srcLen) {
+        return 0;
+    }
 
-    if (ctx.srcdword != CDDS_MAGIC) {
-        return CDDS_ERR_WRONGTYPE;
+    decdds_ctx_init(&ctx, 0, srcData);
+    decdds_ctx_reset(&ctx, 10, g_tab1_hdr, g_tab2_hdr);
+
+    if (ctx.srcdword != DECDDS_MAGIC) {
+        return DECDDS_ERR_WRONGTYPE;
     }
 
     // Decode header.
-    retval = decode(&ctx, sizeof(hdr), (uint8_t*)&hdr - 1);
+    retval = decdds_decode(&ctx, sizeof(hdr), (uint8_t*)&hdr - 1);
 
     if (retval < -1) {
-        return CDDS_ERR_EOFHDR;
+        return DECDDS_ERR_EOFHDR;
     }
     else if (retval > -1) {
-        return CDDS_ERR_INVALIDHDR;
+        return DECDDS_ERR_INVALIDHDR;
     }
 
-    if (hdr.magic != CDDS_DDS_MAGIC) {
-        return CDDS_ERR_INVALIDHDR;
+    if (hdr.magic != DECDDS_DDS_MAGIC) {
+        return DECDDS_ERR_INVALIDHDR;
     }
 
     if (verbosity > 1) {
@@ -948,23 +858,23 @@ int cdds_decode(const uint8_t *srcData, uint32_t srcLen, uint8_t **dstData, uint
     int texel;
 
     switch (hdr.pxfmt.fourcc) {
-        case CDDS_FMT_DXT1:
+        case DECDDS_FMT_DXT1:
             tab1 = g_tab1_dxt1;
             tab2 = g_tab2_dxt1;
             bpp = 4;
             texel = 1;
             break;
 
-        case CDDS_FMT_DXT2:
-        case CDDS_FMT_DXT3:
+        case DECDDS_FMT_DXT2:
+        case DECDDS_FMT_DXT3:
             tab1 = g_tab1_dxt23;
             tab2 = g_tab2_dxt23;
             bpp = 8;
             texel = 1;
             break;
 
-        case CDDS_FMT_DXT4:
-        case CDDS_FMT_DXT5:
+        case DECDDS_FMT_DXT4:
+        case DECDDS_FMT_DXT5:
             tab1 = g_tab1_dxt45;
             tab2 = g_tab2_dxt45;
             bpp = 8;
@@ -972,8 +882,8 @@ int cdds_decode(const uint8_t *srcData, uint32_t srcLen, uint8_t **dstData, uint
             break;
 
         default:
-            if (hdr.pxfmt.flags & CDDS_FLG_FOURCC) {
-                return CDDS_ERR_UNSUPPFMT;
+            if (hdr.pxfmt.flags & DECDDS_FLG_FOURCC) {
+                return DECDDS_ERR_UNSUPPFMT;
             }
 
             tab1 = g_tab1_rgb;
@@ -986,23 +896,23 @@ int cdds_decode(const uint8_t *srcData, uint32_t srcLen, uint8_t **dstData, uint
     // Find data length for texture/cube/volume with mips at given dimentions/bpp.
     uint32_t images = 1;
 
-    if (hdr.caps.caps2 & CDDS_CAP_CUBE) {
+    if (hdr.caps.caps2 & DECDDS_CAP_CUBE) {
         images = 0;
-        if (hdr.caps.caps2 & CDDS_CAP_CUBE_POSX) ++images;
-        if (hdr.caps.caps2 & CDDS_CAP_CUBE_NEGX) ++images;
-        if (hdr.caps.caps2 & CDDS_CAP_CUBE_POSY) ++images;
-        if (hdr.caps.caps2 & CDDS_CAP_CUBE_NEGY) ++images;
-        if (hdr.caps.caps2 & CDDS_CAP_CUBE_POSZ) ++images;
-        if (hdr.caps.caps2 & CDDS_CAP_CUBE_NEGZ) ++images;
+        if (hdr.caps.caps2 & DECDDS_CAP_CUBE_POSX) ++images;
+        if (hdr.caps.caps2 & DECDDS_CAP_CUBE_NEGX) ++images;
+        if (hdr.caps.caps2 & DECDDS_CAP_CUBE_POSY) ++images;
+        if (hdr.caps.caps2 & DECDDS_CAP_CUBE_NEGY) ++images;
+        if (hdr.caps.caps2 & DECDDS_CAP_CUBE_POSZ) ++images;
+        if (hdr.caps.caps2 & DECDDS_CAP_CUBE_NEGZ) ++images;
     }
 
     uint32_t imglen = 0;
     uint32_t mips = hdr.mips ? hdr.mips : 1;
 
     for (uint32_t mip = 0; mip < mips; ++mip) {
-        uint32_t width  = CDDS_MAX(hdr.width  >> mip, 1);
-        uint32_t height = CDDS_MAX(hdr.height >> mip, 1);
-        uint32_t slices = (hdr.caps.caps2 & CDDS_CAP_VOLUME) && (hdr.depth >> mip) ? (hdr.depth >> mip) : 1;
+        uint32_t width  = DECDDS_MAX(hdr.width  >> mip, 1);
+        uint32_t height = DECDDS_MAX(hdr.height >> mip, 1);
+        uint32_t slices = (hdr.caps.caps2 & DECDDS_CAP_VOLUME) && (hdr.depth >> mip) ? (hdr.depth >> mip) : 1;
 
         if (texel) {
             imglen += ((width + 3) / 4) * ((height + 3) / 4) * bpp * 2 * slices * images;
@@ -1019,187 +929,20 @@ int cdds_decode(const uint8_t *srcData, uint32_t srcLen, uint8_t **dstData, uint
     *dstLen = sizeof(hdr) + imglen;
 
     if ((*dstData = (uint8_t*)malloc(*dstLen)) == NULL) {
-        return CDDS_ERR_MEM;
+        return DECDDS_ERR_MEM;
     }
 
     memcpy(*dstData, &hdr, sizeof(hdr));
 
-    ctx_reset(&ctx, 10, tab1, tab2);
-    retval = decode(&ctx, imglen, *dstData + sizeof(hdr) - 1);
+    decdds_ctx_reset(&ctx, 10, tab1, tab2);
+    retval = decdds_decode(&ctx, imglen, *dstData + sizeof(hdr) - 1);
 
     if (retval < -1) {
-        return CDDS_ERR_EOFIMG;
+        return DECDDS_ERR_EOFIMG;
     }
     else if (retval > 0) {
-        return CDDS_ERR_INVALIDIMG;
+        return DECDDS_ERR_INVALIDIMG;
     }
 
     return 0;
 }
-
-void panic(const char *fmt)
-{
-    fprintf(stderr, "%s", fmt);
-    abort();
-}
-
-void usage()
-{
-    fprintf(stderr, CDDS_USAGE);
-    exit(CDDS_ERR_USAGE);
-}
-
-int main(int argc, const char* argv[])
-{
-    char *srcFileName = NULL, *dstFileName = NULL;
-    FILE *srcFile, *dstFile;
-    uint8_t *srcData, *dstData = NULL;
-    uint32_t srcLen, dstLen;
-    int retval;
-    int verbosity = 1;
-
-    // Parse options.
-    for (int i = 1; i < argc; ++i) {
-        // Switches
-        if (argv[i][0] == '-') {
-            for (int j = 1; argv[i][j] != 0; ++j) {
-                switch (argv[i][j]) {
-                    case 'h':
-                    case '?':
-                        printf(CDDS_BANNER);
-                        printf(CDDS_USAGE"\n");
-                        printf("Options:\n");
-                        printf("  -v    increase verbosity\n");
-                        printf("  -q    quiet\n");
-                        printf("  -?    this helpful output\n\n");
-                        return 0;
-
-                    case 'v':
-                        ++verbosity;
-                        break;
-
-                    case 'q':
-                        verbosity = 0;
-                        break;
-
-                    default:
-                        usage();
-                }
-            }
-        }
-        else if (srcFileName == NULL) {
-            srcFileName = (char*)argv[i];
-        }
-        else if (dstFileName == NULL) {
-            dstFileName = (char*)argv[i];
-        }
-        else {
-            usage();
-        }
-    }
-
-    if (verbosity) {
-        printf(CDDS_BANNER);
-    }
-
-    // No input file name given.
-    if (srcFileName == NULL) {
-        usage();
-    }
-
-    // Generate output file name if not specified.
-    if (dstFileName == NULL) {
-        char *srcExt = ".cdds";
-        char *dstExt = ".dds";
-        size_t lenSrcName = strlen(srcFileName);
-        size_t lenSrcExt = strlen(srcExt);
-        size_t lenDstExt = strlen(dstExt);
-
-        dstFileName = (char*)malloc(lenSrcName + lenDstExt + 1);
-        strncpy(dstFileName, srcFileName, lenSrcName + 1);
-
-        // Replace ".cdds" extension with ".dds".
-        if ((lenSrcName > lenSrcExt) && !strncmp(srcFileName + lenSrcName - lenSrcExt, srcExt, lenSrcExt)) {
-            strncpy(dstFileName + lenSrcName - lenSrcExt, dstExt, lenDstExt + 1);
-        }
-        // Append ".dds" extension if input file don't ends with ".cdds".
-        else {
-            strncpy(dstFileName + lenSrcName, dstExt, lenDstExt + 1);
-        }
-    }
-
-    if ((srcFile = fopen(srcFileName, "rb")) == NULL) {
-        fprintf(stderr, "Error: Can't open input file \"%s\".\n", srcFileName);
-        return CDDS_ERR_OPEN;
-    }
-
-    if (fseek(srcFile, 0, SEEK_END) != 0) {
-        panic("fseek() failed.\n");
-    }
-
-    if ((srcLen = ftell(srcFile)) == -1) {
-        panic("ftell() failed.\n");
-    }
-
-    if (fseek(srcFile, 0, SEEK_SET) != 0) {
-        panic("fseek() failed.\n");
-    }
-
-    if ((srcData = (uint8_t*)malloc(srcLen)) == NULL) {
-        panic("malloc() failed.\n");
-    }
-
-    if (verbosity) {
-        printf("Reading \"%s\" (%d bytes)\n", srcFileName, srcLen);
-    }
-
-    if (fread(srcData, 1, srcLen, srcFile) != srcLen) {
-        fprintf(stderr, "Error: Can't read input file \"%s\".\n", srcFileName);
-        return CDDS_ERR_READ;
-    }
-
-    if (fclose(srcFile) != 0) {
-        panic("fclose() failed.\n");
-    }
-
-    if ((retval = cdds_decode(srcData, srcLen, &dstData, &dstLen, verbosity)) == 0) {
-        if (verbosity) {
-            printf("Writing \"%s\" (%d bytes)\n", dstFileName, dstLen);
-        }
-
-        if ((dstFile = fopen(dstFileName, "wb")) == NULL) {
-            fprintf(stderr, "Error: Can't create output file \"%s\".\n", dstFileName);
-            return CDDS_ERR_OPEN;
-        }
-
-        if (fwrite(dstData, 1, dstLen, dstFile) != dstLen) {
-            fprintf(stderr, "Error: Can't write output file \"%s\".\n", dstFileName);
-            return CDDS_ERR_WRITE;
-        }
-
-        if (fclose(dstFile) != 0) {
-            panic("fclose failed.\n");
-        }
-    }
-    else {
-        switch (retval) {
-            case CDDS_ERR_WRONGTYPE:
-                fprintf(stderr, "Error: Not a valid CDDS file\n");
-                break;
-
-            case CDDS_ERR_MEM:
-                fprintf(stderr, "Error: Couldn't allocate memory.\n");
-                break;
-
-            default:
-                fprintf(stderr, "Error: Decoding failed.\n");
-                break;
-        }
-    }
-
-    free(srcData);
-    free(dstData);
-
-    return retval;
-}
-
