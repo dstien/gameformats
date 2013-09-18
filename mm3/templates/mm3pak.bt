@@ -1,0 +1,123 @@
+//--------------------------------------
+//--- 010 Editor v5.0 Binary Template
+//
+// File:     mm3pak.bt
+// Author:   Daniel Stien <daniel@stien.org>
+// Revision: 2013-09-18
+// Purpose:  Midtown Madness 3 city package
+//--------------------------------------
+
+local int extractCityCells = 0; // Toggle extraction to separate files for further inspection
+
+local int pakFileNo = GetFileNum();
+
+local string tocFileName = FileNameGetPath(GetFileName())
+                         + FileNameGetBase(GetFileName(), false)
+                         + ".toc";
+local int tocFileNo = FileOpen(tocFileName, false, "Hex", true);
+
+if (tocFileNo == -1) {
+    Warning("Couldn't open TOC file '%s'.", tocFileName);
+    return;
+}
+
+FileSelect(tocFileNo);
+local uint32 numEntries = ReadUInt(8);
+
+local uint32 unks[numEntries];
+local uint32 sizes[numEntries];
+local uint32 offsets[numEntries];
+local uint32 sortedIndices[numEntries];
+
+local uint32 i, j;
+local uint32 sum = 0;
+
+local uint32 curOffset = -1;
+local uint32 curIndex = -1;
+
+// Read TOC.
+for (i = 0; i < numEntries; i++) {
+    unks[i] = ReadUInt(12 + i * 12);
+    sizes[i] = ReadUInt(12 + i * 12 + 4);
+    offsets[i] = ReadUInt(12 + i * 12 + 8);
+
+    if (offsets[i] == 0) {
+        curOffset = 0;
+        curIndex = i;
+        sortedIndices[0] = i;
+    }
+
+    sum += sizes[i];
+}
+
+if (curIndex == -1) {
+    Warning("Couldn't locate file at offset 0.");
+    return;
+}
+
+// File indices sorted by offset.
+for (i = 1; i < numEntries; i++) {
+    curOffset = sum;
+    for (j = 0; j < numEntries; j++) {
+        if (offsets[j] > offsets[sortedIndices[i - 1]] && offsets[j] < curOffset) {
+            curOffset = offsets[j];
+            curIndex = j;
+        }
+    }
+    sortedIndices[i] = curIndex;
+}
+
+FileClose();
+FileSelect(pakFileNo);
+
+// Read files in order of appearance.
+typedef struct (uint32 tocIndex, uint32 tocUnk, uint32 length) {
+    local uint32 index = tocIndex;
+    local uint32 unk   = tocUnk;
+    ubyte        data[length];
+} File <read=ReadFile>;
+
+local int numCityCells = 0;
+local int cellFileNo;
+local string cellFileName;
+
+for (i = 0; i < numEntries; i++) {
+    File file(sortedIndices[i], unks[sortedIndices[i]], sizes[sortedIndices[i]]);
+
+    if (file.data[0] > 0 && file.data[1] == 0 && file.data[2] == 0 && file.data[3] == 0 && file.data[4] > 0 && file.data[5] == 0 && file.data[6] == 0 && file.data[7] == 0) {
+        numCityCells++;
+        SPrintf(cellFileName, "%sCells\\%s%04d.cell", FileNameGetPath(GetFileName()), FileNameGetBase(GetFileName(), false), file.data[0]);
+
+        // Extract city cells to separate files.
+        if (extractCityCells) {
+            cellFileNo = FileNew("Hex", true);
+            FileSelect(cellFileNo);
+            WriteBytes(file.data, 0, sizes[sortedIndices[i]]);
+            FileSave(cellFileName);
+            FileClose();
+            FileSelect(pakFileNo);
+            Printf("%04d %04d %08X %s\n", file.index, numCityCells, file.unk, cellFileName);
+        }
+    }
+}
+
+Printf("numCityCells: %d\n", numCityCells);
+
+// Display original index and unk from TOC.
+string ReadFile(File &d)
+{
+    string s;
+    SPrintf(s, "%04d: %08X", d.index, d.unk);
+
+    if (d.data[0] > 0 && d.data[1] == 0 && d.data[2] == 0 && d.data[3] == 0 && d.data[4] > 0 && d.data[5] == 0 && d.data[6] == 0 && d.data[7] == 0) {
+        SPrintf(s, "%s (city cell %d)", s, d.data[0]);
+    }
+
+    if (d.index == 0) {
+        s += "   *********";
+    }
+    else if (d.index == 1) {
+        s += "   #########";
+    }
+    return s;
+}

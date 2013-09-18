@@ -1,0 +1,19 @@
+//--------------------------------------
+//--- 010 Editor v5.0 Binary Template
+//
+// File:     mm3pak.bt
+// Author:   Daniel Stien <daniel@stien.org>
+// Revision: 2013-09-16
+// Purpose:  Midtown Madness 3 city package table of contents
+//--------------------------------------
+
+typedef struct {
+    uint32 unk;
+    uint32 size;
+    uint32 offst;
+} Entry <open=true>;
+
+uint32 pakLength;
+uint32 unknown;
+uint32 numEntries;
+Entry entries[numEntries];
