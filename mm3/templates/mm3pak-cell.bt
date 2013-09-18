@@ -1,0 +1,161 @@
+//--------------------------------------
+//--- 010 Editor v5.0 Binary Template
+//
+// File:     mm3pak-cell.bt
+// Author:   Daniel Stien <daniel@stien.org>
+// Revision: 2013-09-16
+// Purpose:  Midtown Madness 3 city cell from .pak archive
+//--------------------------------------
+
+struct {
+    uint32 id;
+    uint32 unk2;
+    uint32 numFacadeSections;
+    uint32 offFacadeSections;
+    uint32 unkNoise1Offset;
+    uint32 unkNoise1FullLength;
+    uint32 numFacadeIndices;
+    uint32 offFacadeIndices;
+
+    uint32 unkSect5Num;
+    uint32 unkSect5Offset;
+    uint32 numJunctionSections;
+    uint32 offJunctionSections;
+
+    uint32 unkSect4Num;
+    uint32 unkSect4Offset;
+
+    uint32 unkSect6Num;
+    uint32 unkSect6Offset;
+
+    uint32 unkSect7Num;
+    uint32 unkSect7Offset;
+
+    uint32 unkSect8Num;
+    uint32 unkSect8Offset;
+
+    uint32 unkSect9Offset;
+    uint32 unkSect9Offset2;
+    uint32 unkSect9Num;
+
+    uint32 unkSect10Offset;
+
+    // offset + lengh pairs?
+    uint32 unkSect11Offset;
+    uint32 unkSect12Num;
+    uint32 unkSect12Offset;
+    uint32 unk4a;
+    float unk4b[4];
+
+    struct {
+        uint32 unk; // 0x80
+        uint32 offset;
+        uint32 width; // 101
+    } Map;
+
+    float unk5[9]; // mtx?
+    uint32 unkSectXNum1;
+    uint32 unkSectXNum2;
+    uint32 unkSectXNum3;
+    uint32 unkSectXOffset;
+} Header;
+
+float unk6[11];
+
+struct {
+    float unk1[8];
+    uint16 unk2[6];
+} unk7[36];
+
+uint16 unk8[1022];
+uint32 unk8b;
+uint16 unk9[1022];
+
+ubyte pad0[Header.offFacadeSections - FTell()];
+
+// Facades (not bound)
+struct {
+    uint32 unk1;
+    uint32 unk2;
+    uint32 unk3;
+    ubyte  unk4[16];
+    uint32 unk5;
+    uint32 unk6;
+    float  unk7[18];
+    uint16 unk8;
+    uint16 unk9;
+} FacadeSect[Header.numFacadeSections];
+ubyte pad1[Header.unkNoise1Offset - FTell()];
+
+ubyte unkNoise1[Header.numFacadeIndices];
+//uint32 unk10;
+//ubyte unkData1[Header.unkNoise1FullLength - Header.numFacadeIndices - 4]; // bound?
+ubyte pad2[Header.offFacadeIndices - FTell()];
+
+uint16 facadeIndices[Header.numFacadeIndices];
+ubyte pad3[Header.offJunctionSections - FTell()];
+
+// Junctions (not bound)
+struct {
+    ubyte data[248];
+} JunctionSect[Header.numJunctionSections];
+ubyte pad4[Header.unkSect4Offset - FTell()];
+
+// Road surface/bound?
+struct {
+    ubyte data[1080];
+} UnkSect4[Header.unkSect4Num];
+
+ubyte pad5a[Header.unkSect5Offset - FTell()];
+
+struct {
+    ubyte data[204];
+} UnkSect5[Header.unkSect5Num];
+
+ubyte pad5[Header.unkSect6Offset - FTell()];
+
+struct {
+    float data[8];
+} UnkSect6[Header.unkSect6Num];
+
+struct {
+    float data[23];
+} UnkSect6b[Header.unkSect6Num];
+
+ubyte pad6[Header.unkSect7Offset - FTell()];
+
+struct {
+    ubyte data[200];
+} UnkSect7[Header.unkSect7Num];
+
+ubyte pad7[Header.unkSect8Offset - FTell()];
+
+struct {
+    ubyte data[92];
+} UnkSect8[Header.unkSect8Num];
+
+ubyte padX[Header.unkSectXOffset - FTell()];
+
+struct {
+    ubyte data[48];
+} UnkSectX[Header.unkSectXNum1 * Header.unkSectXNum2 * Header.unkSectXNum3];
+
+ubyte pad8[Header.unkSect9Offset - FTell()];
+
+uint16 unkSect9[Header.unkSect9Num];
+
+ubyte pad9[Header.unkSect10Offset - FTell()];
+
+struct {
+    ubyte data[128];
+} unkSect11[10]; // ???????
+
+ubyte pad11[Header.unkSect12Offset - FTell()];
+
+uint16 unkSect12[Header.unkSect12Num];
+
+ubyte pad12[Header.Map.offset - FTell()];
+
+ubyte mapImageData[Header.Map.width * Header.Map.width];
+
+ubyte padMap[FileSize() - FTell()];
