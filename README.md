@@ -3,9 +3,9 @@ dstien's game formats
 
 Tools and specs for reverse engineered game file formats.
 
-Content
--------
+Contents
+--------
 
-* **mm3** - Midtown Madness 3 (XBOX 2003)
+* **mm3** - Midtown Madness 3 (DICE, XBOX 2003)
   * *decdds*: Extract CDDS textures.
   * *templates*: Misc binary templates.

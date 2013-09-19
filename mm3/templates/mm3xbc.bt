@@ -1,0 +1,344 @@
+//--------------------------------------
+//--- 010 Editor v5.0 Binary Template
+//
+// File:     mm3xbc.bt
+// Author:   Daniel Stien <daniel@stien.org>
+// Revision: 2013-09-16
+// Purpose:  Midtown Madness 3 city
+//--------------------------------------
+
+typedef struct {
+    float x[4];
+    float y[4];
+    float z[4];
+    float w[3];
+} Matrix;
+
+typedef struct {
+    float x;
+    float y;
+    float z;
+} Vertex3f;
+
+typedef struct {
+    float x;
+    float y;
+    float z;
+    float w;
+} Vertex4f;
+
+typedef struct {
+    int16 x;
+    int16 y;
+    int16 z;
+    ubyte unk[14];
+} Vertex1;
+
+typedef struct {
+    int16 x;
+    int16 y;
+    int16 z;
+    ubyte unk[10];
+} Vertex2;
+
+typedef struct {
+    /*int x : 11;
+    int y : 11;
+    int z : 10;*/
+    int16 x;
+    int16 y;
+    //int w : 2;
+    float unknown;
+} Vertex3;
+
+typedef struct {
+    uint32 numVertices;
+    uint32 numIndices;
+    Vertex1 vertices[numVertices];
+    uint16 indices[numIndices];
+} Mesh <optimize=false>;
+
+typedef struct {
+    uint32  numVertices;
+    uint32  numIndices;
+    Vertex2 vertices[numVertices];
+    uint16  indices[numIndices];
+} Mesh2 <optimize=false>;
+
+typedef struct {
+    float x;
+    float y;
+    float z;
+    float u;
+    float v;
+    uint16 u1;
+    uint16 u2;
+} Mesh3Vertex1;
+
+typedef struct {
+    int x : 10;
+    int y : 11;
+    int z : 11;
+    int nx : 10;
+    int ny : 11;
+    int nz : 11;
+    int u : 10;
+    int v : 11;
+    int w : 11;
+    uint32 unk;
+} Mesh3Vertex2;
+
+typedef struct {
+    uint32 numVert1;
+    Mesh3Vertex1 vert1[numVert1];
+    uint32 numVert2;
+    Mesh3Vertex2 vert2[numVert2]; // Must be another data type
+    uint32 numIndices;
+    uint16 indices[numIndices];
+} Mesh3 <optimize=false>;
+
+typedef struct {
+    uint32 unk1;
+    uint32 meshId;
+    uint16 sectDef;
+    uint16 firstVertexId; // ?
+    uint16 indexCount;
+    uint16 indexOffset;
+    uint16 numQuads;
+    uint16 unk2;
+    uint16 unk3[10]; // uint16 offsets + lengths in indices list
+    uint32 objectsOffset;
+    uint32 numObjects;
+    uint32 indexInObjectsUnk12;
+    uint32 entriesInObjectsUnk12;
+    float  unkBbox[12];
+    uint32 unk4;
+    if (unk4 > 0x0100) { // Facade mesh
+        uint32 unk5[5]; // separate collision mesh?
+    }
+} MeshSection <optimize=false, read=ReadMeshSection>;
+
+string ReadMeshSection(MeshSection &d)
+{
+  string s;
+  SPrintf(s, "%d: %d", d.meshId, d.unk3[2]);
+  //SPrintf(s, "%d   %d   %d   %d", d.unk1, d.sectDef, d.unk2[0], d.unk2[5]);
+  return s;
+}
+
+// Objcet mesh section...
+typedef struct {
+    uint32 unk1;
+    uint16 unk2;
+    uint16 id;
+    float  unk3[48];
+    uint16 unk3;
+    uint16 bound; 
+    uint16 unk4;
+    uint16 unk5;
+    uint16 verticesIndex;
+    uint16 indicesIndex;
+    uint16 unk6;
+    uint32 unk7[5];
+    uint16 unk8[5];
+} UnkSect3;
+
+typedef struct {
+    uint32 dataLen;
+    string name;
+    uint32 type;
+    uint32 tileUnk10;
+    uint32 width;
+    uint32 height;
+    uint32 stride;
+    uint32 mips;
+    uint32 tileUnk13;
+/*local int i = 0, w = width, h = height, len = 0;
+
+    for (i = 0; i < tileUnk12; i++) {
+        switch (type) {
+            case 16: // Unk
+                len += w * h;
+                break;
+            case 19: // DXT1 (4 bit per pixel)
+                len += w * h / 2;
+                break;
+        }
+        w /= 2;
+        h /= 2;
+    }
+    ubyte data[len];*/
+} TileHeader;
+
+typedef struct {
+    TileHeader header;
+    ubyte data[header.dataLen];
+} Tile <optimize=false, read=ReadTile>;
+
+string ReadTile(Tile &d)
+{
+  string s;
+  SPrintf(s, "%s (%d)", d.header.name, d.header.type /*d.header.dataLen*/);
+  return s;
+}
+
+typedef struct {
+    TileHeader header; // Original header?
+    Tile tile; // Compressed?
+} ProcessedTile <optimize=false, read=ReadProcessedTile>;
+
+string ReadProcessedTile(ProcessedTile &d)
+{
+  string s;
+  SPrintf(s, "%s (%d)", d.header.name, d.tile.header.type /*d.header.dataLen*/);
+  return s;
+}
+
+typedef struct {
+    string name;
+    uint32 num;
+    uint16 data[num];
+} TreeBase <optimize=false, read=ReadTreeBase>;
+
+string ReadTreeBase(TreeBase &d)
+{
+  string s;
+  SPrintf(s, "%s (%d)", d.name, d.num);
+  return s;
+}
+
+// Must encapsulate string in struct in order to read string arrays.
+typedef struct {
+    string s;
+} String <optimize=false, read=ReadStringVal>;
+
+string ReadStringVal(String &d)
+{
+  string s;
+  SPrintf(s, "%s", d.s);
+  return s;
+}
+
+// Header
+struct {
+    string version;
+    uint32 numCellCols; // Grid of city parts
+    uint32 numCellRows;
+    string name;
+    float  bbox[11];
+    uint32 unk3[11];
+    float  unk4[7];
+    int32  numCells1; // City cells in .pak file (numCellCols * numCellRows)
+    int32  unk5[numCells1];
+    int32  numCells2;
+    int32  unk6[numCells2];
+    int32  unk7[4];
+} header;
+
+// Roads
+struct {
+    int32  numMatrices;
+    Matrix matrices[numMatrices];
+    
+    uint32 numMeshes;
+    Mesh   meshes[numMeshes];
+    
+    uint32 roadTilesDataLenSum;
+    struct {
+        Tile roadTiles[5];
+    } roadTiles;
+    
+    uint32 numMeshSections;
+    MeshSection meshSections[numMeshSections];
+
+    uint32 numObjectIndices;
+    uint16 objectIndices[numObjectIndices]; // Index in name list
+    
+    uint32 numObjectPositions;
+    typedef struct {
+      float f1, f2, f3, f4, f5, f6, f7;
+    } ObjectPosition;
+    ObjectPosition objectPositions[numObjectPositions];
+} roads;
+
+// Houses
+struct {
+    uint32 numMesh2;
+    Mesh2  meshes2[numMesh2];
+    
+    uint32 houseTileDataLenSum;
+    Tile houseTiles[6];
+    
+    uint32 numMeshSections;
+    MeshSection mesSections[numMeshSections];
+    
+    uint32 numObjectIndices;
+    uint16 objectIndices[numObjectIndices]; // Index in name list
+    
+    uint32 numObjectPositions;
+    Vertex4f objectPositions[numObjectPositions];
+} facades;
+
+// Objects
+struct {
+    uint32 numUnk12;
+    Vertex3 unk12[numUnk12]; // Not a vertex
+    
+    uint32 numUnkSect3;
+    UnkSect3 unkSect3[numUnkSect3];
+    
+    uint32 numObjects;
+    String objects[numObjects];
+    
+    uint32 numUnk14;
+    Vertex3f unk14[numUnk14];
+    
+    uint32 numUnk15;
+    Vertex3f unk15[numUnk15 * 2];
+    
+    uint32 numUnk16;
+    Vertex3f unk16[numUnk16];
+    
+    uint32 numUnk17;
+    Vertex4f unk17[numUnk17];
+    
+    uint32 numUnk18;
+    float unk18[numUnk18 * 7];
+    
+    uint32 numUnk19;
+    float  unk19[numUnk19 * 6];
+} objects;
+
+// Tree bases
+struct {
+    uint32 numUnk20;
+    float  unk20[numUnk20 * 4];
+
+    uint32 numTreeBases;
+    TreeBase treeBases[numTreeBases];
+    
+    uint32 numMesh3;
+    Mesh3 mesh3[numMesh3]; // Tree leafs
+} trees;
+
+struct {
+Tile seasons[12];
+} seasons;
+
+struct {
+    uint32 unk21; // Size?
+    uint32 unk22;
+    uint32 numUnk23;
+    uint16 unk23[numUnk23 * 4];
+    
+    uint32 numUnk24;
+    uint32 unk24[numUnk24]; // Affects .pak textures?
+    uint32 numUnk25;
+    uint32 unk25[numUnk25];
+} unknown;
+
+struct {
+    uint32 numProcessedTiles;
+    ProcessedTile processedTiles[numProcessedTiles];
+    Tile nullTile;
+} tiles;
