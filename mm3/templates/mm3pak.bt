@@ -3,7 +3,7 @@
 //
 // File:     mm3pak.bt
 // Author:   Daniel Stien <daniel@stien.org>
-// Revision: 2013-09-18
+// Revision: 2014-12-06
 // Purpose:  Midtown Madness 3 city package
 //--------------------------------------
 
@@ -84,7 +84,7 @@ local string cellFileName;
 for (i = 0; i < numEntries; i++) {
     File file(sortedIndices[i], unks[sortedIndices[i]], sizes[sortedIndices[i]]);
 
-    if (file.data[0] > 0 && file.data[1] == 0 && file.data[2] == 0 && file.data[3] == 0 && file.data[4] > 0 && file.data[5] == 0 && file.data[6] == 0 && file.data[7] == 0) {
+    if (file.data[1] == 0 && file.data[2] == 0 && file.data[3] == 0 && file.data[4] > 0 && file.data[5] == 0 && file.data[6] == 0 && file.data[7] == 0) {
         numCityCells++;
         SPrintf(cellFileName, "%sCells\\%s%04d.cell", FileNameGetPath(GetFileName()), FileNameGetBase(GetFileName(), false), file.data[0]);
 
@@ -109,7 +109,7 @@ string ReadFile(File &d)
     string s;
     SPrintf(s, "%04d: %08X", d.index, d.unk);
 
-    if (d.data[0] > 0 && d.data[1] == 0 && d.data[2] == 0 && d.data[3] == 0 && d.data[4] > 0 && d.data[5] == 0 && d.data[6] == 0 && d.data[7] == 0) {
+    if (d.data[1] == 0 && d.data[2] == 0 && d.data[3] == 0 && d.data[4] > 0 && d.data[5] == 0 && d.data[6] == 0 && d.data[7] == 0) {
         SPrintf(s, "%s (city cell %d)", s, d.data[0]);
     }
 
