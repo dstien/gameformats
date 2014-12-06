@@ -3,13 +3,13 @@
 //
 // File:     mm3pak-cell.bt
 // Author:   Daniel Stien <daniel@stien.org>
-// Revision: 2013-09-16
+// Revision: 2014-12-06
 // Purpose:  Midtown Madness 3 city cell from .pak archive
 //--------------------------------------
 
 struct {
     uint32 id;
-    uint32 unk2;
+    uint32 unk2; // Additional files except buildings?
     uint32 numFacadeSections;
     uint32 offFacadeSections;
     uint32 unkNoise1Offset;
