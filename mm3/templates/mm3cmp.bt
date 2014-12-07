@@ -1,0 +1,323 @@
+//--------------------------------------
+//--- 010 Editor v5.0 Binary Template
+//
+// File:     mm3cmp.bt
+// Author:   Daniel Stien <daniel@stien.org>
+// Revision: 2014-12-07
+// Purpose:  Midtown Madness 3 car mesh package
+//--------------------------------------
+
+typedef enum <uint16> {
+  NODE_TYPE_0 = 0x00, // No content/EOF
+  NODE_TYPE_TRANSFORM = 0x01,
+  NODE_TYPE_MESH1     = 0x02,
+  NODE_TYPE_3 = 0x03, // Axis
+  NODE_TYPE_LIGHT     = 0x04,
+  NODE_TYPE_SMOKE     = 0x05,
+  NODE_TYPE_MESH2     = 0x06,
+  NODE_TYPE_MESH3     = 0x07, // Shadow?
+  NODE_TYPE_MESH4     = 0x08, // Shadow?
+  NODE_TYPE_6D = 0x6D, // Material set (+ file header?)
+  NODE_TYPE_72 = 0x72,
+  NODE_TYPE_73 = 0x73,
+} NodeType;
+
+typedef enum <byte> {
+  BYTEBOOL_FALSE = 0x0,
+  BYTEBOOL_TRUE  = 0x1
+} ByteBool;
+
+typedef struct {
+  float x1;
+  float y1;
+  float z1;
+  float x2;
+  float y2;
+  float z2;
+} BoundBox;
+
+typedef struct {
+  float a;
+  float r;
+  float g;
+  float b;
+} Color;
+
+typedef struct {
+  int x : 11;
+  int y : 11;
+  int z : 10;
+  int16 rem; // Normals
+  int16 d[9];
+} Vertex <read=ReadVertex>;
+
+// Vertex summary.
+string ReadVertex(Vertex &v)
+{
+  string s;
+  SPrintf(s, "%d, %d, %d", v.x, v.y, v.z);
+  return s;
+}
+
+typedef struct {
+  uint16 type;
+  switch (type) {
+    case 0x0001:
+    case 0x0101:
+    case 0x0201:
+    case 0x0301:
+    case 0x0501:
+    case 0x0701:
+    case 0x0901:
+    case 0x0A01:
+    case 0x0B01:
+      uint16 indices[12];
+      break;
+    case 0x0002:
+    case 0x0003:
+    case 0x0006:
+      uint16 indices[3]; // 14?
+      break;
+    case 0x0004:
+      uint16 indices[10]; // was: 20
+      break;
+    case 0x0005:
+      uint16 indices[7];
+      break;
+    case 0x000A:
+      ubyte indices[23];
+      break;
+    case 0x6001:
+      uint16 indices[9];
+      break;
+    case 0x8801:
+      uint16 indices[7];
+      break;
+    default:
+      //MessageBox(idOk, "Warning", "Unknown primitive type for '%s': 0x%02X", path1, type);
+      break;
+  }
+} Primitive;
+
+typedef struct {
+  float f1;
+  byte d[24];
+} MeshExtra;
+
+typedef struct {
+  if (type == NODE_TYPE_MESH1 || type == NODE_TYPE_MESH2) {
+    ubyte    unknown1;
+    string   path1;
+  }
+
+  uint32   meshSectionLength;
+  if (meshSectionLength == 0) {
+    FSkip(-3); // Extremely stupid.
+    //ubyte unk;
+    break;
+  }
+
+  local int meshSectionStart = FTell();
+
+  float    unknown2; // NAE
+  BoundBox aabb;
+  uint32   numVertices1; // NAE
+  uint32   numVertexRefs;
+  uint32   unknown10; // NAE
+  uint32   unknown11; // NAE
+  uint32   unknown12; // NAE
+
+  //if ((header.unknown1 & 0x1) | (header.unknown1 & 0x2)) { // There seem to be four floats here if the first or second bit is set in the header.
+    Color    color; // RGBA
+  //}
+  //else {
+  //  float    unknown13;
+  //}
+
+  string   path2;
+
+  ByteBool    hasVertexRefs;
+  if (hasVertexRefs == BYTEBOOL_TRUE) { // Draw triangles in addition to the vertices.
+    uint32   unknown15; // NAE
+    uint32   vertexRefsSectionLength; // == numVertexRefs * sizeof(uint16)
+    uint16   vertexRefs[numVertexRefs];
+  }
+  uint16   unknown33; // NAE
+  uint16   unknown34; // NAE
+  ubyte    unkonwn35; // NAE
+  uint32   numVertices2;
+  if (numVertices1 != numVertices2) {
+    MessageBox(idOk, "Warning", "numVertices1 != numVertices2 in '%s'", name);
+  }
+  if (numVertices2 < 10) {
+    MessageBox(idOk, "Tiny mesh", "Less than 10 vertices in '%s'", name);
+  }
+  uint32   vertexStride;
+  uint32   verticesSectionLength; // == numVertices * vertexStride
+  uint32   unknown29; // NAE
+  Vertex   vertices[numVertices2];
+
+  uint32 numPrimitives;
+  Primitive primitives[numPrimitives]<optimize=false>;
+  ByteBool hasExtraSection;
+
+  if (hasExtraSection) {
+    byte extraPadding[3];
+    uint32 numExtraUnknown;
+    MeshExtra extraElements[numExtraUnknown];
+  }
+
+  local int meshSectionLeft = meshSectionLength - (FTell() - meshSectionStart) - 3;
+  if (meshSectionLeft > 0) {
+    ubyte unknown99[meshSectionLeft];
+  }
+  else if (meshSectionLeft < -3)
+  {
+    MessageBox(idOk, "Well", "meshSectionLeft: %i", meshSectionLeft);
+  }
+} Mesh;
+
+typedef struct {
+  ulong    unknown1; // Nil
+  BoundBox boundBox;
+  ulong    unknown2; // 1
+  ushort   unknown3; // Nil
+  ubyte    unknown4; // 1
+
+  switch (type) {
+    case NODE_TYPE_6D:
+      ubyte    data1[111];
+      ubyte    date2[442-12];
+      break;
+    case NODE_TYPE_72:
+    case NODE_TYPE_73:
+      string   materialPath;
+      ubyte    data1[112]; // Matrix?
+      ubyte    data2[441-12];
+      break;
+  }
+
+  float    unknowns[3];
+  ulong    unknown5;
+  ulong    unknown6;
+} NodeDataMaterial;
+
+typedef struct {
+  float    unknown1[29];
+  int32    unknown2;
+  BoundBox boundBox;
+} NodeDataTransform;
+
+typedef struct {
+  ulong    unknown1;
+  ulong    unknown2;
+  ulong    unknown3;
+  ulong    unknown4;
+  Mesh     mesh;
+  if (mesh.meshSectionLength > 0 && mesh.hasExtraSection) {
+    Mesh shadowMesh;
+    //Mesh lodMesh;
+  }
+  //if (name == "bodyShape") {
+  //  ubyte    unknown5[3];
+  //  Mesh     shadowMesh;
+  //  FSkip(-1); // Extremely stupid.
+  //}
+} NodeDataMesh1;
+
+typedef struct {
+  uint32 unknown1;
+  string name;
+  float  unknown2[36];
+} SubFileContentType3;
+
+typedef struct {
+  uint32 unknown1;
+  uint32 unknown2;
+  float  unknown3[8];
+} NodeDataLight;
+
+typedef struct {
+  uint32   unknown1;
+  uint32   unknown2;
+  uint32   unknown3;
+  uint32   unknown4;
+  BoundBox boundBox1;
+  Mesh     mesh;
+
+  if (mesh.hasExtraSection) {
+    Mesh shadowMesh;
+    ubyte hasExtrasPadding[3];
+    Mesh lodMesh;
+  }
+} NodeDataMesh2;
+
+typedef struct {
+  Mesh mesh;
+} NodeDataMesh3;
+
+typedef struct {
+  NodeType type;
+  uint16   unk;
+  string   name;
+
+  if (unk == 0x100) {
+    NodeDataMesh3 data;
+  }
+  else {
+    switch(type) {
+      case NODE_TYPE_0:
+        break;
+      case NODE_TYPE_TRANSFORM:
+        NodeDataTransform data;
+        break;
+      case NODE_TYPE_MESH1:
+        NodeDataMesh1 data;
+        break;
+      case NODE_TYPE_3:
+        SubFileContentType3 data;
+        break;
+      case NODE_TYPE_LIGHT:
+        NodeDataLight data;
+        break;
+      case NODE_TYPE_SMOKE:
+        break;
+      case NODE_TYPE_MESH2:
+        NodeDataMesh2 data;
+        break;
+      //case NODE_TYPE_MESH3:
+      //case NODE_TYPE_MESH4:
+      //  NodeDataMesh3 data;
+      //  break;
+      case NODE_TYPE_6D:
+      case NODE_TYPE_72:
+      case NODE_TYPE_73:
+        NodeDataMaterial data;
+        break;
+      default:
+        MessageBox(idOk, "Warning", "Unknown node type for '%s': 0x%02X", name, type);
+        ubyte unkown[FileSize() - FTell()];
+    }
+  }
+
+  if (!FEof() && type != NODE_TYPE_LIGHT && type != NODE_TYPE_MESH2) { // Light is leaf.
+    uint32 numChildren;
+    struct Node; // Forward declare.
+    Node   children[numChildren] <optimize=false>;
+  }
+} Node <read=ReadNode>;
+
+// Node summary.
+string ReadNode(Node &n)
+{
+  string s;
+  SPrintf(s, "%s: '%s'", EnumToString(n.type), n.name);
+  return s;
+}
+
+// Read nodes untill end of file reached.
+uint32 unknown0;
+
+while (!FEof()) {
+  Node node <open=false>;
+}
