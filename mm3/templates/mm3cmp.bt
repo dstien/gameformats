@@ -3,23 +3,23 @@
 //
 // File:     mm3cmp.bt
 // Author:   Daniel Stien <daniel@stien.org>
-// Revision: 2014-12-07
+// Revision: 2014-12-08
 // Purpose:  Midtown Madness 3 car mesh package
 //--------------------------------------
 
 typedef enum <uint16> {
-  NODE_TYPE_0 = 0x00, // No content/EOF
+  NODE_TYPE_0         = 0x00, // No content/EOF
   NODE_TYPE_TRANSFORM = 0x01,
   NODE_TYPE_MESH1     = 0x02,
-  NODE_TYPE_3 = 0x03, // Axis
+  NODE_TYPE_3         = 0x03, // Axis
   NODE_TYPE_LIGHT     = 0x04,
   NODE_TYPE_SMOKE     = 0x05,
   NODE_TYPE_MESH2     = 0x06,
   NODE_TYPE_MESH3     = 0x07, // Shadow?
   NODE_TYPE_MESH4     = 0x08, // Shadow?
-  NODE_TYPE_6D = 0x6D, // Material set (+ file header?)
-  NODE_TYPE_72 = 0x72,
-  NODE_TYPE_73 = 0x73,
+  NODE_TYPE_6D        = 0x6D, // Material set (+ file header?)
+  NODE_TYPE_72        = 0x72,
+  NODE_TYPE_73        = 0x73,
 } NodeType;
 
 typedef enum <byte> {
@@ -28,19 +28,15 @@ typedef enum <byte> {
 } ByteBool;
 
 typedef struct {
-  float x1;
-  float y1;
-  float z1;
-  float x2;
-  float y2;
-  float z2;
+  float x, y, z;
+} Vertex3f;
+
+typedef struct {
+  Vertex3f min, max;
 } BoundBox;
 
 typedef struct {
-  float a;
-  float r;
-  float g;
-  float b;
+  float r, g, b, a;
 } Color;
 
 typedef struct {
@@ -104,8 +100,8 @@ typedef struct {
   byte d[24];
 } MeshExtra;
 
-typedef struct {
-  if (type == NODE_TYPE_MESH1 || type == NODE_TYPE_MESH2) {
+typedef struct (int hasPath1) {
+  if (hasPath1) {
     ubyte    unknown1;
     string   path1;
   }
@@ -127,11 +123,13 @@ typedef struct {
   uint32   unknown11; // NAE
   uint32   unknown12; // NAE
 
-  //if ((header.unknown1 & 0x1) | (header.unknown1 & 0x2)) { // There seem to be four floats here if the first or second bit is set in the header.
-    Color    color; // RGBA
+  // There seem to be four floats here if the first or second bit is set in the node header.
+  // TODO: Check if the files where this is the case are used.
+  //if ((headerUnknown1 & 0x1) | (headerUnknown1 & 0x2)) {
+    Color    color;
   //}
   //else {
-  //  float    unknown13;
+  //  float    alpha;
   //}
 
   string   path2;
@@ -171,11 +169,47 @@ typedef struct {
   if (meshSectionLeft > 0) {
     ubyte unknown99[meshSectionLeft];
   }
-  else if (meshSectionLeft < -3)
+  else if (meshSectionLeft < 0)
   {
     MessageBox(idOk, "Well", "meshSectionLeft: %i", meshSectionLeft);
   }
 } Mesh;
+
+typedef struct {
+  ulong    unknown1;
+  ulong    unknown2;
+  ulong    unknown3;
+  ulong    unknown4;
+  Mesh     mesh(true);
+  if (mesh.meshSectionLength > 0 && mesh.hasExtraSection) {
+    Mesh shadowMesh(true);
+    //Mesh lodMesh;
+  }
+  //if (name == "bodyShape") {
+  //  ubyte    unknown5[3];
+  //  Mesh     shadowMesh(true);
+  //  FSkip(-1); // Extremely stupid.
+  //}
+} NodeDataMesh1;
+
+typedef struct {
+  uint32   unknown1;
+  uint32   unknown2;
+  uint32   unknown3;
+  uint32   unknown4;
+  BoundBox boundBox1;
+  Mesh     mesh(true);
+
+  if (mesh.hasExtraSection) {
+    Mesh shadowMesh(true);
+    ubyte hasExtrasPadding[3];
+    Mesh lodMesh(true);
+  }
+} NodeDataMesh2;
+
+typedef struct {
+  Mesh mesh(false);
+} NodeDataMesh3;
 
 typedef struct {
   ulong    unknown1; // Nil
@@ -209,27 +243,10 @@ typedef struct {
 } NodeDataTransform;
 
 typedef struct {
-  ulong    unknown1;
-  ulong    unknown2;
-  ulong    unknown3;
-  ulong    unknown4;
-  Mesh     mesh;
-  if (mesh.meshSectionLength > 0 && mesh.hasExtraSection) {
-    Mesh shadowMesh;
-    //Mesh lodMesh;
-  }
-  //if (name == "bodyShape") {
-  //  ubyte    unknown5[3];
-  //  Mesh     shadowMesh;
-  //  FSkip(-1); // Extremely stupid.
-  //}
-} NodeDataMesh1;
-
-typedef struct {
   uint32 unknown1;
   string name;
   float  unknown2[36];
-} SubFileContentType3;
+} NodeDataType3;
 
 typedef struct {
   uint32 unknown1;
@@ -238,30 +255,16 @@ typedef struct {
 } NodeDataLight;
 
 typedef struct {
-  uint32   unknown1;
-  uint32   unknown2;
-  uint32   unknown3;
-  uint32   unknown4;
-  BoundBox boundBox1;
-  Mesh     mesh;
-
-  if (mesh.hasExtraSection) {
-    Mesh shadowMesh;
-    ubyte hasExtrasPadding[3];
-    Mesh lodMesh;
-  }
-} NodeDataMesh2;
-
-typedef struct {
-  Mesh mesh;
-} NodeDataMesh3;
-
-typedef struct {
   NodeType type;
   uint16   unk;
   string   name;
 
-  if (unk == 0x100) {
+  if (unk != 0x100 && unk != 0) {
+    MessageBox(idOk, "Warning", "Unk == 0x%04X", unk);
+  }
+
+  if (unk == 0x100/* && type != NODE_TYPE_MESH3*/) {
+    //MessageBox(idOk, "Warning", "Unk == 0x100 && type != NODE_TYPE_MESH3");
     NodeDataMesh3 data;
   }
   else {
@@ -275,7 +278,7 @@ typedef struct {
         NodeDataMesh1 data;
         break;
       case NODE_TYPE_3:
-        SubFileContentType3 data;
+        NodeDataType3 data;
         break;
       case NODE_TYPE_LIGHT:
         NodeDataLight data;
@@ -285,10 +288,10 @@ typedef struct {
       case NODE_TYPE_MESH2:
         NodeDataMesh2 data;
         break;
-      //case NODE_TYPE_MESH3:
-      //case NODE_TYPE_MESH4:
-      //  NodeDataMesh3 data;
-      //  break;
+      case NODE_TYPE_MESH3:
+      case NODE_TYPE_MESH4:
+        NodeDataMesh3 data;
+        break;
       case NODE_TYPE_6D:
       case NODE_TYPE_72:
       case NODE_TYPE_73:
@@ -300,7 +303,8 @@ typedef struct {
     }
   }
 
-  if (!FEof() && type != NODE_TYPE_LIGHT && type != NODE_TYPE_MESH2) { // Light is leaf.
+  // Light and Mesh2 are leaf nodes.
+  if (!FEof() && type != NODE_TYPE_LIGHT && type != NODE_TYPE_MESH2 && unk != 0x100) {
     uint32 numChildren;
     struct Node; // Forward declare.
     Node   children[numChildren] <optimize=false>;
