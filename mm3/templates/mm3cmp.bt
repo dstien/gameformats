@@ -3,7 +3,7 @@
 //
 // File:     mm3cmp.bt
 // Author:   Daniel Stien <daniel@stien.org>
-// Revision: 2014-12-08
+// Revision: 2014-12-09
 // Purpose:  Midtown Madness 3 car mesh package
 //--------------------------------------
 
@@ -17,7 +17,7 @@ typedef enum <uint16> {
   NODE_TYPE_MESH2     = 0x06,
   NODE_TYPE_MESH3     = 0x07, // Shadow?
   NODE_TYPE_MESH4     = 0x08, // Shadow?
-  NODE_TYPE_6D        = 0x6D, // Material set (+ file header?)
+  NODE_TYPE_6D        = 0x6D, // Version? Material set (+ file header?)
   NODE_TYPE_72        = 0x72,
   NODE_TYPE_73        = 0x73,
 } NodeType;
@@ -100,16 +100,10 @@ typedef struct {
   byte d[24];
 } MeshExtra;
 
-typedef struct (int hasPath1) {
-  if (hasPath1) {
-    ubyte    unknown1;
-    string   path1;
-  }
-
+typedef struct {
   uint32   meshSectionLength;
-  if (meshSectionLength == 0) {
-    FSkip(-3); // Extremely stupid.
-    //ubyte unk;
+
+  if (!meshSectionLength) {
     break;
   }
 
@@ -124,7 +118,7 @@ typedef struct (int hasPath1) {
   uint32   unknown12; // NAE
 
   // There seem to be four floats here if the first or second bit is set in the node header.
-  // TODO: Check if the files where this is the case are used.
+  // TODO: Check if the files where this is the case are used. (Ambient_Bus, Ambient_PMetro)
   //if ((headerUnknown1 & 0x1) | (headerUnknown1 & 0x2)) {
     Color    color;
   //}
@@ -132,7 +126,7 @@ typedef struct (int hasPath1) {
   //  float    alpha;
   //}
 
-  string   path2;
+  string   path;
 
   ByteBool    hasVertexRefs;
   if (hasVertexRefs == BYTEBOOL_TRUE) { // Draw triangles in addition to the vertices.
@@ -145,16 +139,17 @@ typedef struct (int hasPath1) {
   ubyte    unkonwn35; // NAE
   uint32   numVertices2;
   if (numVertices1 != numVertices2) {
-    MessageBox(idOk, "Warning", "numVertices1 != numVertices2 in '%s'", name);
+    MessageBox(idOk, "Warning", "numVertices1 (%u) != numVertices2 (%u) in '%s'", numVertices1, numVertices2, name);
   }
   if (numVertices2 < 10) {
-    MessageBox(idOk, "Tiny mesh", "Less than 10 vertices in '%s'", name);
+    MessageBox(idOk, "Tiny mesh", "Less than 10 vertices (%u) in '%s'", numVertices2, name);
   }
   uint32   vertexStride;
   uint32   verticesSectionLength; // == numVertices * vertexStride
   uint32   unknown29; // NAE
   Vertex   vertices[numVertices2];
 
+/*
   uint32 numPrimitives;
   Primitive primitives[numPrimitives]<optimize=false>;
   ByteBool hasExtraSection;
@@ -164,52 +159,65 @@ typedef struct (int hasPath1) {
     uint32 numExtraUnknown;
     MeshExtra extraElements[numExtraUnknown];
   }
+*/
 
-  local int meshSectionLeft = meshSectionLength - (FTell() - meshSectionStart) - 3;
+  local int meshSectionLeft = meshSectionLength - (FTell() - meshSectionStart);
   if (meshSectionLeft > 0) {
     ubyte unknown99[meshSectionLeft];
   }
-  else if (meshSectionLeft < 0)
-  {
-    MessageBox(idOk, "Well", "meshSectionLeft: %i", meshSectionLeft);
+  else if (meshSectionLeft < 0) {
+    MessageBox(idOk, "Warning", "Read past meshSectionLength (%d)", meshSectionLeft);
   }
 } Mesh;
 
 typedef struct {
+  ByteBool meshFollows;
+  if (meshFollows) {
+    string path;
+    Mesh   mesh;
+  }
+} MeshContainer <read=ReadMeshContainer>;
+
+// MeshContainer summary.
+string ReadMeshContainer(MeshContainer &c)
+{
+  string s;
+  if (c.meshFollows) {
+    SPrintf(s, "'%s'", FileNameGetBase(c.path));
+  }
+  else {
+    s = "---";
+  }
+
+  return s;
+}
+
+typedef struct (NodeType type) {
   ulong    unknown1;
   ulong    unknown2;
   ulong    unknown3;
   ulong    unknown4;
-  Mesh     mesh(true);
-  if (mesh.meshSectionLength > 0 && mesh.hasExtraSection) {
-    Mesh shadowMesh(true);
-    //Mesh lodMesh;
+
+  if (type == NODE_TYPE_MESH2) {
+    BoundBox boundBox1;
   }
-  //if (name == "bodyShape") {
-  //  ubyte    unknown5[3];
-  //  Mesh     shadowMesh(true);
-  //  FSkip(-1); // Extremely stupid.
-  //}
-} NodeDataMesh1;
+
+  local int i, maxMeshes = 3;
+  if (unknown1) {
+    maxMeshes = 2;
+  }
+  for (i = 0; i < maxMeshes; i++) {
+    MeshContainer meshContainer;
+    if (!meshContainer.meshFollows) {
+      break;
+    }
+  }
+} NodeDataMesh12;
 
 typedef struct {
-  uint32   unknown1;
-  uint32   unknown2;
-  uint32   unknown3;
-  uint32   unknown4;
-  BoundBox boundBox1;
-  Mesh     mesh(true);
-
-  if (mesh.hasExtraSection) {
-    Mesh shadowMesh(true);
-    ubyte hasExtrasPadding[3];
-    Mesh lodMesh(true);
-  }
-} NodeDataMesh2;
-
-typedef struct {
-  Mesh mesh(false);
-} NodeDataMesh3;
+MessageBox(idOk, "Warning", "Got mesh3/4!");
+  Mesh mesh;
+} NodeDataMesh34;
 
 typedef struct {
   ulong    unknown1; // Nil
@@ -263,9 +271,12 @@ typedef struct {
     MessageBox(idOk, "Warning", "Unk == 0x%04X", unk);
   }
 
-  if (unk == 0x100/* && type != NODE_TYPE_MESH3*/) {
-    //MessageBox(idOk, "Warning", "Unk == 0x100 && type != NODE_TYPE_MESH3");
-    NodeDataMesh3 data;
+  if (unk) {
+    MessageBox(idOk, "Warning", "Unk is set!");
+  }
+
+  if (unk == 0x100) {
+    NodeDataMesh34 data;
   }
   else {
     switch(type) {
@@ -275,7 +286,8 @@ typedef struct {
         NodeDataTransform data;
         break;
       case NODE_TYPE_MESH1:
-        NodeDataMesh1 data;
+      case NODE_TYPE_MESH2:
+        NodeDataMesh12 data(type);
         break;
       case NODE_TYPE_3:
         NodeDataType3 data;
@@ -285,12 +297,9 @@ typedef struct {
         break;
       case NODE_TYPE_SMOKE:
         break;
-      case NODE_TYPE_MESH2:
-        NodeDataMesh2 data;
-        break;
       case NODE_TYPE_MESH3:
       case NODE_TYPE_MESH4:
-        NodeDataMesh3 data;
+        NodeDataMesh34 data;
         break;
       case NODE_TYPE_6D:
       case NODE_TYPE_72:
@@ -303,8 +312,12 @@ typedef struct {
     }
   }
 
-  // Light and Mesh2 are leaf nodes.
-  if (!FEof() && type != NODE_TYPE_LIGHT && type != NODE_TYPE_MESH2 && unk != 0x100) {
+  // Light and Mesh are leaf nodes.
+  if (!FEof()
+      && type != NODE_TYPE_LIGHT
+      && type != NODE_TYPE_MESH1
+      && type != NODE_TYPE_MESH2
+      && unk != 0x100) {
     uint32 numChildren;
     struct Node; // Forward declare.
     Node   children[numChildren] <optimize=false>;
