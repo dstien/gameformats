@@ -3,7 +3,7 @@
 //
 // File:     mm3cmp.bt
 // Author:   Daniel Stien <daniel@stien.org>
-// Revision: 2014-12-09
+// Revision: 2014-12-10
 // Purpose:  Midtown Madness 3 car mesh package
 //--------------------------------------
 
@@ -13,16 +13,13 @@ typedef enum <uint32> {
   VERSION_115 = 115,
 } Version;
 
-typedef enum <uint16> {
-  NODE_TYPE_0         = 0x00, // No content/EOF
+typedef enum <uint32> {
   NODE_TYPE_TRANSFORM = 0x01,
   NODE_TYPE_MESH1     = 0x02,
   NODE_TYPE_AXIS      = 0x03,
   NODE_TYPE_LIGHT     = 0x04,
   NODE_TYPE_SMOKE     = 0x05,
   NODE_TYPE_MESH2     = 0x06,
-  NODE_TYPE_MESH3     = 0x07, // Shadow?
-  NODE_TYPE_MESH4     = 0x08, // Shadow?
 } NodeType;
 
 typedef enum <byte> {
@@ -142,9 +139,9 @@ typedef struct (Version version) {
   if (numVertices1 != numVertices2) {
     MessageBox(idOk, "Warning", "numVertices1 (%u) != numVertices2 (%u) in '%s'", numVertices1, numVertices2, name);
   }
-  if (numVertices2 < 10) {
-    MessageBox(idOk, "Tiny mesh", "Less than 10 vertices (%u) in '%s'", numVertices2, name);
-  }
+  //if (numVertices2 < 10) {
+  //  MessageBox(idOk, "Tiny mesh", "Less than 10 vertices (%u) in '%s'", numVertices2, name);
+  //}
   uint32   vertexStride;
   uint32   verticesSectionLength; // == numVertices * vertexStride
   uint32   unknown29; // NAE
@@ -199,30 +196,26 @@ typedef struct (Version version, NodeType type) {
   ulong    unknown3;
   ulong    unknown4;
 
+  // Regular cars (MESH1) have body and shadow mesh,
+  // ambient cars (MESH2) have body, shadow and lod mesh.
+  local int i, maxMeshes = 2;
   if (type == NODE_TYPE_MESH2) {
-    BoundBox boundBox1;
+    maxMeshes = 3;
+    BoundBox aabb;
   }
 
-  local int i, maxMeshes = 3;
-  if (unknown1) {
-    maxMeshes = 2;
-  }
   for (i = 0; i < maxMeshes; i++) {
     MeshContainer meshContainer(version);
     if (!meshContainer.meshFollows) {
       break;
     }
   }
-} NodeDataMesh12;
-
-typedef struct {
-MessageBox(idOk, "Warning", "Got mesh3/4!");
-  Mesh mesh;
-} NodeDataMesh34;
+  // TODO: More LOD and material stuff for NODE_TYPE_MESH2 in version 109 files.
+} NodeDataMesh;
 
 typedef struct (Version version) {
   ulong    unknown1; // Nil
-  BoundBox boundBox;
+  BoundBox aabb;
   ulong    unknown2; // 1
   ushort   unknown3; // Nil
   ubyte    unknown4; // 1
@@ -245,7 +238,7 @@ typedef struct (Version version) {
 typedef struct {
   float    unknown1[29];
   int32    unknown2;
-  BoundBox boundBox;
+  BoundBox aabb;
 } NodeDataTransform;
 
 typedef struct (Version version) {
@@ -262,54 +255,31 @@ typedef struct (Version version) {
 
 typedef struct (Version version) {
   NodeType type;
-  uint16   unk;
   string   name;
 
-  if (unk != 0x100 && unk != 0) {
-    MessageBox(idOk, "Warning", "Unk == 0x%04X", unk);
+  switch(type) {
+    case NODE_TYPE_TRANSFORM:
+      NodeDataTransform data;
+      break;
+    case NODE_TYPE_MESH1:
+    case NODE_TYPE_MESH2:
+      NodeDataMesh data(version, type);
+      break;
+    case NODE_TYPE_AXIS:
+      break;
+    case NODE_TYPE_LIGHT:
+      NodeDataLight data(version);
+      break;
+    case NODE_TYPE_SMOKE:
+      uint32 value;
+      break;
+    default:
+      MessageBox(idOk, "Warning", "Unknown type for node'%s': 0x%02X", name, type);
+      return;
   }
 
-  if (unk) {
-    MessageBox(idOk, "Warning", "Unk is set!");
-  }
-
-  if (unk == 0x100) {
-    NodeDataMesh34 data;
-  }
-  else {
-    switch(type) {
-      case NODE_TYPE_0:
-        break;
-      case NODE_TYPE_TRANSFORM:
-        NodeDataTransform data;
-        break;
-      case NODE_TYPE_MESH1:
-      case NODE_TYPE_MESH2:
-        NodeDataMesh12 data(version, type);
-        break;
-      case NODE_TYPE_AXIS:
-        break;
-      case NODE_TYPE_LIGHT:
-        NodeDataLight data(version);
-        break;
-      case NODE_TYPE_SMOKE:
-        break;
-      case NODE_TYPE_MESH3:
-      case NODE_TYPE_MESH4:
-        NodeDataMesh34 data;
-        break;
-      default:
-        MessageBox(idOk, "Warning", "Unknown node type for '%s': 0x%02X", name, type);
-        ubyte unkown[FileSize() - FTell()];
-    }
-  }
-
-  // Don't read children count for leaf nodes.
-  if (!FEof()
-      && type != NODE_TYPE_LIGHT
-      && type != NODE_TYPE_MESH1
-      && type != NODE_TYPE_MESH2
-      && type != NODE_TYPE_AXIS) {
+  // Transform nodes are groups.
+  if (type == NODE_TYPE_TRANSFORM) {
     uint32 numChildren;
     struct Node; // Forward declare.
     Node   children(version)[numChildren] <optimize=false>;
