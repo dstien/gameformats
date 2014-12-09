@@ -248,12 +248,6 @@ typedef struct {
   BoundBox boundBox;
 } NodeDataTransform;
 
-typedef struct {
-  uint32 unknown1;
-  string name;
-  float  unknown2[36];
-} NodeDataAxis;
-
 typedef struct (Version version) {
   uint32 unknown1;
   uint32 unknown2;
@@ -294,9 +288,6 @@ typedef struct (Version version) {
         NodeDataMesh12 data(version, type);
         break;
       case NODE_TYPE_AXIS:
-        if (name != "end") {
-          NodeDataAxis data;
-        }
         break;
       case NODE_TYPE_LIGHT:
         NodeDataLight data(version);
@@ -318,7 +309,7 @@ typedef struct (Version version) {
       && type != NODE_TYPE_LIGHT
       && type != NODE_TYPE_MESH1
       && type != NODE_TYPE_MESH2
-      && !(type == NODE_TYPE_AXIS && name == "end")) {
+      && type != NODE_TYPE_AXIS) {
     uint32 numChildren;
     struct Node; // Forward declare.
     Node   children(version)[numChildren] <optimize=false>;
