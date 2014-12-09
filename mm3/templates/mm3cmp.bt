@@ -7,19 +7,22 @@
 // Purpose:  Midtown Madness 3 car mesh package
 //--------------------------------------
 
+typedef enum <uint32> {
+  VERSION_109 = 109,
+  VERSION_114 = 114,
+  VERSION_115 = 115,
+} Version;
+
 typedef enum <uint16> {
   NODE_TYPE_0         = 0x00, // No content/EOF
   NODE_TYPE_TRANSFORM = 0x01,
   NODE_TYPE_MESH1     = 0x02,
-  NODE_TYPE_3         = 0x03, // Axis
+  NODE_TYPE_AXIS      = 0x03,
   NODE_TYPE_LIGHT     = 0x04,
   NODE_TYPE_SMOKE     = 0x05,
   NODE_TYPE_MESH2     = 0x06,
   NODE_TYPE_MESH3     = 0x07, // Shadow?
   NODE_TYPE_MESH4     = 0x08, // Shadow?
-  NODE_TYPE_6D        = 0x6D, // Version? Material set (+ file header?)
-  NODE_TYPE_72        = 0x72,
-  NODE_TYPE_73        = 0x73,
 } NodeType;
 
 typedef enum <byte> {
@@ -100,7 +103,7 @@ typedef struct {
   byte d[24];
 } MeshExtra;
 
-typedef struct {
+typedef struct (Version version) {
   uint32   meshSectionLength;
 
   if (!meshSectionLength) {
@@ -117,14 +120,12 @@ typedef struct {
   uint32   unknown11; // NAE
   uint32   unknown12; // NAE
 
-  // There seem to be four floats here if the first or second bit is set in the node header.
-  // TODO: Check if the files where this is the case are used. (Ambient_Bus, Ambient_PMetro)
-  //if ((headerUnknown1 & 0x1) | (headerUnknown1 & 0x2)) {
+  if (version >= VERSION_115) {
     Color    color;
-  //}
-  //else {
-  //  float    alpha;
-  //}
+  }
+  else {
+    float    alpha;
+  }
 
   string   path;
 
@@ -170,11 +171,11 @@ typedef struct {
   }
 } Mesh;
 
-typedef struct {
+typedef struct (Version version) {
   ByteBool meshFollows;
   if (meshFollows) {
     string path;
-    Mesh   mesh;
+    Mesh   mesh(version);
   }
 } MeshContainer <read=ReadMeshContainer>;
 
@@ -192,7 +193,7 @@ string ReadMeshContainer(MeshContainer &c)
   return s;
 }
 
-typedef struct (NodeType type) {
+typedef struct (Version version, NodeType type) {
   ulong    unknown1;
   ulong    unknown2;
   ulong    unknown3;
@@ -207,7 +208,7 @@ typedef struct (NodeType type) {
     maxMeshes = 2;
   }
   for (i = 0; i < maxMeshes; i++) {
-    MeshContainer meshContainer;
+    MeshContainer meshContainer(version);
     if (!meshContainer.meshFollows) {
       break;
     }
@@ -219,24 +220,21 @@ MessageBox(idOk, "Warning", "Got mesh3/4!");
   Mesh mesh;
 } NodeDataMesh34;
 
-typedef struct {
+typedef struct (Version version) {
   ulong    unknown1; // Nil
   BoundBox boundBox;
   ulong    unknown2; // 1
   ushort   unknown3; // Nil
   ubyte    unknown4; // 1
 
-  switch (type) {
-    case NODE_TYPE_6D:
-      ubyte    data1[111];
-      ubyte    date2[442-12];
-      break;
-    case NODE_TYPE_72:
-    case NODE_TYPE_73:
-      string   materialPath;
-      ubyte    data1[112]; // Matrix?
-      ubyte    data2[441-12];
-      break;
+  if (version >= VERSION_114) {
+    string   materialPath;
+    ubyte    data1[112]; // Matrix?
+    ubyte    data2[441-12];
+  }
+  else {
+    ubyte    data1[111];
+    ubyte    date2[442-12];
   }
 
   float    unknowns[3];
@@ -254,15 +252,21 @@ typedef struct {
   uint32 unknown1;
   string name;
   float  unknown2[36];
-} NodeDataType3;
+} NodeDataAxis;
 
-typedef struct {
+typedef struct (Version version) {
   uint32 unknown1;
   uint32 unknown2;
-  float  unknown3[8];
+
+  if (version >= VERSION_114) {
+    float  unknown3[8];
+  }
+  else {
+    float  unknown3[6];
+  }
 } NodeDataLight;
 
-typedef struct {
+typedef struct (Version version) {
   NodeType type;
   uint16   unk;
   string   name;
@@ -287,13 +291,15 @@ typedef struct {
         break;
       case NODE_TYPE_MESH1:
       case NODE_TYPE_MESH2:
-        NodeDataMesh12 data(type);
+        NodeDataMesh12 data(version, type);
         break;
-      case NODE_TYPE_3:
-        NodeDataType3 data;
+      case NODE_TYPE_AXIS:
+        if (name != "end") {
+          NodeDataAxis data;
+        }
         break;
       case NODE_TYPE_LIGHT:
-        NodeDataLight data;
+        NodeDataLight data(version);
         break;
       case NODE_TYPE_SMOKE:
         break;
@@ -301,26 +307,21 @@ typedef struct {
       case NODE_TYPE_MESH4:
         NodeDataMesh34 data;
         break;
-      case NODE_TYPE_6D:
-      case NODE_TYPE_72:
-      case NODE_TYPE_73:
-        NodeDataMaterial data;
-        break;
       default:
         MessageBox(idOk, "Warning", "Unknown node type for '%s': 0x%02X", name, type);
         ubyte unkown[FileSize() - FTell()];
     }
   }
 
-  // Light and Mesh are leaf nodes.
+  // Don't read children count for leaf nodes.
   if (!FEof()
       && type != NODE_TYPE_LIGHT
       && type != NODE_TYPE_MESH1
       && type != NODE_TYPE_MESH2
-      && unk != 0x100) {
+      && !(type == NODE_TYPE_AXIS && name == "end")) {
     uint32 numChildren;
     struct Node; // Forward declare.
-    Node   children[numChildren] <optimize=false>;
+    Node   children(version)[numChildren] <optimize=false>;
   }
 } Node <read=ReadNode>;
 
@@ -332,9 +333,13 @@ string ReadNode(Node &n)
   return s;
 }
 
-// Read nodes untill end of file reached.
-uint32 unknown0;
+typedef struct {
+  uint32  unknown0;
+  Version version;
+  string  name;
+  NodeDataMaterial material(version);
+  uint32  numChildren;
+  Node    children(version)[numChildren] <optimize=false>;
+} RootNode;
 
-while (!FEof()) {
-  Node node <open=false>;
-}
+RootNode root <open=true>;
