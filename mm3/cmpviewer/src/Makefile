@@ -2,6 +2,7 @@ CXX = clang++
 CXXFLAGS = -O2 -std=c++11 -Wall -Werror
 
 LD = $(CXX)
+LDFLAGS = -losg -losgViewer
 
 OBJS = cmp.o main.o
 OUT = cmpviewer

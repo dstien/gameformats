@@ -82,6 +82,7 @@ namespace cmp
 			virtual ~GroupNode() = 0;
 			virtual void read(std::ifstream& ifs);
 
+			BoundBox           aabb;
 			std::vector<Node*> children;
 	};
 
@@ -94,7 +95,6 @@ namespace cmp
 			static RootNode* readFile(std::ifstream& ifs);
 
 			uint32_t    unknown0;
-			BoundBox    aabb;
 			uint32_t    unknown1;
 			uint16_t    unknown2;
 			uint8_t     unknown3;
@@ -114,7 +114,6 @@ namespace cmp
 
 			float       unknown0[29];
 			int32_t     unknown1;
-			BoundBox    aabb;
 	};
 
 	class AxisNode : public Node
@@ -192,6 +191,7 @@ namespace cmp
 			MeshNode(Version version, Type type) : Node(version, type) {}
 			virtual ~MeshNode();
 			virtual void read(std::ifstream& ifs);
+			bool hasBound() { return type == Mesh2; }
 
 			int32_t            unknown0;
 			int32_t            unknown1;
