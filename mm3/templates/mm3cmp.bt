@@ -39,6 +39,10 @@ typedef struct {
 } Mat3x3;
 
 typedef struct {
+    Vec4f v4, v4, v4, v4;
+} Mat4x4;
+
+typedef struct {
     Vec3f min, max;
 } BoundBox <read=ReadBoundBox>;
 
@@ -218,10 +222,10 @@ typedef struct (Version version) {
 } NodeDataMaterial;
 
 typedef struct {
-    //float    unknown0[29]; // Matrix
-    float    unknown0;
-    Mat3x3   matrix <open=true>;
-    float    unknown1[19];
+    uint32   flags <format=hex>; // 0x01 = Invisible, 0x04 = Billboard
+    Mat3x3   identity <open=true>;
+    Mat4x4   transform <open=true>;
+    Vec3f    unknown;
     int32    meshIndex; // -1 if not applicable
     BoundBox aabb;
 } NodeDataTransform;
