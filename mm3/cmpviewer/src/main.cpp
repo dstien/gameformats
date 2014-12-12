@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <iostream>
 #include <osgViewer/Viewer>
+#include <osgUtil/SmoothingVisitor>
 
 #include "cmp.h"
 
@@ -113,6 +114,35 @@ osg::ref_ptr<osg::Geode> drawBoundBox(cmp::BoundBox* aabb)
 	return geode.get();
 }
 
+osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh)
+{
+	cmp::BoundBox* b = &mesh->aabb;
+	float maxX = (b->min.x - b->max.x) * -1;
+	float maxY = (b->min.y - b->max.y) * -1;
+	float maxZ = (b->min.z - b->max.z) * -1;
+
+	osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array();
+	osg::ref_ptr<osg::DrawElementsUInt> indices = new osg::DrawElementsUInt(osg::PrimitiveSet::POINTS);
+
+	for (unsigned i = 0; i < mesh->vertexCount2; i++) {
+		cmp::Vertex* v = &mesh->vertices[i];
+		vertices->push_back(osg::Vec3(v->scaleX(maxX), v->scaleY(maxY), v->scaleZ(maxZ)));
+		indices->push_back(i);
+	}
+
+	osg::ref_ptr<osg::Geometry> geometry = new osg::Geometry();
+	geometry->setVertexArray(vertices.get());
+	geometry->addPrimitiveSet(indices.get());
+
+	osg::ref_ptr<osg::Geode> geode = new osg::Geode();
+	geode->addDrawable(geometry.get());
+
+	osgUtil::SmoothingVisitor sv;
+	geode->accept(sv);
+
+	return geode.get();
+}
+
 osg::ref_ptr<osg::Node> drawNode(cmp::Node* node)
 {
 	switch (node->type) {
@@ -147,6 +177,7 @@ osg::ref_ptr<osg::Node> drawNode(cmp::Node* node)
 
 			for (cmp::Mesh* mesh : meshNode->meshes) {
 				group->addChild(drawBoundBox(&mesh->aabb));
+				group->addChild(drawMesh(mesh));
 				break;
 			}
 
@@ -155,6 +186,7 @@ osg::ref_ptr<osg::Node> drawNode(cmp::Node* node)
 		case cmp::Node::Axis:
 		case cmp::Node::Light:
 		case cmp::Node::Smoke:
+		default:
 			return 0;
 	}
 }
