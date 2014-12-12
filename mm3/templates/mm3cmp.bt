@@ -1,200 +1,182 @@
 //--------------------------------------
-//--- 010 Editor v5.0 Binary Template
+//--- 010 Editor v5.0.2 Binary Template
 //
 // File:     mm3cmp.bt
 // Author:   Daniel Stien <daniel@stien.org>
-// Revision: 2014-12-10
+// Revision: 2014-12-12
 // Purpose:  Midtown Madness 3 car mesh package
 //--------------------------------------
 
 typedef enum <uint32> {
-  VERSION_109 = 109,
-  VERSION_114 = 114,
-  VERSION_115 = 115,
+    VERSION_109 = 109,
+    VERSION_114 = 114,
+    VERSION_115 = 115,
 } Version;
 
 typedef enum <uint32> {
-  NODE_TYPE_TRANSFORM = 0x01,
-  NODE_TYPE_MESH1     = 0x02,
-  NODE_TYPE_AXIS      = 0x03,
-  NODE_TYPE_LIGHT     = 0x04,
-  NODE_TYPE_SMOKE     = 0x05,
-  NODE_TYPE_MESH2     = 0x06,
+    NODE_TYPE_TRANSFORM = 0x01,
+    NODE_TYPE_MESH1     = 0x02,
+    NODE_TYPE_AXIS      = 0x03,
+    NODE_TYPE_LIGHT     = 0x04,
+    NODE_TYPE_SMOKE     = 0x05,
+    NODE_TYPE_MESH2     = 0x06,
 } NodeType;
 
-typedef enum <byte> {
-  BYTEBOOL_FALSE = 0x0,
-  BYTEBOOL_TRUE  = 0x1
-} ByteBool;
+typedef struct {
+    float x, y, z;
+} Vec3f <read=ReadVec3f>;
 
 typedef struct {
-  float x, y, z;
-} Vertex3f;
+    float x, y, z, w;
+} Vec4f <read=ReadVec4f>;
 
 typedef struct {
-  Vertex3f min, max;
-} BoundBox;
+    float a, r, g, b;
+} Color4f <read=ReadColor4f>;
 
 typedef struct {
-  float r, g, b, a;
-} Color;
+    Vec3f v1, v2, v3;
+} Mat3x3;
 
 typedef struct {
-  int x : 11;
-  int y : 11;
-  int z : 10;
-  int16 rem; // Normals
-  int16 d[9];
+    Vec3f min, max;
+} BoundBox <read=ReadBoundBox>;
+
+typedef struct {
+    int x : 11;
+    int y : 11;
+    int z : 10;
+    int16 unknown0; // Normals
+    int16 unknown1[9];
 } Vertex <read=ReadVertex>;
 
-// Vertex summary.
-string ReadVertex(Vertex &v)
-{
-  string s;
-  SPrintf(s, "%d, %d, %d", v.x, v.y, v.z);
-  return s;
-}
+typedef struct {
+    uint16 type <format=hex>;
+    switch (type) {
+        case 0x0001:
+        case 0x0101:
+        case 0x0201:
+        case 0x0301:
+        case 0x0501:
+        case 0x0701:
+        case 0x0901:
+        case 0x0A01:
+        case 0x0B01:
+            uint16 indices[12];
+            break;
+        case 0x0002:
+        case 0x0003:
+        case 0x0006:
+            uint16 indices[3]; // 14?
+            break;
+        case 0x0004:
+            uint16 indices[10]; // was: 20
+            break;
+        case 0x0005:
+            uint16 indices[7];
+            break;
+        case 0x000A:
+            ubyte indices[23];
+            break;
+        case 0x6001:
+            uint16 indices[9];
+            break;
+        case 0x8801:
+            uint16 indices[7];
+            break;
+        default:
+            //MessageBox(idOk, "Warning", "Unknown primitive type for '%s': 0x%02X", path1, type);
+            break;
+    }
+} Primitive <read=ReadPrimitive>;
 
 typedef struct {
-  uint16 type;
-  switch (type) {
-    case 0x0001:
-    case 0x0101:
-    case 0x0201:
-    case 0x0301:
-    case 0x0501:
-    case 0x0701:
-    case 0x0901:
-    case 0x0A01:
-    case 0x0B01:
-      uint16 indices[12];
-      break;
-    case 0x0002:
-    case 0x0003:
-    case 0x0006:
-      uint16 indices[3]; // 14?
-      break;
-    case 0x0004:
-      uint16 indices[10]; // was: 20
-      break;
-    case 0x0005:
-      uint16 indices[7];
-      break;
-    case 0x000A:
-      ubyte indices[23];
-      break;
-    case 0x6001:
-      uint16 indices[9];
-      break;
-    case 0x8801:
-      uint16 indices[7];
-      break;
-    default:
-      //MessageBox(idOk, "Warning", "Unknown primitive type for '%s': 0x%02X", path1, type);
-      break;
-  }
-} Primitive;
-
-typedef struct {
-  float f1;
-  byte d[24];
+    float unknown0;
+    byte  unknown1[24];
 } MeshExtra;
 
 typedef struct (Version version) {
-  uint32   meshSectionLength;
+    uint32    meshSectionLength;
 
-  if (!meshSectionLength) {
-    break;
-  }
+    if (!meshSectionLength) {
+        break;
+    }
 
-  local int meshSectionStart = FTell();
+    local int meshSectionStart = FTell();
 
-  float    unknown2; // NAE
-  BoundBox aabb;
-  uint32   numVertices1; // NAE
-  uint32   numVertexRefs;
-  uint32   unknown10; // NAE
-  uint32   unknown11; // NAE
-  uint32   unknown12; // NAE
+    float     unknown0; // NAE
+    BoundBox  aabb;
+    uint32    vertexCount1; // NAE
+    uint32    indexCount;
+    uint32    unknown1; // NAE
+    uint32    unknown2; // NAE
+    uint32    unknown3; // NAE
 
-  if (version >= VERSION_115) {
-    Color    color;
-  }
-  else {
-    float    alpha;
-  }
+    if (version >= VERSION_115) {
+        Color4f   color;
+    }
+    else {
+        float     alpha;
+    }
 
-  string   path;
+    string    path;
 
-  ByteBool    hasVertexRefs;
-  if (hasVertexRefs == BYTEBOOL_TRUE) { // Draw triangles in addition to the vertices.
-    uint32   unknown15; // NAE
-    uint32   vertexRefsSectionLength; // == numVertexRefs * sizeof(uint16)
-    uint16   vertexRefs[numVertexRefs];
-  }
-  uint16   unknown33; // NAE
-  uint16   unknown34; // NAE
-  ubyte    unkonwn35; // NAE
-  uint32   numVertices2;
-  if (numVertices1 != numVertices2) {
-    MessageBox(idOk, "Warning", "numVertices1 (%u) != numVertices2 (%u) in '%s'", numVertices1, numVertices2, name);
-  }
-  //if (numVertices2 < 10) {
-  //  MessageBox(idOk, "Tiny mesh", "Less than 10 vertices (%u) in '%s'", numVertices2, name);
-  //}
-  uint32   vertexStride;
-  uint32   verticesSectionLength; // == numVertices * vertexStride
-  uint32   unknown29; // NAE
-  Vertex   vertices[numVertices2];
+    ubyte    hasIndices;
+    if (hasIndices) { // Draw triangles in addition to the vertices.
+        uint32    unknown4; // NAE ... or material?
+        uint32    indicesLength; // == indexCount * sizeof(uint16)
+        uint16    indices[indexCount];
+    }
+
+    uint16    unknown5; // NAE
+    uint16    unknown6; // NAE
+    ubyte     unkonwn7; // NAE
+    uint32    vertexCount2;
+
+    if (vertexCount1 != vertexCount2) {
+        MessageBox(idOk, "Warning", "vertexCount1 (%u) != vertexCount2 (%u) in '%s'", vertexCount1, vertexCount2, name);
+    }
+
+    uint32    vertexStride;
+    uint32    verticesLength; // == vertexCount * vertexStride
+    uint32    unknown8; // NAE
+    Vertex    vertices[vertexCount2];
+
+    // Here's where it gets tricky...
+    uint32    primitiveCount;
+    Primitive primitives[primitiveCount]<optimize=false>;
+    ubyte     hasExtraSection;
 
 /*
-  uint32 numPrimitives;
-  Primitive primitives[numPrimitives]<optimize=false>;
-  ByteBool hasExtraSection;
-
-  if (hasExtraSection) {
-    byte extraPadding[3];
-    uint32 numExtraUnknown;
-    MeshExtra extraElements[numExtraUnknown];
-  }
+    if (hasExtraSection) {
+        byte      extraPadding[3];
+        uint32    meshExtraCount;
+        MeshExtra meshExtras[meshExtraCount];
+    }
 */
 
-  local int meshSectionLeft = meshSectionLength - (FTell() - meshSectionStart);
-  if (meshSectionLeft > 0) {
-    ubyte unknown99[meshSectionLeft];
-  }
-  else if (meshSectionLeft < 0) {
-    MessageBox(idOk, "Warning", "Read past meshSectionLength (%d)", meshSectionLeft);
-  }
+    local int meshSectionLeft = meshSectionLength - (FTell() - meshSectionStart);
+    if (meshSectionLeft > 0) {
+        ubyte     unparsed[meshSectionLeft];
+    }
+    else if (meshSectionLeft < 0) {
+        MessageBox(idOk, "Warning", "Read past meshSectionLength (%d)", meshSectionLeft);
+    }
 } Mesh;
 
 typedef struct (Version version) {
-  ByteBool meshFollows;
-  if (meshFollows) {
-    string path;
-    Mesh   mesh(version);
-  }
+    ubyte meshFollows;
+    if (meshFollows) {
+        string path;
+        Mesh   mesh(version);
+    }
 } MeshContainer <read=ReadMeshContainer>;
 
-// MeshContainer summary.
-string ReadMeshContainer(MeshContainer &c)
-{
-  string s;
-  if (c.meshFollows) {
-    SPrintf(s, "'%s'", FileNameGetBase(c.path));
-  }
-  else {
-    s = "---";
-  }
-
-  return s;
-}
-
 typedef struct (Version version, NodeType type) {
-  ulong    unknown1;
-  ulong    unknown2;
-  ulong    unknown3;
-  ulong    unknown4;
+    uint32 unknown0;
+    uint32 unknown1;
+    uint32 unknown2;
+    uint32 unknown3;
 
   // Regular cars (MESH1) have body and shadow mesh,
   // ambient cars (MESH2) have body, shadow and lod mesh.
@@ -214,93 +196,152 @@ typedef struct (Version version, NodeType type) {
 } NodeDataMesh;
 
 typedef struct (Version version) {
-  ulong    unknown1; // Nil
-  BoundBox aabb;
-  ulong    unknown2; // 1
-  ushort   unknown3; // Nil
-  ubyte    unknown4; // 1
+    uint32   unknown0; // Nil
+    BoundBox aabb;
+    uint32   unknown1; // 1
+    uint16   unknown2; // Nil
+    ubyte    unknown3; // 1
 
-  if (version >= VERSION_114) {
-    string   materialPath;
-    ubyte    data1[112]; // Matrix?
-    ubyte    data2[441-12];
-  }
-  else {
-    ubyte    data1[111];
-    ubyte    date2[442-12];
-  }
+    if (version >= VERSION_114) {
+        string   materialPath;
+        ubyte    unknown4[112]; // Matrix?
+        ubyte    unknown5[441-12];
+    }
+    else {
+        ubyte    unknown4[111];
+        ubyte    unknown5[442-12];
+    }
 
-  float    unknowns[3];
-  ulong    unknown5;
-  ulong    unknown6;
+    float    unknown6[3];
+    uint32   unknown7;
+    uint32   unknown8;
 } NodeDataMaterial;
 
 typedef struct {
-  float    unknown1[29];
-  int32    unknown2;
-  BoundBox aabb;
+    //float    unknown0[29]; // Matrix
+    float    unknown0;
+    Mat3x3   matrix <open=true>;
+    float    unknown1[19];
+    int32    meshIndex; // -1 if not applicable
+    BoundBox aabb;
 } NodeDataTransform;
 
 typedef struct (Version version) {
-  uint32 unknown1;
-  uint32 unknown2;
+    uint32 unknown0;
+    uint32 unknown1;
 
-  if (version >= VERSION_114) {
-    float  unknown3[8];
-  }
-  else {
-    float  unknown3[6];
-  }
+    if (version >= VERSION_114) {
+        float  unknown2[8];
+    }
+    else {
+        float  unknown2[6];
+    }
 } NodeDataLight;
 
 typedef struct (Version version) {
-  NodeType type;
-  string   name;
+    NodeType type;
+    string   name;
 
-  switch(type) {
-    case NODE_TYPE_TRANSFORM:
-      NodeDataTransform data;
-      break;
-    case NODE_TYPE_MESH1:
-    case NODE_TYPE_MESH2:
-      NodeDataMesh data(version, type);
-      break;
-    case NODE_TYPE_AXIS:
-      break;
-    case NODE_TYPE_LIGHT:
-      NodeDataLight data(version);
-      break;
-    case NODE_TYPE_SMOKE:
-      uint32 value;
-      break;
-    default:
-      MessageBox(idOk, "Warning", "Unknown type for node'%s': 0x%02X", name, type);
-      return;
-  }
+    switch(type) {
+        case NODE_TYPE_TRANSFORM:
+            NodeDataTransform data;
+            break;
+        case NODE_TYPE_MESH1:
+        case NODE_TYPE_MESH2:
+            NodeDataMesh data(version, type);
+            break;
+        case NODE_TYPE_AXIS:
+            break;
+        case NODE_TYPE_LIGHT:
+            NodeDataLight data(version);
+            break;
+        case NODE_TYPE_SMOKE:
+            uint32 value;
+            break;
+        default:
+            MessageBox(idOk, "Warning", "Unknown type for node'%s': 0x%02X", name, type);
+            return;
+    }
 
-  // Transform nodes are groups.
-  if (type == NODE_TYPE_TRANSFORM) {
-    uint32 numChildren;
-    struct Node; // Forward declare.
-    Node   children(version)[numChildren] <optimize=false>;
-  }
+    // Transform nodes are groups
+    if (type == NODE_TYPE_TRANSFORM) {
+        uint32 childCount;
+        struct Node; // Forward declare
+        Node   children(version)[childCount] <optimize=false>;
+    }
 } Node <read=ReadNode>;
 
-// Node summary.
-string ReadNode(Node &n)
-{
-  string s;
-  SPrintf(s, "%s: '%s'", EnumToString(n.type), n.name);
-  return s;
-}
-
 typedef struct {
-  uint32  unknown0;
-  Version version;
-  string  name;
-  NodeDataMaterial material(version);
-  uint32  numChildren;
-  Node    children(version)[numChildren] <optimize=false>;
+    uint32  rootNodeId; // == 0
+    Version version;
+    string  name;
+    NodeDataMaterial material(version);
+    uint32  childCount;
+    Node    children(version)[childCount] <optimize=false>;
 } RootNode;
 
 RootNode root <open=true>;
+
+// Vec3f summary
+string ReadVec3f(Vec3f &v)
+{
+    string s;
+    SPrintf(s, "%f, %f, %f", v.x, v.y, v.z);
+    return s;
+}
+
+// Vec4f summary
+string ReadVec4f(Vec4f &v)
+{
+    string s;
+    SPrintf(s, "%f, %f, %f, %f", v.x, v.y, v.z, v.w);
+    return s;
+}
+
+// Color4f summary
+string ReadColor4f(Color4f &c)
+{
+    string s;
+    SPrintf(s, "%f, %f, %f, %f", c.a, c.r, c.g, c.b);
+    return s;
+}
+
+// BoundBox summary
+string ReadBoundBox(BoundBox &b)
+{
+    string s;
+    SPrintf(s, "(%f, %f, %f), (%f, %f, %f)", b.min.x, b.min.y, b.min.z, b.max.x, b.max.y, b.max.z);
+    return s;
+}
+
+// Vertex summary
+string ReadVertex(Vertex &v)
+{
+    string s;
+    SPrintf(s, "%d, %d, %d", v.x, v.y, v.z);
+    return s;
+}
+
+// Primitive summary
+string ReadPrimitive(Primitive &p)
+{
+    string s;
+    SPrintf(s, "%04X (%d)", p.type, exists(p.indices) ? sizeof(p.indices) : 0);
+    return s;
+}
+
+// MeshContainer summary
+string ReadMeshContainer(MeshContainer &c)
+{
+    string s;
+    SPrintf(s, "'%s'", c.meshFollows ? FileNameGetBase(c.path) : "---");
+    return s;
+}
+
+// Node summary
+string ReadNode(Node &n)
+{
+    string s;
+    SPrintf(s, "%s: '%s'", EnumToString(n.type), n.name);
+    return s;
+}
