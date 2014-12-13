@@ -1,0 +1,34 @@
+//--------------------------------------
+//--- 010 Editor v5.0.2 Binary Template
+//
+// File:     mm3omb.bt
+// Author:   Daniel Stien <daniel@stien.org>
+// Revision: 2014-12-13
+// Purpose:  Midtown Madness 3 binary car material set
+//--------------------------------------
+
+typedef struct {
+    ubyte r <format=hex>;
+    ubyte g <format=hex>;
+    ubyte b <format=hex>;
+} Color3b <read=ReadColor3b>;
+
+typedef struct {
+    string  name;
+    string  texture;
+    Color3b diffuse;  //
+    Color3b ambient;  // Order not verified
+    Color3b specular; //
+} Material <open=true>;
+
+ubyte    unknown;
+uint32   materialCount;
+Material materials[materialCount] <optimize=false>;
+
+// Color3b summary
+string ReadColor3b(Color3b &c)
+{
+    string s;
+    SPrintf(s, "%.2f, %.2f, %.2f", c.r/255.0, c.g/255.0, c.b/255.0);
+    return s;
+}
