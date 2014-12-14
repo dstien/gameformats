@@ -3,7 +3,7 @@
 //
 // File:     mm3cmp.bt
 // Author:   Daniel Stien <daniel@stien.org>
-// Revision: 2014-12-12
+// Revision: 2014-12-14
 // Purpose:  Midtown Madness 3 car mesh package
 //--------------------------------------
 
@@ -39,7 +39,7 @@ typedef struct {
 } Mat3x3;
 
 typedef struct {
-    Vec4f v4, v4, v4, v4;
+    Vec4f v1, v2, v3, v4;
 } Mat4x4;
 
 typedef struct {
@@ -51,48 +51,59 @@ typedef struct {
     int y : 11;
     int z : 10;
     int16 unknown0; // Normals
-    int16 unknown1[9];
+    int16 unknown1[9]; // uv, ???, specular
 } Vertex <read=ReadVertex>;
 
 typedef struct {
-    uint16 type <format=hex>;
-    switch (type) {
-        case 0x0001:
-        case 0x0101:
-        case 0x0201:
-        case 0x0301:
-        case 0x0501:
-        case 0x0701:
-        case 0x0901:
-        case 0x0A01:
-        case 0x0B01:
-            uint16 indices[12];
-            break;
-        case 0x0002:
-        case 0x0003:
-        case 0x0006:
-            uint16 indices[3]; // 14?
-            break;
-        case 0x0004:
-            uint16 indices[10]; // was: 20
-            break;
-        case 0x0005:
-            uint16 indices[7];
-            break;
-        case 0x000A:
-            ubyte indices[23];
-            break;
-        case 0x6001:
-            uint16 indices[9];
-            break;
-        case 0x8801:
-            uint16 indices[7];
-            break;
-        default:
-            //MessageBox(idOk, "Warning", "Unknown primitive type for '%s': 0x%02X", path1, type);
-            break;
+    ubyte type <format=hex>;
+    ubyte subtype <format=hex>;
+
+    if (type == 1) {
+        // Subtype is material index
+        if (subtype < 0x60) {
+            uint16 unknowns[12];
+        }
+        // Triangles, range of indices in indices list
+        else if (subtype == 0x60) {
+            uint16 unknown0;
+            uint16 unknown1;
+            uint16 offset;
+            uint16 length; // * 3 + 3
+            uint16 unknowns[5];
+        }
+        // Triangle strips, range of indices in vertices list
+        else if (subtype == 0x88) {
+            uint16 offset;
+            uint16 length; // + 3
+            uint16 unknowns[5];
+        }
     }
-} Primitive <read=ReadPrimitive>;
+    else {
+        switch (type) {
+            case 0x02: // Confirmed
+                uint16 unknowns[9];
+                break;
+            case 0x03: // Wrong
+                uint16 unknowns[9];
+                break;
+            case 0x04: // Fairly certain
+                uint16 unknowns[20];
+                break;
+            case 0x05: // Fairly certain
+                uint16 unknowns[9];
+                break;
+            case 0x06: // Guess
+                uint16 unknowns[14];
+                break;
+            case 0x07:
+                uint16 unknowns[5];
+                break;
+            default:
+                //MessageBox(idOk, "Warning", "Unknown attribute type for '%s': 0x%02X", path, type);
+                break;
+        }
+    }
+} Attribute <read=ReadAttribute>;
 
 typedef struct {
     float unknown0;
@@ -132,7 +143,7 @@ typedef struct (Version version) {
         uint16    indices[indexCount];
     }
 
-    uint16    unknown5; // NAE
+    uint16    unknown5; // Must be > 0
     uint16    unknown6; // NAE
     ubyte     unkonwn7; // NAE
     uint32    vertexCount2;
@@ -147,17 +158,16 @@ typedef struct (Version version) {
     Vertex    vertices[vertexCount2];
 
     // Here's where it gets tricky...
-    uint32    primitiveCount;
-    Primitive primitives[primitiveCount]<optimize=false>;
+    uint32    attributeCount;
+    Attribute attributes[attributeCount]<optimize=false>;
+
     ubyte     hasExtraSection;
 
-/*
     if (hasExtraSection) {
         byte      extraPadding[3];
         uint32    meshExtraCount;
         MeshExtra meshExtras[meshExtraCount];
     }
-*/
 
     local int meshSectionLeft = meshSectionLength - (FTell() - meshSectionStart);
     if (meshSectionLeft > 0) {
@@ -326,11 +336,11 @@ string ReadVertex(Vertex &v)
     return s;
 }
 
-// Primitive summary
-string ReadPrimitive(Primitive &p)
+// Attribute summary
+string ReadAttribute(Attribute &a)
 {
     string s;
-    SPrintf(s, "%04X (%d)", p.type, exists(p.indices) ? sizeof(p.indices) : 0);
+    SPrintf(s, "%02X %02X (%d)", a.type, a.subtype, exists(a.unknowns) ? sizeof(a.unknowns) / sizeof(uint16) : 0);
     return s;
 }
 
