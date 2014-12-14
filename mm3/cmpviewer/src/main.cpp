@@ -1,6 +1,7 @@
 #include <cstring>
 #include <iomanip>
 #include <iostream>
+#include <osgGA/StateSetManipulator>
 #include <osgViewer/Viewer>
 #include <osgUtil/SmoothingVisitor>
 
@@ -11,11 +12,11 @@ std::ostream& operator<<(std::ostream& lhs, cmp::Node::Type type)
 	switch (type) {
 		case cmp::Node::Root:      lhs << "Root";      break;
 		case cmp::Node::Transform: lhs << "Transform"; break;
-		case cmp::Node::Mesh1:	   lhs << "Mesh1";     break;
-		case cmp::Node::Axis:	   lhs << "Axis";      break;
-		case cmp::Node::Light:	   lhs << "Light";     break;
-		case cmp::Node::Smoke:	   lhs << "Smoke";     break;
-		case cmp::Node::Mesh2:	   lhs << "Mesh2";     break;
+		case cmp::Node::Mesh1:     lhs << "Mesh1";     break;
+		case cmp::Node::Axis:      lhs << "Axis";      break;
+		case cmp::Node::Light:     lhs << "Light";     break;
+		case cmp::Node::Smoke:     lhs << "Smoke";     break;
+		case cmp::Node::Mesh2:     lhs << "Mesh2";     break;
 		default: lhs << "Unknown (" << (uint32_t)type << ")";
 	}
 
@@ -45,6 +46,10 @@ void printNode(cmp::Node* node)
 					std::cout << std::setw(indent + 4) << "" << "Mesh \"" << mesh->name << "\" (" << mesh->length << ") bytes" << std::endl;
 					std::cout << std::setw(indent + 8) << "" << mesh->vertexCount2 << " vertices" << std::endl;
 					std::cout << std::setw(indent + 8) << "" << mesh->indexCount << " indices" << std::endl;
+					std::cout << std::setw(indent + 8) << "" << mesh->attributeCount << " attributes" << std::endl;
+					for (cmp::Attribute* attr : mesh->attributes) {
+						std::cout << std::setw(indent + 12) << "" << "Type: " << (int)attr->type << " Subtype: " << (int)attr->subtype << std::endl;
+					}
 					std::cout << std::setw(indent + 8) << "" << mesh->unparsedLength << " unparsed bytes" << std::endl;
 				}
 			}
@@ -65,15 +70,15 @@ osg::ref_ptr<osg::Geode> drawBoundBox(cmp::BoundBox* aabb)
 {
 	osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array();
 
-	vertices->push_back(osg::Vec3(aabb->max.x, aabb->max.y, aabb->max.z)); // 1 0
-	vertices->push_back(osg::Vec3(aabb->min.x, aabb->max.y, aabb->max.z)); // 2 1
-	vertices->push_back(osg::Vec3(aabb->max.x, aabb->min.y, aabb->max.z)); // 3 2
-	vertices->push_back(osg::Vec3(aabb->min.x, aabb->min.y, aabb->max.z)); // 4 3
+	vertices->push_back(osg::Vec3(aabb->max.x, aabb->max.y, -aabb->max.z)); // 1 0
+	vertices->push_back(osg::Vec3(aabb->min.x, aabb->max.y, -aabb->max.z)); // 2 1
+	vertices->push_back(osg::Vec3(aabb->max.x, aabb->min.y, -aabb->max.z)); // 3 2
+	vertices->push_back(osg::Vec3(aabb->min.x, aabb->min.y, -aabb->max.z)); // 4 3
 
-	vertices->push_back(osg::Vec3(aabb->max.x, aabb->max.y, aabb->min.z)); // 5 4
-	vertices->push_back(osg::Vec3(aabb->min.x, aabb->max.y, aabb->min.z)); // 6 5
-	vertices->push_back(osg::Vec3(aabb->max.x, aabb->min.y, aabb->min.z)); // 7 6
-	vertices->push_back(osg::Vec3(aabb->min.x, aabb->min.y, aabb->min.z)); // 8 7
+	vertices->push_back(osg::Vec3(aabb->max.x, aabb->max.y, -aabb->min.z)); // 5 4
+	vertices->push_back(osg::Vec3(aabb->min.x, aabb->max.y, -aabb->min.z)); // 6 5
+	vertices->push_back(osg::Vec3(aabb->max.x, aabb->min.y, -aabb->min.z)); // 7 6
+	vertices->push_back(osg::Vec3(aabb->min.x, aabb->min.y, -aabb->min.z)); // 8 7
 
 	osg::ref_ptr<osg::DrawElementsUInt> indices = new osg::DrawElementsUInt(osg::PrimitiveSet::LINES);
 
@@ -122,17 +127,41 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh)
 	float maxZ = (b->min.z - b->max.z) * -1;
 
 	osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array();
-	osg::ref_ptr<osg::DrawElementsUInt> indices = new osg::DrawElementsUInt(osg::PrimitiveSet::POINTS);
 
 	for (unsigned i = 0; i < mesh->vertexCount2; i++) {
 		cmp::Vertex* v = &mesh->vertices[i];
-		vertices->push_back(osg::Vec3(v->scaleX(maxX), v->scaleY(maxY), v->scaleZ(maxZ)));
-		indices->push_back(i);
+		vertices->push_back(osg::Vec3(v->scaleX(maxX), v->scaleY(maxY), -v->scaleZ(maxZ)));
 	}
 
 	osg::ref_ptr<osg::Geometry> geometry = new osg::Geometry();
 	geometry->setVertexArray(vertices.get());
-	geometry->addPrimitiveSet(indices.get());
+
+	for (cmp::Attribute* attr : mesh->attributes) {
+		cmp::TrianglesAttribute* triattr = dynamic_cast<cmp::TrianglesAttribute*>(attr);
+		if (triattr) {
+			osg::ref_ptr<osg::DrawElementsUInt> triangles = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES);
+			for (unsigned i = 0; i < (triattr->length * 3) + 3; i++) {
+				triangles->insert(triangles->begin(), mesh->indices[triattr->offset + i]);
+				//triangles->push_back(mesh->indices[triattr->offset + i]);
+			}
+
+			geometry->addPrimitiveSet(triangles.get());
+			continue;
+		}
+
+		cmp::TriangleStripAttribute* stripattr = dynamic_cast<cmp::TriangleStripAttribute*>(attr);
+		if (stripattr) {
+			osg::ref_ptr<osg::DrawElementsUInt> strip = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLE_STRIP);
+
+			for (unsigned i = 0; i < stripattr->length + 3; i++) {
+				strip->insert(strip->begin(), stripattr->offset + i);
+				//strip->push_back(stripattr->offset + i);
+			}
+
+			geometry->addPrimitiveSet(strip.get());
+			continue;
+		}
+	}
 
 	osg::ref_ptr<osg::Geode> geode = new osg::Geode();
 	geode->addDrawable(geometry.get());
@@ -235,6 +264,11 @@ int main(int argc, char** argv)
 
 	osgViewer::Viewer viewer;
 	viewer.setUpViewInWindow(0, 0, 800, 600);
+	viewer.getCamera()->setClearColor(osg::Vec4(0.32f,0.76f,0.91f,0.0f));
+
+	// Wireframe/light toggling.
+	viewer.addEventHandler(new osgGA::StateSetManipulator(viewer.getCamera()->getOrCreateStateSet()));
+
 	viewer.setSceneData(model.get());
 	viewer.realize();
 

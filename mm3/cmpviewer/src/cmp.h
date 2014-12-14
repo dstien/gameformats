@@ -1,7 +1,7 @@
 #pragma once
 
 #include <fstream>
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -151,6 +151,34 @@ namespace cmp
 			int32_t unknown0;
 	};
 
+	struct Attribute
+	{
+		virtual ~Attribute() {}
+		uint8_t type;
+		uint8_t subtype;
+	};
+
+	struct MaterialAttribute : public Attribute
+	{
+		uint16_t unknown[12];
+	};
+
+	struct TrianglesAttribute : public Attribute
+	{
+		uint16_t unknown0;
+		uint16_t unknown1;
+		uint16_t offset;
+		uint16_t length;
+		uint16_t unknown2[5];
+	};
+
+	struct TriangleStripAttribute : public Attribute
+	{
+		uint16_t offset;
+		uint16_t length;
+		uint16_t unknown[5];
+	};
+
 	class Mesh : public Element
 	{
 		public:
@@ -169,7 +197,7 @@ namespace cmp
 			Color4f     color;
 
 			std::string path;
-				  
+
 			uint8_t     hasIndices;
 			uint32_t    unknown4;
 			uint32_t    indicesLength;
@@ -184,6 +212,9 @@ namespace cmp
 			uint32_t    verticesLength;
 			uint32_t    unknown8;
 			Vertex*     vertices;
+
+			uint32_t    attributeCount;
+			std::vector<Attribute*> attributes;
 
 			int         unparsedLength;
 			uint8_t*    unparsed;
