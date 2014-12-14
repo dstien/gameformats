@@ -1,0 +1,35 @@
+//--------------------------------------
+//--- 010 Editor v5.0.2 Binary Template
+//
+// File:     mm3ccol.bt
+// Author:   Daniel Stien <daniel@stien.org>
+// Revision: 2014-12-14
+// Purpose:  Midtown Madness 3 car collision mesh
+//--------------------------------------
+
+typedef struct {
+    float x, y, z;
+} Vec3f <read=ReadVec3f>;
+
+typedef struct {
+    string name;
+    uint32 vertexCount;
+    Vec3f  vertices[vertexCount];
+    uint32 normalCount;
+    Vec3f  normals[normalCount];
+    uint32 unknownCount;
+    float  unknown[unknownCount]; // Some property for each normal?
+    uint32 indexCount;
+    uint32 indices[indexCount]; // Indices in vertices
+} CollisionMesh <open=true>;
+
+uint32        collisionMeshCount;
+CollisionMesh collisionMeshes[collisionMeshCount] <optimize=false>;
+
+// Vec3f summary
+string ReadVec3f(Vec3f &v)
+{
+    string s;
+    SPrintf(s, "%f, %f, %f", v.x, v.y, v.z);
+    return s;
+}
