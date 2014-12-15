@@ -1,6 +1,7 @@
 #include <cstring>
 #include <iomanip>
 #include <iostream>
+#include <osg/Material>
 #include <osg/MatrixTransform>
 #include <osgGA/StateSetManipulator>
 #include <osgViewer/Viewer>
@@ -164,6 +165,21 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh)
 		}
 	}
 
+	if (mesh->color.a == 1.0f) {
+		osg::ref_ptr<osg::Vec4Array> colors = new osg::Vec4Array();
+		colors->push_back(osg::Vec4(mesh->color.r, mesh->color.g, mesh->color.b, mesh->color.a));
+		geometry->setColorArray(colors.get());
+		geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+	}
+	else {
+		osg::ref_ptr<osg::StateSet> state = geometry->getOrCreateStateSet();
+		state->setMode(GL_BLEND, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
+		osg::ref_ptr<osg::Material> material = new osg::Material();
+		material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(mesh->color.r, mesh->color.g, mesh->color.b, mesh->color.a));
+		material->setAlpha(osg::Material::FRONT_AND_BACK, mesh->color.a);
+		state->setAttributeAndModes(material.get(), osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
+	}
+
 	osg::ref_ptr<osg::Geode> geode = new osg::Geode();
 	geode->addDrawable(geometry.get());
 
@@ -282,7 +298,7 @@ int main(int argc, char** argv)
 
 	osgViewer::Viewer viewer;
 	viewer.setUpViewInWindow(0, 0, 800, 600);
-	viewer.getCamera()->setClearColor(osg::Vec4(0.32f,0.76f,0.91f,0.0f));
+	viewer.getCamera()->setClearColor(osg::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 	// Wireframe/light toggling.
 	viewer.addEventHandler(new osgGA::StateSetManipulator(viewer.getCamera()->getOrCreateStateSet()));
