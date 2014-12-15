@@ -204,7 +204,8 @@ typedef struct (Version version, NodeType type) {
 } NodeDataMesh;
 
 typedef struct {
-    Mat4x3   world <open=true>; // Transformation from root.
+    uint32   flags <format=hex>;   // 0x01 = Invisible, 0x04 = Billboard
+    Mat4x3   world <open=true>;    // Transformation from root.
     Mat4x3   relative <open=true>; // Transformation from parent.
     Vec3f    unknown0;
     float    unknown1;
@@ -221,7 +222,6 @@ typedef struct (Version version) {
         string   materialPath;
     }
 
-    uint32 unknown4; // TODO: Check for flags
     Transformation transformation;
     ubyte    unknown5[425];
     Vec3f    unknown6;
@@ -230,7 +230,6 @@ typedef struct (Version version) {
 } NodeDataRoot;
 
 typedef struct {
-    uint32   flags <format=hex>; // 0x01 = Invisible, 0x04 = Billboard
     Transformation transformation;
     int32    meshIndex; // -1 if not applicable
     BoundBox aabb; // Axis-aligned bound box relative to parent's transformation.
