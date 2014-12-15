@@ -41,6 +41,11 @@ namespace cmp
 		float r, g, b, a;
 	};
 
+	struct Mat4x3
+	{
+		float a[4][3];
+	};
+
 	class Element
 	{
 		public:
@@ -116,8 +121,12 @@ namespace cmp
 			virtual ~TransformNode() {}
 			virtual void read(std::ifstream& ifs);
 
-			float       unknown0[29];
-			int32_t     unknown1;
+			uint32_t flags;
+			Mat4x3   identity;
+			Mat4x3   transform;
+			Vec3f    unknown0;
+			float    unknown1;
+			int32_t  meshIndex;
 	};
 
 	class AxisNode : public Node

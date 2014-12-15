@@ -1,6 +1,7 @@
 #include <cstring>
 #include <iomanip>
 #include <iostream>
+#include <osg/MatrixTransform>
 #include <osgGA/StateSetManipulator>
 #include <osgViewer/Viewer>
 #include <osgUtil/SmoothingVisitor>
@@ -172,7 +173,16 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh)
 	return geode.get();
 }
 
-osg::ref_ptr<osg::Node> drawNode(cmp::Node* node)
+osg::Matrix cmpMatrix2osgMatrix(cmp::Mat4x3* m)
+{
+	return osg::Matrix(
+			m->a[0][0], m->a[1][0],  m->a[2][0], 0.0f,
+			m->a[0][1], m->a[1][1],  m->a[2][1], 0.0f,
+			m->a[0][2], m->a[1][2],  m->a[2][2], 0.0f,
+			m->a[3][0], m->a[3][1], -m->a[3][2], 1.0f);
+}
+
+osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent)
 {
 	switch (node->type) {
 		case cmp::Node::Root:
@@ -180,13 +190,19 @@ osg::ref_ptr<osg::Node> drawNode(cmp::Node* node)
 		{
 			cmp::GroupNode* groupNode = dynamic_cast<cmp::GroupNode*>(node);
 
-			osg::ref_ptr<osg::Group> group = new osg::Group();
+			osg::ref_ptr<osg::MatrixTransform> group = new osg::MatrixTransform();
 
-			group->addChild(drawBoundBox(&groupNode->aabb));
+			// Group bound is relative to parent.
+			parent->addChild(drawBoundBox(&groupNode->aabb));
+
+			cmp::TransformNode* transNode = dynamic_cast<cmp::TransformNode*>(node);
+			if (transNode) {
+				group->setMatrix(cmpMatrix2osgMatrix(&transNode->transform));
+			}
 
 			for (cmp::Node* node : groupNode->children) {
-				 osg::ref_ptr<osg::Node> child = drawNode(node);
-				 if (child) {
+				osg::ref_ptr<osg::Node> child = drawNode(node, group);
+				if (child) {
 					group->addChild(child.get());
 				}
 			}
@@ -201,11 +217,11 @@ osg::ref_ptr<osg::Node> drawNode(cmp::Node* node)
 			osg::ref_ptr<osg::Group> group = new osg::Group();
 
 			if (meshNode->hasBound()) {
-				group->addChild(drawBoundBox(&meshNode->aabb));
+				//group->addChild(drawBoundBox(&meshNode->aabb));
 			}
 
 			for (cmp::Mesh* mesh : meshNode->meshes) {
-				group->addChild(drawBoundBox(&mesh->aabb));
+				//group->addChild(drawBoundBox(&mesh->aabb));
 				group->addChild(drawMesh(mesh));
 				break;
 			}
@@ -258,7 +274,9 @@ int main(int argc, char** argv)
 		return 3;
 	}
 
-	osg::ref_ptr<osg::Node> model = drawNode(root);
+	osg::ref_ptr<osg::Group> world = new osg::Group();
+	osg::ref_ptr<osg::Node> model = drawNode(root, world);
+	world->addChild(model.get());
 
 	delete root;
 
@@ -269,7 +287,7 @@ int main(int argc, char** argv)
 	// Wireframe/light toggling.
 	viewer.addEventHandler(new osgGA::StateSetManipulator(viewer.getCamera()->getOrCreateStateSet()));
 
-	viewer.setSceneData(model.get());
+	viewer.setSceneData(world.get());
 	viewer.realize();
 
 	return viewer.run();

@@ -151,8 +151,12 @@ void TransformNode::read(std::ifstream& ifs)
 {
 	Node::read(ifs);
 
+	parse(ifs, flags);
+	parse(ifs, identity);
+	parse(ifs, transform);
 	parse(ifs, unknown0);
 	parse(ifs, unknown1);
+	parse(ifs, meshIndex);
 	parse(ifs, aabb);
 
 	GroupNode::read(ifs);
