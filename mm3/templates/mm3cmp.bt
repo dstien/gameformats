@@ -42,8 +42,10 @@ typedef struct {
     int x : 11;
     int y : 11;
     int z : 10;
-    int16 unknown0; // Normals
-    int16 unknown1[9]; // uv, ???, specular
+    int nx : 11;
+    int ny : 11;
+    int nz : 10;
+    int16 unknown1[8]; // uv, ???, specular
 } Vertex <read=ReadVertex>;
 
 typedef struct {
