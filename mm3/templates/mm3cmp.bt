@@ -201,6 +201,13 @@ typedef struct (Version version, NodeType type) {
   // TODO: More LOD and material stuff for NODE_TYPE_MESH2 in version 109 files.
 } NodeDataMesh;
 
+typedef struct {
+    Mat4x3   world <open=true>; // Transformation from root.
+    Mat4x3   relative <open=true>; // Transformation from parent.
+    Vec3f    unknown0;
+    float    unknown1;
+} Transformation;
+
 typedef struct (Version version) {
     uint32   unknown0; // Nil
     BoundBox aabb;
@@ -210,25 +217,19 @@ typedef struct (Version version) {
 
     if (version >= VERSION_114) {
         string   materialPath;
-        ubyte    unknown4[112]; // Matrix?
-        ubyte    unknown5[441-12];
-    }
-    else {
-        ubyte    unknown4[111];
-        ubyte    unknown5[442-12];
     }
 
-    float    unknown6[3];
+    uint32 unknown4; // TODO: Check for flags
+    Transformation transformation;
+    ubyte    unknown5[425];
+    Vec3f    unknown6;
     uint32   unknown7;
     uint32   unknown8;
-} NodeDataMaterial;
+} NodeDataRoot;
 
 typedef struct {
     uint32   flags <format=hex>; // 0x01 = Invisible, 0x04 = Billboard
-    Mat4x3   world <open=true>; // Transformation from root.
-    Mat4x3   relative <open=true>; // Transformation from parent.
-    Vec3f    unknown0;
-    float    unknown1;
+    Transformation transformation;
     int32    meshIndex; // -1 if not applicable
     BoundBox aabb; // Axis-aligned bound box relative to parent's transformation.
 } NodeDataTransform;
@@ -282,7 +283,7 @@ typedef struct {
     uint32  rootNodeId; // == 0
     Version version;
     string  name;
-    NodeDataMaterial material(version);
+    NodeDataRoot data(version);
     uint32  childCount;
     Node    children(version)[childCount] <optimize=false>;
 } RootNode;
