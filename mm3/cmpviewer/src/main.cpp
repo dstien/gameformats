@@ -5,7 +5,6 @@
 #include <osg/MatrixTransform>
 #include <osgGA/StateSetManipulator>
 #include <osgViewer/Viewer>
-#include <osgUtil/SmoothingVisitor>
 
 #include "cmp.h"
 
@@ -129,14 +128,17 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh)
 	float maxZ = (b->min.z - b->max.z) * -1;
 
 	osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array();
+	osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array(osg::Array::BIND_PER_VERTEX);
 
 	for (unsigned i = 0; i < mesh->vertexCount2; i++) {
 		cmp::Vertex* v = &mesh->vertices[i];
 		vertices->push_back(osg::Vec3(v->scaleX(maxX), v->scaleY(maxY), -v->scaleZ(maxZ)));
+		normals->push_back(osg::Vec3(v->scaleNX(), v->scaleNY(), -v->scaleNZ()));
 	}
 
 	osg::ref_ptr<osg::Geometry> geometry = new osg::Geometry();
 	geometry->setVertexArray(vertices.get());
+	geometry->setNormalArray(normals.get());
 
 	for (cmp::Attribute* attr : mesh->attributes) {
 		cmp::TrianglesAttribute* triattr = dynamic_cast<cmp::TrianglesAttribute*>(attr);
@@ -182,9 +184,6 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh)
 
 	osg::ref_ptr<osg::Geode> geode = new osg::Geode();
 	geode->addDrawable(geometry.get());
-
-	osgUtil::SmoothingVisitor sv;
-	geode->accept(sv);
 
 	return geode.get();
 }

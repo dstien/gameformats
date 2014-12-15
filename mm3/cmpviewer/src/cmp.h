@@ -19,11 +19,17 @@ namespace cmp
 		int x : 11;
 		int y : 11;
 		int z : 10;
-		uint32_t unknown[5];
+		int nx : 11;
+		int ny : 11;
+		int nz : 10;
+		uint32_t unknown[4];
 
 		float scaleX(float scale) { return ((float)x / 1024.0) * scale; }
 		float scaleY(float scale) { return ((float)y / 1024.0) * scale; }
 		float scaleZ(float scale) { return ((float)z /  512.0) * scale; }
+		float scaleNX() { return ((float)nx / 1024.0); }
+		float scaleNY() { return ((float)ny / 1024.0); }
+		float scaleNZ() { return ((float)nz /  512.0); }
 	};
 
 	struct  Vec3f
