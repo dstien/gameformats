@@ -46,6 +46,14 @@ namespace cmp
 		float a[4][3];
 	};
 
+	struct Transformation
+	{
+		Mat4x3 world;
+		Mat4x3 relative;
+		Vec3f  unknown0;
+		float  unknown1;
+	};
+
 	class Element
 	{
 		public:
@@ -103,15 +111,17 @@ namespace cmp
 			virtual void read(std::ifstream& ifs);
 			static RootNode* readFile(std::ifstream& ifs);
 
-			uint32_t    unknown0;
-			uint32_t    unknown1;
-			uint16_t    unknown2;
-			uint8_t     unknown3;
-			std::string path;
-			uint8_t     unknown4[541];
-			Vec3f       unknown5;
-			uint32_t    unknown6;
-			uint32_t    unknown7;
+			uint32_t       unknown0;
+			uint32_t       unknown1;
+			uint16_t       unknown2;
+			uint8_t        unknown3;
+			std::string    path;
+			uint32_t       unknown4;
+			Transformation transformation;
+			uint8_t        unknown5[425];
+			Vec3f          unknown6;
+			uint32_t       unknown7;
+			uint32_t       unknown8;
 	};
 
 	class TransformNode : public GroupNode
@@ -121,12 +131,9 @@ namespace cmp
 			virtual ~TransformNode() {}
 			virtual void read(std::ifstream& ifs);
 
-			uint32_t flags;
-			Mat4x3   identity;
-			Mat4x3   transform;
-			Vec3f    unknown0;
-			float    unknown1;
-			int32_t  meshIndex;
+			uint32_t       flags;
+			Transformation transformation;
+			int32_t        meshIndex;
 	};
 
 	class AxisNode : public Node

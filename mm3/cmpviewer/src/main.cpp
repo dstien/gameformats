@@ -197,7 +197,7 @@ osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent)
 
 			cmp::TransformNode* transNode = dynamic_cast<cmp::TransformNode*>(node);
 			if (transNode) {
-				group->setMatrix(cmpMatrix2osgMatrix(&transNode->transform));
+				group->setMatrix(cmpMatrix2osgMatrix(&transNode->transformation.relative));
 			}
 
 			for (cmp::Node* node : groupNode->children) {

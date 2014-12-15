@@ -140,9 +140,11 @@ void RootNode::read(std::ifstream& ifs)
 	}
 
 	parse(ifs, unknown4);
+	parse(ifs, transformation);
 	parse(ifs, unknown5);
 	parse(ifs, unknown6);
 	parse(ifs, unknown7);
+	parse(ifs, unknown8);
 
 	GroupNode::read(ifs);
 }
@@ -152,10 +154,7 @@ void TransformNode::read(std::ifstream& ifs)
 	Node::read(ifs);
 
 	parse(ifs, flags);
-	parse(ifs, identity);
-	parse(ifs, transform);
-	parse(ifs, unknown0);
-	parse(ifs, unknown1);
+	parse(ifs, transformation);
 	parse(ifs, meshIndex);
 	parse(ifs, aabb);
 
