@@ -30,11 +30,19 @@ void printNode(cmp::Node* node)
 
 	int indent = 4 * level;
 	
-	std::cout << std::setw(indent) << "" << node->type << " node (\"" << node->name << "\")" << std::endl;
+	std::cout << std::setw(indent) << "" << node->type << " node \"" << node->name << "\"" << std::endl;
 
 	switch (node->type) {
 		case cmp::Node::Root:
+			break;
 		case cmp::Node::Transform:
+			{
+				cmp::TransformNode* transformNode = dynamic_cast<cmp::TransformNode*>(node);
+				if (transformNode && transformNode->meshIndex != -1) {
+					std::cout << std::setw(indent + 4) << "" << "Mesh index: " << transformNode->meshIndex << std::endl;
+				}
+			}
+			break;
 		case cmp::Node::Axis:
 		case cmp::Node::Light:
 		case cmp::Node::Smoke:
@@ -44,14 +52,19 @@ void printNode(cmp::Node* node)
 			cmp::MeshNode* meshNode = dynamic_cast<cmp::MeshNode*>(node);
 			if (meshNode) {
 				for (cmp::Mesh* mesh : meshNode->meshes) {
-					std::cout << std::setw(indent + 4) << "" << "Mesh \"" << mesh->name << "\" (" << mesh->length << ") bytes" << std::endl;
-					std::cout << std::setw(indent + 8) << "" << mesh->vertexCount2 << " vertices" << std::endl;
-					std::cout << std::setw(indent + 8) << "" << mesh->indexCount << " indices" << std::endl;
-					std::cout << std::setw(indent + 8) << "" << mesh->attributeCount << " attributes" << std::endl;
-					for (cmp::Attribute* attr : mesh->attributes) {
-						std::cout << std::setw(indent + 12) << "" << "Type: " << (int)attr->type << " Subtype: " << (int)attr->subtype << std::endl;
+					std::cout << std::setw(indent + 4) << "" << "Mesh \"" << mesh->name << "\" (" << mesh->length << " bytes)" << std::endl;
+					if (mesh->length) {
+						std::cout << std::setw(indent + 8) << "" << mesh->vertexCount2 << " vertices" << std::endl;
+						std::cout << std::setw(indent + 8) << "" << mesh->indexCount << " indices" << std::endl;
+						std::cout << std::setw(indent + 8) << "" << mesh->attributeCount << " attributes" << std::endl;
+						for (cmp::Attribute* attr : mesh->attributes) {
+							std::cout << std::setw(indent + 12) << "" << "Type: " << (int)attr->type << " Subtype: " << (int)attr->subtype << std::endl;
+						}
+						std::cout << std::setw(indent + 8) << "" << mesh->unparsedLength << " unparsed bytes" << std::endl;
 					}
-					std::cout << std::setw(indent + 8) << "" << mesh->unparsedLength << " unparsed bytes" << std::endl;
+					else {
+						std::cout << std::setw(indent + 8) << "" << "Reference " << (mesh->reference ? "resolved" : "not resolved") << std::endl;
+					}
 				}
 			}
 			break;
@@ -122,6 +135,16 @@ osg::ref_ptr<osg::Geode> drawBoundBox(cmp::BoundBox* aabb)
 
 osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh)
 {
+	if (!mesh->length) {
+		if (mesh->reference) {
+			// TODO: Re-use geode.
+			return drawMesh(mesh->reference);
+		}
+
+		osg::ref_ptr<osg::Geode> geode = new osg::Geode();
+		return geode.get();
+	}
+
 	cmp::BoundBox* b = &mesh->aabb;
 	float maxX = (b->min.x - b->max.x) * -1;
 	float maxY = (b->min.y - b->max.y) * -1;

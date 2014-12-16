@@ -60,6 +60,9 @@ namespace cmp
 		float  unknown1;
 	};
 
+	class Mesh;
+	typedef std::vector<Mesh*> MeshList;
+
 	class Element
 	{
 		public:
@@ -94,6 +97,7 @@ namespace cmp
 			virtual ~Node() = 0;
 			virtual void read(std::ifstream& ifs);
 			static Node* readNode(std::ifstream& ifs, Version version);
+			virtual void findMeshes(MeshList* meshList) {}
 
 			Type type;
 	};
@@ -104,6 +108,7 @@ namespace cmp
 			GroupNode(Version version, Type type) : Node(version, type) {}
 			virtual ~GroupNode() = 0;
 			virtual void read(std::ifstream& ifs);
+			virtual void findMeshes(MeshList* meshList);
 
 			BoundBox           aabb;
 			std::vector<Node*> children;
@@ -116,6 +121,7 @@ namespace cmp
 			virtual ~RootNode() {}
 			virtual void read(std::ifstream& ifs);
 			static RootNode* readFile(std::ifstream& ifs);
+			void resolveReferences();
 
 			uint32_t       unknown0;
 			uint32_t       unknown1;
@@ -240,6 +246,8 @@ namespace cmp
 
 			int         unparsedLength;
 			uint8_t*    unparsed;
+
+			Mesh*       reference;
 	};
 
 	class MeshNode : public Node
@@ -248,6 +256,7 @@ namespace cmp
 			MeshNode(Version version, Type type) : Node(version, type) {}
 			virtual ~MeshNode();
 			virtual void read(std::ifstream& ifs);
+			virtual void findMeshes(MeshList* meshList);
 			bool hasBound() { return type == Mesh2; }
 
 			int32_t            unknown0;

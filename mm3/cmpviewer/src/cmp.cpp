@@ -104,6 +104,21 @@ void GroupNode::read(std::ifstream& ifs)
 	}
 }
 
+void GroupNode::findMeshes(MeshList* meshList)
+{
+	for (Node* child : children) {
+		child->findMeshes(meshList);
+	}
+}
+
+void MeshNode::findMeshes(MeshList* meshList)
+{
+	for (cmp::Mesh* mesh : meshes) {
+		meshList->push_back(mesh);
+	}
+}
+
+
 RootNode* RootNode::readFile(std::ifstream& ifs)
 {
 	Type type;
@@ -121,6 +136,8 @@ RootNode* RootNode::readFile(std::ifstream& ifs)
 	RootNode* root = new RootNode(version);
 
 	root->read(ifs);
+
+	root->resolveReferences();
 
 	return root;
 }
@@ -147,6 +164,23 @@ void RootNode::read(std::ifstream& ifs)
 	parse(ifs, unknown8);
 
 	GroupNode::read(ifs);
+}
+
+void RootNode::resolveReferences()
+{
+	std::vector<Mesh*> meshes;
+	findMeshes(&meshes);
+
+	for (cmp::Mesh* empty : meshes) {
+		if (empty->length == 0) {
+			for (cmp::Mesh* mesh : meshes) {
+				if (mesh != empty && mesh->length > 0 && mesh->name == empty->name) {
+					empty->reference = mesh;
+					break;
+				}
+			}
+		}
+	}
 }
 
 void TransformNode::read(std::ifstream& ifs)
@@ -191,6 +225,7 @@ Mesh::Mesh(Version version) : Element(version)
 	vertices = 0;
 	unparsedLength = 0;
 	unparsed = 0;
+	reference = 0;
 }
 
 Mesh::~Mesh()
