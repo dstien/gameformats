@@ -226,7 +226,7 @@ typedef struct (Version version) {
     ubyte    unknown5[425];
     Vec3f    unknown6;
     uint32   unknown7;
-    uint32   unknown8;
+    uint32   meshNodeCount;
 } NodeDataRoot;
 
 typedef struct {
