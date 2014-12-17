@@ -8,6 +8,15 @@
 
 #include "cmp.h"
 
+#define CULL_GROUP_AABB 1 << 0
+#define CULL_MESH_AABB  1 << 1
+#define CULL_BODY       1 << 2
+#define CULL_TIRES      1 << 3
+#define CULL_WINDOWS    1 << 4
+#define CULL_INTERIOR   1 << 5
+#define CULL_LOOSEPARTS 1 << 6
+#define CULL_OTHER      1 << 7
+
 std::ostream& operator<<(std::ostream& lhs, cmp::Node::Type type)
 {
 	switch (type) {
@@ -80,7 +89,7 @@ void printNode(cmp::Node* node)
 	}
 }
 
-osg::ref_ptr<osg::Geode> drawBoundBox(cmp::BoundBox* aabb)
+osg::ref_ptr<osg::Geode> drawBoundBox(cmp::BoundBox* aabb, osg::Node::NodeMask mask)
 {
 	osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array();
 
@@ -130,15 +139,17 @@ osg::ref_ptr<osg::Geode> drawBoundBox(cmp::BoundBox* aabb)
 	osg::ref_ptr<osg::Geode> geode = new osg::Geode();
 	geode->addDrawable(geometry.get());
 
+	geode->setNodeMask(mask);
+
 	return geode.get();
 }
 
-osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh)
+osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh, osg::Node::NodeMask mask)
 {
 	if (!mesh->length) {
 		if (mesh->reference) {
 			// TODO: Re-use geode.
-			return drawMesh(mesh->reference);
+			return drawMesh(mesh->reference, mask);
 		}
 
 		osg::ref_ptr<osg::Geode> geode = new osg::Geode();
@@ -208,6 +219,8 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh)
 	osg::ref_ptr<osg::Geode> geode = new osg::Geode();
 	geode->addDrawable(geometry.get());
 
+	geode->setNodeMask(mask);
+
 	return geode.get();
 }
 
@@ -220,7 +233,7 @@ osg::Matrix cmpMatrix2osgMatrix(cmp::Mat4x3* m)
 			m->a[3][0], m->a[3][1], -m->a[3][2], 1.0f);
 }
 
-osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent)
+osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent, osg::Node::NodeMask mask = 0)
 {
 	switch (node->type) {
 		case cmp::Node::Root:
@@ -231,15 +244,33 @@ osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent)
 			osg::ref_ptr<osg::MatrixTransform> group = new osg::MatrixTransform();
 
 			// Group bound is relative to parent.
-			parent->addChild(drawBoundBox(&groupNode->aabb));
+			parent->addChild(drawBoundBox(&groupNode->aabb, CULL_GROUP_AABB));
 
 			cmp::TransformNode* transNode = dynamic_cast<cmp::TransformNode*>(node);
 			if (transNode) {
 				group->setMatrix(cmpMatrix2osgMatrix(&transNode->transformation.relative));
 			}
 
+			if (mask == 0) {
+				if (node->name == "body") {
+					mask = CULL_BODY;
+				}
+				else if (node->name == "looseparts") {
+					mask = CULL_LOOSEPARTS;
+				}
+				else if (node->name == "lowdash") {
+					mask = CULL_INTERIOR;
+				}
+				else if (node->name == "glass_windows") {
+					mask = CULL_WINDOWS;
+				}
+				else if (!node->name.compare(0, 4, "tire")) {
+					mask = CULL_TIRES;
+				}
+			}
+
 			for (cmp::Node* node : groupNode->children) {
-				osg::ref_ptr<osg::Node> child = drawNode(node, group);
+				osg::ref_ptr<osg::Node> child = drawNode(node, group, mask);
 				if (child) {
 					group->addChild(child.get());
 				}
@@ -255,12 +286,17 @@ osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent)
 			osg::ref_ptr<osg::Group> group = new osg::Group();
 
 			if (meshNode->hasBound()) {
-				//group->addChild(drawBoundBox(&meshNode->aabb));
+				group->addChild(drawBoundBox(&meshNode->aabb, CULL_MESH_AABB));
+			}
+
+			if (!mask) {
+				mask = CULL_OTHER;
 			}
 
 			for (cmp::Mesh* mesh : meshNode->meshes) {
-				//group->addChild(drawBoundBox(&mesh->aabb));
-				group->addChild(drawMesh(mesh));
+				group->addChild(drawBoundBox(&mesh->aabb, CULL_MESH_AABB));
+
+				group->addChild(drawMesh(mesh, mask));
 				break;
 			}
 
@@ -273,6 +309,54 @@ osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent)
 			return 0;
 	}
 }
+
+class KeyHandler : public osgGA::GUIEventHandler
+{
+	public:
+		KeyHandler(osg::Camera* camera) : camera(camera) {}
+
+		virtual bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&)
+		{
+			if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
+					switch (ea.getKey()) {
+						case osgGA::GUIEventAdapter::KeySymbol::KEY_F1:
+							camera->setCullMask(camera->getCullMask() ^ CULL_GROUP_AABB);
+							return true;
+						case osgGA::GUIEventAdapter::KeySymbol::KEY_F2:
+							camera->setCullMask(camera->getCullMask() ^ CULL_MESH_AABB);
+							return true;
+						case osgGA::GUIEventAdapter::KeySymbol::KEY_F3:
+							camera->setCullMask(camera->getCullMask() ^ CULL_BODY);
+							return true;
+						case osgGA::GUIEventAdapter::KeySymbol::KEY_F4:
+							camera->setCullMask(camera->getCullMask() ^ CULL_TIRES);
+							return true;
+						case osgGA::GUIEventAdapter::KeySymbol::KEY_F5:
+							camera->setCullMask(camera->getCullMask() ^ CULL_WINDOWS);
+							return true;
+						case osgGA::GUIEventAdapter::KeySymbol::KEY_F6:
+							camera->setCullMask(camera->getCullMask() ^ CULL_INTERIOR);
+							return true;
+						case osgGA::GUIEventAdapter::KeySymbol::KEY_F7:
+							camera->setCullMask(camera->getCullMask() ^ CULL_LOOSEPARTS);
+							return true;
+						case osgGA::GUIEventAdapter::KeySymbol::KEY_F8:
+							camera->setCullMask(camera->getCullMask() ^ CULL_OTHER);
+							return true;
+					}
+			}
+
+			return false;
+		}
+
+		virtual void accept(osgGA::GUIEventHandlerVisitor& v)
+		{
+			v.visit(*this);
+		}
+
+	private:
+		osg::Camera* camera;
+};
 
 int main(int argc, char** argv)
 {
@@ -321,6 +405,9 @@ int main(int argc, char** argv)
 	osgViewer::Viewer viewer;
 	viewer.setUpViewInWindow(0, 0, 800, 600);
 	viewer.getCamera()->setClearColor(osg::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	viewer.getCamera()->setCullMask(CULL_BODY | CULL_TIRES | CULL_WINDOWS | CULL_INTERIOR | CULL_LOOSEPARTS | CULL_OTHER);
+
+	viewer.addEventHandler(new KeyHandler(viewer.getCamera()));
 
 	// Wireframe/light toggling.
 	viewer.addEventHandler(new osgGA::StateSetManipulator(viewer.getCamera()->getOrCreateStateSet()));
