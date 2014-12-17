@@ -211,21 +211,32 @@ typedef struct {
     float    unknown1;
 } Transformation;
 
+typedef struct {
+    Vec3f  unknown0;
+    uint32 unknown1;
+} RootEntry;
+
 typedef struct (Version version) {
-    uint32   unknown0; // Nil
-    BoundBox aabb;
-    uint32   unknown1; // 1
-    uint16   unknown2; // Nil
-    ubyte    unknown3; // 1
+    uint32    unknown0; // Nil
+    BoundBox  aabb;
+    uint32    unknown1; // 1
+    uint16    unknown2; // Nil
+    ubyte     unknown3; // 1
 
     if (version >= VERSION_114) {
-        string   materialPath;
+        string materialPath;
     }
 
     Transformation transformation;
-    ubyte    unknown5[425];
-    Vec3f    unknown6;
-    uint32   unknown7;
+    uint32    unknown5;
+    ubyte     unknown6;
+    BoundBox  aabb2;
+    uint32    rootEntryCount;
+    uint32    unknown7;
+    uint32    unknown8;
+    uint32    unknown9;
+    float     unknown10[3];
+    RootEntry rootEntries[rootEntryCount];
     uint32   meshNodeCount;
 } NodeDataRoot;
 
@@ -268,7 +279,7 @@ typedef struct (Version version) {
             uint32 value;
             break;
         default:
-            MessageBox(idOk, "Warning", "Unknown type for node'%s': 0x%02X", name, type);
+            MessageBox(idOk, "Warning", "Unknown type for node '%s': 0x%02X", name, type);
             return;
     }
 
