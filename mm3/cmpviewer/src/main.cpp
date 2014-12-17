@@ -8,14 +8,17 @@
 
 #include "cmp.h"
 
-#define CULL_GROUP_AABB 1 << 0
-#define CULL_MESH_AABB  1 << 1
-#define CULL_BODY       1 << 2
-#define CULL_TIRES      1 << 3
-#define CULL_WINDOWS    1 << 4
-#define CULL_INTERIOR   1 << 5
-#define CULL_LOOSEPARTS 1 << 6
-#define CULL_OTHER      1 << 7
+#define CULL_GROUP_AABB 1 <<  0
+#define CULL_MESH_AABB  1 <<  1
+#define CULL_BODY       1 <<  2
+#define CULL_TIRES      1 <<  3
+#define CULL_WINDOWS    1 <<  4
+#define CULL_INTERIOR   1 <<  5
+#define CULL_LOOSEPARTS 1 <<  6
+#define CULL_OTHER      1 <<  7
+#define CULL_LOD1       1 <<  8
+#define CULL_LOD2       1 <<  9
+#define CULL_LOD3       1 << 10
 
 std::ostream& operator<<(std::ostream& lhs, cmp::Node::Type type)
 {
@@ -293,11 +296,23 @@ osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent, osg::Node:
 				mask = CULL_OTHER;
 			}
 
+			int lod = 0;
 			for (cmp::Mesh* mesh : meshNode->meshes) {
+				switch (lod) {
+					case 0:
+						//mask |= CULL_LOD1;
+						break;
+					case 1:
+						mask = CULL_LOD2;
+						break;
+					default:
+						mask = CULL_LOD3;
+				}
+
 				group->addChild(drawBoundBox(&mesh->aabb, CULL_MESH_AABB));
 
 				group->addChild(drawMesh(mesh, mask));
-				break;
+				lod++;
 			}
 
 			return group.get();
@@ -319,6 +334,15 @@ class KeyHandler : public osgGA::GUIEventHandler
 		{
 			if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
 					switch (ea.getKey()) {
+						//case '1':
+						//	camera->setCullMask(camera->getCullMask() ^ CULL_LOD1);
+						//	return true;
+						case '2':
+							camera->setCullMask(camera->getCullMask() ^ CULL_LOD2);
+							return true;
+						case '3':
+							camera->setCullMask(camera->getCullMask() ^ CULL_LOD3);
+							return true;
 						case osgGA::GUIEventAdapter::KeySymbol::KEY_F1:
 							camera->setCullMask(camera->getCullMask() ^ CULL_GROUP_AABB);
 							return true;
@@ -405,7 +429,7 @@ int main(int argc, char** argv)
 	osgViewer::Viewer viewer;
 	viewer.setUpViewInWindow(0, 0, 800, 600);
 	viewer.getCamera()->setClearColor(osg::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-	viewer.getCamera()->setCullMask(CULL_BODY | CULL_TIRES | CULL_WINDOWS | CULL_INTERIOR | CULL_LOOSEPARTS | CULL_OTHER);
+	viewer.getCamera()->setCullMask(CULL_BODY | CULL_TIRES | CULL_WINDOWS | CULL_INTERIOR | CULL_LOOSEPARTS | CULL_OTHER |  CULL_LOD1);
 
 	viewer.addEventHandler(new KeyHandler(viewer.getCamera()));
 
