@@ -1,0 +1,37 @@
+//--------------------------------------
+//--- 010 Editor v5.0.2 Binary Template
+//
+// File:     mm3occ.bt
+// Author:   Daniel Stien <daniel@stien.org>
+// Revision: 2014-12-19
+// Purpose:  Midtown Madness 3 city occlusion data
+//--------------------------------------
+
+typedef struct {
+    float x, y, z;
+} Vec3f;
+
+typedef struct {
+    float x, y, z, w;
+} Vec4f;
+
+typedef struct {
+    uint32 lineCount;
+    uint16 indices[lineCount * 2];
+} Lines <optimize=false>;
+
+typedef struct {
+    string version;
+    uint32 linesCount;
+    Lines  lines[linesCount];
+    uint32 vertexCount;
+    Vec3f  vertices[vertexCount];
+    uint32 unknown0Count;
+    Vec4f  unknown0[unknown0Count];
+    uint32 unknown1Count;
+    Vec3f  unknown1[unknown1Count];
+    float  unknown2[15];
+} Entry <optimize=false,open=true>;
+
+uint32 entryCount;
+Entry  entries[entryCount];
