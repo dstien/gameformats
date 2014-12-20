@@ -95,9 +95,8 @@ typedef struct {
 } Attribute <read=ReadAttribute>;
 
 typedef struct {
-    float unknown0;
-    byte  unknown1[24];
-} MeshExtra;
+    uint32 unknown[7];
+} NumberPlateVertex;
 
 typedef struct (Version version) {
     uint32    meshSectionLength;
@@ -150,10 +149,10 @@ typedef struct (Version version) {
     Attribute attributes[attributeCount]<optimize=false>;
     uint32    unknown9; // Matches last material?
 
-    uint32    hasExtraSection;
-    if (hasExtraSection) {
-        uint32    meshExtraCount;
-        MeshExtra meshExtras[meshExtraCount];
+    uint32    hasNumberPlate;
+    if (hasNumberPlate) {
+        uint32            numberPlateVertexCount;
+        NumberPlateVertex numberPlateVertices[numberPlateVertexCount];
     }
 
     local int meshSectionLeft = meshSectionLength - (FTell() - meshSectionStart);
