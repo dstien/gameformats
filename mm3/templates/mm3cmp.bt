@@ -3,7 +3,7 @@
 //
 // File:     mm3cmp.bt
 // Author:   Daniel Stien <daniel@stien.org>
-// Revision: 2014-12-15
+// Revision: 2014-12-20
 // Purpose:  Midtown Madness 3 car mesh package
 //--------------------------------------
 
@@ -56,9 +56,18 @@ typedef struct {
     ubyte subtype <format=hex>;
 
     if (type == 1) {
-        // Subtype is material index
+        // Subtype is material index for triangles
         if (subtype < 0x60) {
-            uint16 unknowns[12];
+            // Wouldn't mind knowing why this case is special...
+            if (subtype != 0 || parentof(this).attributeCount != 2) {
+                ubyte  unknown0;
+            }
+            uint16 unknown1;
+            uint32 unknown2; // Matches unknown0 from earlier subtype 0x60 entry
+            uint32 unknown3; // Matches unknown1 + 1 from earlier subtype 0x60 entry
+            uint32 offset;   // Matches offset from earlier subtype 0x60 entry
+            uint32 length;   // Matches length + 1 from earlier subtype 0x60 entry
+            ubyte  unknown6;
         }
         // Triangles, range of indices in indices list
         else if (subtype == 0x60) {
@@ -75,30 +84,13 @@ typedef struct {
             uint16 unknowns[5];
         }
     }
+    // Type is material index for triangle strips
     else {
-        switch (type) {
-            case 0x02: // Confirmed
-                uint16 unknowns[9];
-                break;
-            case 0x03: // Wrong
-                uint16 unknowns[9];
-                break;
-            case 0x04: // Fairly certain
-                uint16 unknowns[20];
-                break;
-            case 0x05: // Fairly certain
-                uint16 unknowns[9];
-                break;
-            case 0x06: // Guess
-                uint16 unknowns[14];
-                break;
-            case 0x07:
-                uint16 unknowns[5];
-                break;
-            default:
-                //MessageBox(idOk, "Warning", "Unknown attribute type for '%s': 0x%02X", path, type);
-                break;
-        }
+        uint16 unknown0;
+        uint32 unknown1;
+        uint32 halfLength; // length - 2 / 2
+        uint32 offset;     // Matches offset in subtype 0x88
+        uint32 length;     // Matches length + 1 from earlier 0x88 entry
     }
 } Attribute <read=ReadAttribute>;
 
@@ -154,14 +146,12 @@ typedef struct (Version version) {
     uint32    unknown8; // NAE
     Vertex    vertices[vertexCount2];
 
-    // Here's where it gets tricky...
     uint32    attributeCount;
     Attribute attributes[attributeCount]<optimize=false>;
+    uint32    unknown9; // Matches last material?
 
-    ubyte     hasExtraSection;
-
+    uint32    hasExtraSection;
     if (hasExtraSection) {
-        byte      extraPadding[3];
         uint32    meshExtraCount;
         MeshExtra meshExtras[meshExtraCount];
     }
