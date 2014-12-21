@@ -54,7 +54,12 @@ typedef struct {
     int u  : 11; // u  / 1024
     int v  : 11; // v  / 1024
     int unknown0 : 10;
-    uint32 unknown1[3]; // ???, specular
+    ubyte unknown1;
+    ubyte unknown2 : 5;
+    ubyte meshId : 3;
+    ubyte unknown3;
+    ubyte unknown4;
+    uint16 unknowns[4]; // ???, specular
 } Vertex <read=ReadVertex>;
 
 typedef struct {
