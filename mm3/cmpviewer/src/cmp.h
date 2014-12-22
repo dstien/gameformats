@@ -54,10 +54,11 @@ namespace cmp
 
 	struct Transformation
 	{
-		Mat4x3 world;
-		Mat4x3 relative;
-		Vec3f  unknown0;
-		float  unknown1;
+		uint32_t flags;
+		Mat4x3   world;
+		Mat4x3   relative;
+		Vec3f    unknown0;
+		float    unknown1;
 	};
 
 	class Mesh;
@@ -114,11 +115,16 @@ namespace cmp
 			std::vector<Node*> children;
 	};
 
+	struct RootEntry {
+		Vec3f    unknown0;
+		uint32_t unknown1;
+	};
+
 	class RootNode : public GroupNode
 	{
 		public:
-			RootNode(Version version) : GroupNode(version, Root) {}
-			virtual ~RootNode() {}
+			RootNode(Version version);
+			virtual ~RootNode();
 			virtual void read(std::ifstream& ifs);
 			static RootNode* readFile(std::ifstream& ifs);
 			void resolveReferences();
@@ -128,12 +134,17 @@ namespace cmp
 			uint16_t       unknown2;
 			uint8_t        unknown3;
 			std::string    path;
-			uint32_t       unknown4;
 			Transformation transformation;
-			uint8_t        unknown5[425];
-			Vec3f          unknown6;
+			uint32_t       unknown4;
+			uint8_t        unknown5;
+			BoundBox       aabb2;
+			uint32_t       rootEntryCount;
+			uint32_t       unknown6;
 			uint32_t       unknown7;
 			uint32_t       unknown8;
+			float          unknown9[3];
+			RootEntry*     rootEntries;
+			uint32_t       meshNodeCount;
 	};
 
 	class TransformNode : public GroupNode
@@ -143,7 +154,6 @@ namespace cmp
 			virtual ~TransformNode() {}
 			virtual void read(std::ifstream& ifs);
 
-			uint32_t       flags;
 			Transformation transformation;
 			int32_t        meshIndex;
 	};

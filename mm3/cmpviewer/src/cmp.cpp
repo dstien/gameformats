@@ -111,13 +111,17 @@ void GroupNode::findMeshes(MeshList* meshList)
 	}
 }
 
-void MeshNode::findMeshes(MeshList* meshList)
+RootNode::RootNode(Version version) : GroupNode(version, Root)
 {
-	for (cmp::Mesh* mesh : meshes) {
-		meshList->push_back(mesh);
-	}
+	rootEntries = 0;
 }
 
+RootNode::~RootNode()
+{
+	if (rootEntries) {
+		delete[] rootEntries;
+	}
+}
 
 RootNode* RootNode::readFile(std::ifstream& ifs)
 {
@@ -156,12 +160,20 @@ void RootNode::read(std::ifstream& ifs)
 		parse(ifs, path);
 	}
 
-	parse(ifs, unknown4);
 	parse(ifs, transformation);
+	parse(ifs, unknown4);
 	parse(ifs, unknown5);
+	parse(ifs, aabb2);
+	parse(ifs, rootEntryCount);
 	parse(ifs, unknown6);
 	parse(ifs, unknown7);
 	parse(ifs, unknown8);
+	parse(ifs, unknown9);
+
+	rootEntries = new RootEntry[rootEntryCount];
+	ifs.read(reinterpret_cast<char*>(rootEntries), sizeof(RootEntry) * rootEntryCount);
+
+	parse(ifs, meshNodeCount);
 
 	GroupNode::read(ifs);
 }
@@ -187,7 +199,6 @@ void TransformNode::read(std::ifstream& ifs)
 {
 	Node::read(ifs);
 
-	parse(ifs, flags);
 	parse(ifs, transformation);
 	parse(ifs, meshIndex);
 	parse(ifs, aabb);
@@ -392,6 +403,13 @@ MeshNode::~MeshNode()
 {
 	for (Mesh* mesh : meshes) {
 		delete mesh;
+	}
+}
+
+void MeshNode::findMeshes(MeshList* meshList)
+{
+	for (cmp::Mesh* mesh : meshes) {
+		meshList->push_back(mesh);
 	}
 }
 
