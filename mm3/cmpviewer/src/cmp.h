@@ -278,9 +278,6 @@ namespace cmp
 			uint32_t    numberPlateVertexCount;
 			NumberPlateVertex* numberPlateVertices;
 
-			int         unparsedLength;
-			uint8_t*    unparsed;
-
 			Mesh*       reference;
 	};
 

@@ -86,9 +86,6 @@ void printNode(cmp::Node* node)
 						if (mesh->hasNumberPlate) {
 							std::cout << std::setw(indent + 8) << "" << mesh->numberPlateVertexCount << " number plate vertices" << std::endl;
 						}
-						if (mesh->unparsedLength) {
-							std::cout << std::setw(indent + 8) << "" << mesh->unparsedLength << " unparsed bytes" << std::endl;
-						}
 					}
 					else {
 						std::cout << std::setw(indent + 8) << "" << "Reference: ";

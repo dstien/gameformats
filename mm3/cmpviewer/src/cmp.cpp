@@ -235,8 +235,6 @@ Mesh::Mesh(Version version) : Element(version)
 	indices = 0;
 	vertices = 0;
 	numberPlateVertices = 0;
-	unparsedLength = 0;
-	unparsed = 0;
 	reference = 0;
 }
 
@@ -260,10 +258,6 @@ Mesh::~Mesh()
 
 	if (numberPlateVertices) {
 		delete numberPlateVertices;
-	}
-
-	if (unparsed) {
-		delete[] unparsed;
 	}
 }
 
@@ -386,7 +380,7 @@ void Mesh::read(std::ifstream& ifs)
 		ifs.read(reinterpret_cast<char*>(numberPlateVertices), sizeof(NumberPlateVertex) * numberPlateVertexCount);
 	}
 
-	unparsedLength = length - ((int)ifs.tellg() - meshStartOffset);
+	int unparsedLength = length - ((int)ifs.tellg() - meshStartOffset);
 
 	if (unparsedLength < 0) {
 		std::ostringstream msg;
@@ -394,8 +388,9 @@ void Mesh::read(std::ifstream& ifs)
 		throw std::runtime_error(msg.str());
 	}
 	else if (unparsedLength > 0) {
-		unparsed = new uint8_t[unparsedLength];
-		ifs.read(reinterpret_cast<char*>(unparsed), unparsedLength);
+		std::ostringstream msg;
+		msg << "Finished reading mesh \"" << name << "\" with " << unparsedLength << " unparsed bytes left.";
+		throw std::runtime_error(msg.str());
 	}
 }
 
