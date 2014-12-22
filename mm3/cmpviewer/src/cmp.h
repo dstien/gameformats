@@ -220,6 +220,10 @@ namespace cmp
 		Primitive::Type Type() { return isTriangleStrip ? Primitive::Type::TriangleStrip : Primitive::Type::TriangleList; }
 	};
 
+	struct NumberPlateVertex{
+		uint32_t unknown[7];
+	};
+
 	class Mesh : public Element
 	{
 		public:
@@ -259,6 +263,10 @@ namespace cmp
 
 			uint32_t    materialCount;
 			std::vector<Material*> materials;
+
+			uint32_t    hasNumberPlate;
+			uint32_t    numberPlateVertexCount;
+			NumberPlateVertex* numberPlateVertices;
 
 			int         unparsedLength;
 			uint8_t*    unparsed;

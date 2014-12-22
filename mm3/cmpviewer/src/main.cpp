@@ -81,12 +81,23 @@ void printNode(cmp::Node* node)
 						std::cout << std::setw(indent + 8) << "" << mesh->indexCount << " indices" << std::endl;
 						std::cout << std::setw(indent + 8) << "" << mesh->primitives.size() << " primitives" << std::endl;
 						for (int i = 0; i < mesh->primitives.size(); i++) {
-							std::cout << std::setw(indent + 12) << "" << "Type: " << std::setw(16) << mesh->primitives[i]->type << " Material: " << mesh->materials[i]->material << std::endl;
+							std::cout << std::setw(indent + 12) << "" << "Type: " << std::left << std::setw(13) << mesh->primitives[i]->type << " Material: " << mesh->materials[i]->material << std::endl;
 						}
-						std::cout << std::setw(indent + 8) << "" << mesh->unparsedLength << " unparsed bytes" << std::endl;
+						if (mesh->hasNumberPlate) {
+							std::cout << std::setw(indent + 8) << "" << mesh->numberPlateVertexCount << " number plate vertices" << std::endl;
+						}
+						if (mesh->unparsedLength) {
+							std::cout << std::setw(indent + 8) << "" << mesh->unparsedLength << " unparsed bytes" << std::endl;
+						}
 					}
 					else {
-						std::cout << std::setw(indent + 8) << "" << "Reference " << (mesh->reference ? "resolved" : "not resolved") << std::endl;
+						std::cout << std::setw(indent + 8) << "" << "Reference: ";
+						if (!mesh->reference) {
+							std::cout << "Not resolved" << std::endl;
+						}
+						else {
+							std::cout << "\"" << mesh->reference->name << "\"" << std::endl;
+						}
 					}
 				}
 			}

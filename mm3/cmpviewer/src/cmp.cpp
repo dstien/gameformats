@@ -223,6 +223,7 @@ Mesh::Mesh(Version version) : Element(version)
 {
 	indices = 0;
 	vertices = 0;
+	numberPlateVertices = 0;
 	unparsedLength = 0;
 	unparsed = 0;
 	reference = 0;
@@ -244,6 +245,10 @@ Mesh::~Mesh()
 
 	for (Material* material : materials) {
 		delete material;
+	}
+
+	if (numberPlateVertices) {
+		delete numberPlateVertices;
 	}
 
 	if (unparsed) {
@@ -360,6 +365,14 @@ void Mesh::read(std::ifstream& ifs)
 		parse(ifs, material->isTriangleStrip);
 		parse(ifs, material->material);
 		materials.push_back(material);
+	}
+
+	parse(ifs, hasNumberPlate);
+
+	if (hasNumberPlate) {
+		parse(ifs, numberPlateVertexCount);
+		numberPlateVertices = new NumberPlateVertex[numberPlateVertexCount];
+		ifs.read(reinterpret_cast<char*>(numberPlateVertices), sizeof(NumberPlateVertex) * numberPlateVertexCount);
 	}
 
 	unparsedLength = length - ((int)ifs.tellg() - meshStartOffset);
