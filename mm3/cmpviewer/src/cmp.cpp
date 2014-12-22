@@ -171,9 +171,9 @@ void RootNode::resolveReferences()
 	std::vector<Mesh*> meshes;
 	findMeshes(&meshes);
 
-	for (cmp::Mesh* empty : meshes) {
+	for (Mesh* empty : meshes) {
 		if (empty->length == 0) {
-			for (cmp::Mesh* mesh : meshes) {
+			for (Mesh* mesh : meshes) {
 				if (mesh != empty && mesh->length > 0 && mesh->name == empty->name) {
 					empty->reference = mesh;
 					break;
@@ -236,6 +236,14 @@ Mesh::~Mesh()
 
 	if (vertices) {
 		delete[] vertices;
+	}
+
+	for (Primitive* primitive : primitives) {
+		delete primitive;
+	}
+
+	for (Material* material : materials) {
+		delete material;
 	}
 
 	if (unparsed) {
@@ -306,47 +314,52 @@ void Mesh::read(std::ifstream& ifs)
 	vertices = new Vertex[vertexCount2];
 	ifs.read(reinterpret_cast<char*>(vertices), verticesLength);
 
-	parse(ifs, attributeCount);
+	parse(ifs, primitiveAndMaterialCount);
 
-	for (int i = 0; i < attributeCount; i++) {
-		uint8_t type, subtype;
+	for (int i = 0; i < primitiveAndMaterialCount / 2; i++) {
+		Primitive::Type type;
 		parse(ifs, type);
-		parse(ifs, subtype);
 
-		if (type == 0x01) {
-			if (subtype < 0x60) {
-				MaterialAttribute* attr = new MaterialAttribute();
-				attr->type = type;
-				attr->subtype = subtype;
-				parse(ifs, attr->unknown);
-				attributes.push_back(attr);
-				continue;
+		Primitive* primitive = 0;
+
+		switch (type) {
+			case Primitive::TriangleList:
+			{
+				TriangleList* list = new TriangleList();
+				primitive = list;
+				parse(ifs, list->minIndex);
+				parse(ifs, list->vertexCount);
+				break;
 			}
-			else if (subtype == 0x60) {
-				TrianglesAttribute* attr = new TrianglesAttribute();
-				attr->type = type;
-				attr->subtype = subtype;
-				parse(ifs, attr->unknown0);
-				parse(ifs, attr->unknown1);
-				parse(ifs, attr->offset);
-				parse(ifs, attr->length);
-				parse(ifs, attr->unknown2);
-				attributes.push_back(attr);
-				continue;
+			case Primitive::TriangleStrip:
+			{
+				TriangleStrip* strip = new TriangleStrip();
+				primitive = strip;
+				break;
 			}
-			else if (subtype == 0x88) {
-				TriangleStripAttribute* attr = new TriangleStripAttribute();
-				attr->type = type;
-				attr->subtype = subtype;
-				parse(ifs, attr->offset);
-				parse(ifs, attr->length);
-				parse(ifs, attr->unknown);
-				attributes.push_back(attr);
-				continue;
-			}
+			default:
+				std::ostringstream msg;
+				msg << "Unknown primitive type " << type << " in mesh \"" << name << "\".";
+				throw std::runtime_error(msg.str());
 		}
 
-		break;
+		parse(ifs, primitive->offset);
+		parse(ifs, primitive->count);
+		parse(ifs, primitive->unknown);
+		primitives.push_back(primitive);
+	}
+
+	parse(ifs, materialCount);
+
+	for (int i = 0; i < materialCount; i++) {
+		Material* material = new Material();
+		parse(ifs, material->minIndex);
+		parse(ifs, material->vertexCount);
+		parse(ifs, material->offset);
+		parse(ifs, material->count);
+		parse(ifs, material->isTriangleStrip);
+		parse(ifs, material->material);
+		materials.push_back(material);
 	}
 
 	unparsedLength = length - ((int)ifs.tellg() - meshStartOffset);

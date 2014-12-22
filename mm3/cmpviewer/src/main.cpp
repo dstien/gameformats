@@ -36,6 +36,17 @@ std::ostream& operator<<(std::ostream& lhs, cmp::Node::Type type)
 	return lhs;
 }
 
+std::ostream& operator<<(std::ostream& lhs, cmp::Primitive::Type type)
+{
+	switch (type) {
+		case cmp::Primitive::TriangleList:  lhs << "TriangleList";  break;
+		case cmp::Primitive::TriangleStrip: lhs << "TriangleStrip"; break;
+		default: lhs << "Unknown (" << (uint16_t)type << ")";
+	}
+
+	return lhs;
+}
+
 void printNode(cmp::Node* node)
 {
 	static int level = 0;
@@ -68,9 +79,9 @@ void printNode(cmp::Node* node)
 					if (mesh->length) {
 						std::cout << std::setw(indent + 8) << "" << mesh->vertexCount2 << " vertices" << std::endl;
 						std::cout << std::setw(indent + 8) << "" << mesh->indexCount << " indices" << std::endl;
-						std::cout << std::setw(indent + 8) << "" << mesh->attributeCount << " attributes" << std::endl;
-						for (cmp::Attribute* attr : mesh->attributes) {
-							std::cout << std::setw(indent + 12) << "" << "Type: " << (int)attr->type << " Subtype: " << (int)attr->subtype << std::endl;
+						std::cout << std::setw(indent + 8) << "" << mesh->primitives.size() << " primitives" << std::endl;
+						for (int i = 0; i < mesh->primitives.size(); i++) {
+							std::cout << std::setw(indent + 12) << "" << "Type: " << std::setw(16) << mesh->primitives[i]->type << " Material: " << mesh->materials[i]->material << std::endl;
 						}
 						std::cout << std::setw(indent + 8) << "" << mesh->unparsedLength << " unparsed bytes" << std::endl;
 					}
@@ -144,7 +155,7 @@ osg::ref_ptr<osg::Geode> drawBoundBox(cmp::BoundBox* aabb, osg::Node::NodeMask m
 
 	geode->setNodeMask(mask);
 
-	return geode.get();
+	return geode;
 }
 
 osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh, osg::Node::NodeMask mask)
@@ -177,30 +188,38 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh, osg::Node::NodeMask mask)
 	geometry->setVertexArray(vertices.get());
 	geometry->setNormalArray(normals.get());
 
-	for (cmp::Attribute* attr : mesh->attributes) {
-		cmp::TrianglesAttribute* triattr = dynamic_cast<cmp::TrianglesAttribute*>(attr);
-		if (triattr) {
-			osg::ref_ptr<osg::DrawElementsUInt> triangles = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES);
-			for (unsigned i = 0; i < (triattr->length * 3) + 3; i++) {
-				triangles->insert(triangles->begin(), mesh->indices[triattr->offset + i]);
-				//triangles->push_back(mesh->indices[triattr->offset + i]);
+	for (cmp::Primitive* primitive : mesh->primitives) {
+		switch (primitive->type) {
+			case cmp::Primitive::Type::TriangleList:
+			{
+				cmp::TriangleList* list = dynamic_cast<cmp::TriangleList*>(primitive);
+				if (list) {
+					osg::ref_ptr<osg::DrawElementsUInt> triangles = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES);
+					for (unsigned i = 0; i < (list->count * 3) + 3; i++) {
+						triangles->insert(triangles->begin(), mesh->indices[list->offset + i]);
+						//triangles->push_back(mesh->indices[list->offset + i]);
+					}
+
+					geometry->addPrimitiveSet(triangles.get());
+				}
+				break;
 			}
+			case cmp::Primitive::Type::TriangleStrip:
+			{
+				cmp::TriangleStrip* strip = dynamic_cast<cmp::TriangleStrip*>(primitive);
+				if (primitive) {
+					osg::ref_ptr<osg::DrawElementsUInt> tristrip = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLE_STRIP);
 
-			geometry->addPrimitiveSet(triangles.get());
-			continue;
-		}
+					for (unsigned i = 0; i < strip->count + 3; i++) {
+						tristrip->insert(tristrip->begin(), strip->offset + i);
+						//tristrip->push_back(strip->offset + i);
+					}
 
-		cmp::TriangleStripAttribute* stripattr = dynamic_cast<cmp::TriangleStripAttribute*>(attr);
-		if (stripattr) {
-			osg::ref_ptr<osg::DrawElementsUInt> strip = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLE_STRIP);
-
-			for (unsigned i = 0; i < stripattr->length + 3; i++) {
-				strip->insert(strip->begin(), stripattr->offset + i);
-				//strip->push_back(stripattr->offset + i);
+					geometry->addPrimitiveSet(tristrip.get());
+					continue;
+				}
+				break;
 			}
-
-			geometry->addPrimitiveSet(strip.get());
-			continue;
 		}
 	}
 
@@ -224,7 +243,7 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh, osg::Node::NodeMask mask)
 
 	geode->setNodeMask(mask);
 
-	return geode.get();
+	return geode;
 }
 
 osg::Matrix cmpMatrix2osgMatrix(cmp::Mat4x3* m)
@@ -279,7 +298,7 @@ osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent, osg::Node:
 				}
 			}
 
-			return group.get();
+			return group;
 		}
 		case cmp::Node::Mesh1:
 		case cmp::Node::Mesh2:
@@ -315,7 +334,7 @@ osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent, osg::Node:
 				lod++;
 			}
 
-			return group.get();
+			return group;
 		}
 		case cmp::Node::Axis:
 		case cmp::Node::Light:
@@ -373,11 +392,6 @@ class KeyHandler : public osgGA::GUIEventHandler
 			return false;
 		}
 
-		virtual void accept(osgGA::GUIEventHandlerVisitor& v)
-		{
-			v.visit(*this);
-		}
-
 	private:
 		osg::Camera* camera;
 };
@@ -411,7 +425,7 @@ int main(int argc, char** argv)
 		printNode(root);
 		std::cout << std::endl;
 	}
-	catch (const std::ios_base::failure& e) {
+	catch (const std::ios_base::failure&) {
 		std::cerr << "Exception: " << ::strerror(errno) << std::endl;
 		return 2;
 	}
@@ -427,7 +441,7 @@ int main(int argc, char** argv)
 	delete root;
 
 	osgViewer::Viewer viewer;
-	viewer.setUpViewInWindow(0, 0, 800, 600);
+	viewer.setUpViewInWindow(100, 50, 800, 600);
 	viewer.getCamera()->setClearColor(osg::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	viewer.getCamera()->setCullMask(CULL_BODY | CULL_TIRES | CULL_WINDOWS | CULL_INTERIOR | CULL_LOOSEPARTS | CULL_OTHER |  CULL_LOD1);
 

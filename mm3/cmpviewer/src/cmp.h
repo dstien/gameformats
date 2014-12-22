@@ -179,32 +179,45 @@ namespace cmp
 			int32_t unknown0;
 	};
 
-	struct Attribute
+	struct Primitive
 	{
-		virtual ~Attribute() {}
-		uint8_t type;
-		uint8_t subtype;
-	};
+		enum Type : uint16_t
+		{
+			TriangleList = 0x6001,
+			TriangleStrip = 0x8801,
+		};
 
-	struct MaterialAttribute : public Attribute
-	{
-		uint16_t unknown[12];
-	};
-
-	struct TrianglesAttribute : public Attribute
-	{
-		uint16_t unknown0;
-		uint16_t unknown1;
+		Primitive(Type type) : type(type) {}
+		virtual ~Primitive() {}
+		Type type;
 		uint16_t offset;
-		uint16_t length;
-		uint16_t unknown2[5];
-	};
-
-	struct TriangleStripAttribute : public Attribute
-	{
-		uint16_t offset;
-		uint16_t length;
+		uint16_t count;
 		uint16_t unknown[5];
+	};
+
+	struct TriangleList : public Primitive
+	{
+		TriangleList() : Primitive(Type::TriangleList) {}
+
+		uint16_t minIndex;
+		uint16_t vertexCount;
+	};
+
+	struct TriangleStrip : public Primitive
+	{
+		TriangleStrip() : Primitive(Type::TriangleStrip) {}
+	};
+
+	struct Material
+	{
+		uint32_t minIndex;
+		uint32_t vertexCount;
+		uint32_t offset;
+		uint32_t count;
+		uint8_t  isTriangleStrip;
+		uint32_t material;
+
+		Primitive::Type Type() { return isTriangleStrip ? Primitive::Type::TriangleStrip : Primitive::Type::TriangleList; }
 	};
 
 	class Mesh : public Element
@@ -241,8 +254,11 @@ namespace cmp
 			uint32_t    unknown8;
 			Vertex*     vertices;
 
-			uint32_t    attributeCount;
-			std::vector<Attribute*> attributes;
+			uint32_t    primitiveAndMaterialCount;
+			std::vector<Primitive*> primitives;
+
+			uint32_t    materialCount;
+			std::vector<Material*> materials;
 
 			int         unparsedLength;
 			uint8_t*    unparsed;
