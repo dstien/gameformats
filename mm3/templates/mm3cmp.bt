@@ -45,7 +45,7 @@ typedef struct {
 } Vec3f <read=ReadVec3f>;
 
 typedef struct {
-    float a, r, g, b;
+    float r, g, b, a;
 } Color4f <read=ReadColor4f>;
 
 typedef struct {
