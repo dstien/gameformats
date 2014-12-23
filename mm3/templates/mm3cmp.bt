@@ -3,7 +3,7 @@
 //
 // File:     mm3cmp.bt
 // Author:   Daniel Stien <daniel@stien.org>
-// Revision: 2014-12-21
+// Revision: 2014-12-23
 // Purpose:  Midtown Madness 3 car mesh package
 //--------------------------------------
 
@@ -168,11 +168,13 @@ typedef struct (Version version) {
     uint32    materialCount;
     Material  materials[materialCount];
 
-    uint32    hasNumberPlate;
+    if (version >= VERSION_114) {
+        uint32    hasNumberPlate;
 
-    if (hasNumberPlate) {
-        uint32            numberPlateVertexCount;
-        NumberPlateVertex numberPlateVertices[numberPlateVertexCount];
+        if (hasNumberPlate) {
+            uint32            numberPlateVertexCount;
+            NumberPlateVertex numberPlateVertices[numberPlateVertexCount];
+        }
     }
 
     local int meshSectionLeft = meshSectionLength - (FTell() - meshSectionStart);
@@ -208,6 +210,9 @@ typedef struct (Version version, NodeType type) {
 
   for (i = 0; i < maxMeshes; i++) {
     MeshContainer meshContainer(version);
+    if (version < VERSION_114 && type == NODE_TYPE_MESH2 && i == 0) {
+        ubyte unknown;
+    }
     if (!meshContainer.meshFollows) {
       break;
     }
