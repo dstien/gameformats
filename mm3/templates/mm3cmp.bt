@@ -22,6 +22,18 @@ typedef enum <uint32> {
     NODE_TYPE_MESH2     = 0x06,
 } NodeType;
 
+typedef enum <uint32> {
+    HeadLight    = 0,
+    BackLight    = 1,
+    BrakeLight   = 2,
+    ReverseLight = 3,
+    Siren        = 4,
+    SignalLeft   = 5,
+    SignalRight  = 6,
+    HeadLightEnv = 8,
+    SirenEnv     = 9,
+} LightType;
+
 typedef enum <uint16> {
     TriangleList  = 0x6001,
     TriangleStrip = 0x8801,
@@ -34,6 +46,13 @@ typedef struct {
 typedef struct {
     float a, r, g, b;
 } Color4f <read=ReadColor4f>;
+
+typedef struct {
+    ubyte b <format=hex>;
+    ubyte g <format=hex>;
+    ubyte r <format=hex>;
+    ubyte a <format=hex>;
+} Color4b <read=ReadColor4b>;
 
 typedef struct {
     Vec3f v1, v2, v3, v4;
@@ -150,6 +169,7 @@ typedef struct (Version version) {
     Material  materials[materialCount];
 
     uint32    hasNumberPlate;
+
     if (hasNumberPlate) {
         uint32            numberPlateVertexCount;
         NumberPlateVertex numberPlateVertices[numberPlateVertexCount];
@@ -239,14 +259,18 @@ typedef struct {
 } NodeDataTransform;
 
 typedef struct (Version version) {
-    uint32 unknown0;
-    uint32 unknown1;
+    LightType type;
+    uint32    isTogglable;
+    float     unknown0;
+    float     brightness;
+    float     unknown1;
+    float     size;
+    float     unknown2;
+    Color4b   color;
 
     if (version >= VERSION_114) {
-        float  unknown2[8];
-    }
-    else {
-        float  unknown2[6];
+        float unknown3; // Siren rotation offset?
+        float unknown4;
     }
 } NodeDataLight;
 
@@ -306,10 +330,17 @@ string ReadVec3f(Vec3f &v)
 string ReadColor4f(Color4f &c)
 {
     string s;
-    SPrintf(s, "%f, %f, %f, %f", c.a, c.r, c.g, c.b);
+    SPrintf(s, "%f, %f, %f, %f", c.r, c.g, c.b, c.a);
     return s;
 }
 
+// Color4b summary
+string ReadColor4b(Color4b &c)
+{
+    string s;
+    SPrintf(s, "%02X %02X %02X %02X", c.r, c.g, c.b, c.a);
+    return s;
+}
 // BoundBox summary
 string ReadBoundBox(BoundBox &b)
 {
