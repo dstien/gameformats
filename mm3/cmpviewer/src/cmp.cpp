@@ -378,12 +378,14 @@ void Mesh::read(std::ifstream& ifs)
 		materials.push_back(material);
 	}
 
-	parse(ifs, hasNumberPlate);
+	if (version >= Version115) {
+		parse(ifs, hasNumberPlate);
 
-	if (hasNumberPlate) {
-		parse(ifs, numberPlateVertexCount);
-		numberPlateVertices = new NumberPlateVertex[numberPlateVertexCount];
-		ifs.read(reinterpret_cast<char*>(numberPlateVertices), sizeof(NumberPlateVertex) * numberPlateVertexCount);
+		if (hasNumberPlate) {
+			parse(ifs, numberPlateVertexCount);
+			numberPlateVertices = new NumberPlateVertex[numberPlateVertexCount];
+			ifs.read(reinterpret_cast<char*>(numberPlateVertices), sizeof(NumberPlateVertex) * numberPlateVertexCount);
+		}
 	}
 
 	int unparsedLength = length - ((int)ifs.tellg() - meshStartOffset);
