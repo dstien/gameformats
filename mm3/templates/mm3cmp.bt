@@ -8,18 +8,19 @@
 //--------------------------------------
 
 typedef enum <uint32> {
-    VERSION_109 = 109,
-    VERSION_114 = 114,
-    VERSION_115 = 115,
+    Version109 = 109,
+    Version114 = 114,
+    Version115 = 115,
 } Version;
 
 typedef enum <uint32> {
-    NODE_TYPE_TRANSFORM = 0x01,
-    NODE_TYPE_MESH1     = 0x02,
-    NODE_TYPE_AXIS      = 0x03,
-    NODE_TYPE_LIGHT     = 0x04,
-    NODE_TYPE_SMOKE     = 0x05,
-    NODE_TYPE_MESH2     = 0x06,
+    Root      = 0,
+    Transform = 1,
+    Mesh1     = 2,
+    Axis      = 3,
+    Light     = 4,
+    Smoke     = 5,
+    Mesh2     = 6,
 } NodeType;
 
 typedef enum <uint32> {
@@ -124,15 +125,15 @@ typedef struct (Version version) {
 
     local int meshSectionStart = FTell();
 
-    float     unknown0; // NAE
+    float     unknown0;
     BoundBox  aabb;
-    uint32    vertexCount1; // NAE
+    uint32    vertexCount1;
     uint32    indexCount;
-    uint32    unknown1; // NAE
-    uint32    unknown2; // NAE
-    uint32    unknown3; // NAE
+    uint32    unknown1;
+    uint32    unknown2;
+    uint32    unknown3;
 
-    if (version >= VERSION_115) {
+    if (version >= Version115) {
         Color4f   color;
     }
     else {
@@ -142,15 +143,15 @@ typedef struct (Version version) {
     string    path;
 
     ubyte    hasIndices;
-    if (hasIndices) { // Draw triangles in addition to the vertices.
-        uint32    unknown4; // NAE ... or material?
+    if (hasIndices) { // Triangle list indices
+        uint32    unknown4;
         uint32    indicesLength; // == indexCount * sizeof(uint16)
         uint16    indices[indexCount];
     }
 
     uint16    unknown5; // Must be > 0
-    uint16    unknown6; // NAE
-    ubyte     unkonwn7; // NAE
+    uint16    unknown6;
+    ubyte     unkonwn7;
     uint32    vertexCount2;
 
     if (vertexCount1 != vertexCount2) {
@@ -159,7 +160,7 @@ typedef struct (Version version) {
 
     uint32    vertexStride;
     uint32    verticesLength; // == vertexCount * vertexStride
-    uint32    unknown8; // NAE
+    uint32    unknown8;
     Vertex    vertices[vertexCount2];
 
     uint32    primitiveAndMaterialCount;
@@ -168,7 +169,7 @@ typedef struct (Version version) {
     uint32    materialCount;
     Material  materials[materialCount];
 
-    if (version >= VERSION_114) {
+    if (version >= Version114) {
         uint32    hasNumberPlate;
 
         if (hasNumberPlate) {
@@ -179,7 +180,7 @@ typedef struct (Version version) {
 
     local int meshSectionLeft = meshSectionLength - (FTell() - meshSectionStart);
     if (meshSectionLeft > 0) {
-        ubyte     unparsed[meshSectionLeft];
+        MessageBox(idOk, "Warning", "Did not reach meshSectionLength (%d)", meshSectionLeft);
     }
     else if (meshSectionLeft < 0) {
         MessageBox(idOk, "Warning", "Read past meshSectionLength (%d)", meshSectionLeft);
@@ -200,24 +201,24 @@ typedef struct (Version version, NodeType type) {
     uint32 unknown2;
     uint32 unknown3;
 
-  // Regular cars (MESH1) have body and shadow mesh,
-  // ambient cars (MESH2) have body, shadow and lod mesh.
+  // Regular cars (Mesh1) have body and shadow mesh,
+  // ambient cars (Mesh2) have body, shadow and lod mesh.
   local int i, maxMeshes = 2;
-  if (type == NODE_TYPE_MESH2) {
+  if (type == Mesh2) {
     maxMeshes = 3;
     BoundBox aabb;
   }
 
   for (i = 0; i < maxMeshes; i++) {
     MeshContainer meshContainer(version);
-    if (version < VERSION_114 && type == NODE_TYPE_MESH2 && i == 0) {
+    if (version < Version114 && type == Mesh2 && i == 0) {
         ubyte unknown;
     }
     if (!meshContainer.meshFollows) {
       break;
     }
   }
-  // TODO: More LOD and material stuff for NODE_TYPE_MESH2 in version 109 files.
+  // TODO: More LOD and material stuff for Mesh2 in version 109 files.
 } NodeDataMesh;
 
 typedef struct {
@@ -240,7 +241,7 @@ typedef struct (Version version) {
     uint16    unknown2; // Nil
     ubyte     unknown3; // 1
 
-    if (version >= VERSION_114) {
+    if (version >= Version114) {
         string materialPath;
     }
 
@@ -273,7 +274,7 @@ typedef struct (Version version) {
     float     unknown2;
     Color4b   color;
 
-    if (version >= VERSION_114) {
+    if (version >= Version114) {
         float unknown3; // Siren rotation offset?
         float unknown4;
     }
@@ -284,20 +285,20 @@ typedef struct (Version version) {
     string   name;
 
     switch(type) {
-        case NODE_TYPE_TRANSFORM:
+        case Transform:
             NodeDataTransform data;
             break;
-        case NODE_TYPE_MESH1:
-        case NODE_TYPE_MESH2:
+        case Mesh1:
+        case Mesh2:
             NodeDataMesh data(version, type);
             break;
-        case NODE_TYPE_AXIS:
+        case Axis:
             break;
-        case NODE_TYPE_LIGHT:
+        case Light:
             NodeDataLight data(version);
             break;
-        case NODE_TYPE_SMOKE:
-            uint32 value;
+        case Smoke:
+            uint32 value; // Must be 0. Counter?
             break;
         default:
             MessageBox(idOk, "Warning", "Unknown type for node '%s': 0x%02X", name, type);
@@ -305,7 +306,7 @@ typedef struct (Version version) {
     }
 
     // Transform nodes are groups
-    if (type == NODE_TYPE_TRANSFORM) {
+    if (type == Transform) {
         uint32 childCount;
         struct Node; // Forward declare
         Node   children(version)[childCount] <optimize=false>;
@@ -313,7 +314,7 @@ typedef struct (Version version) {
 } Node <read=ReadNode>;
 
 typedef struct {
-    uint32  rootNodeId; // == 0
+    NodeType type;
     Version version;
     string  name;
     NodeDataRoot data(version);
