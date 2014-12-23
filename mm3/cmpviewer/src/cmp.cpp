@@ -215,12 +215,18 @@ void LightNode::read(std::ifstream& ifs)
 {
 	Node::read(ifs);
 
+	parse(ifs, lightType);
+	parse(ifs, isTogglable);
 	parse(ifs, unknown0);
+	parse(ifs, brightness);
 	parse(ifs, unknown1);
+	parse(ifs, size);
 	parse(ifs, unknown2);
+	parse(ifs, color);
 
 	if (version >= Version114) {
 		parse(ifs, unknown3);
+		parse(ifs, unknown4);
 	}
 }
 

@@ -47,6 +47,10 @@ namespace cmp
 		float r, g, b, a;
 	};
 
+	struct Color4b {
+		uint8_t b, g, r, a;
+	};
+
 	struct Mat4x3
 	{
 		float a[4][3];
@@ -169,14 +173,33 @@ namespace cmp
 	class LightNode : public Node
 	{
 		public:
+			enum LightType : uint32_t
+			{
+				HeadLight    = 0,
+				BackLight    = 1,
+				BrakeLight   = 2,
+				ReverseLight = 3,
+				Siren        = 4,
+				SignalLeft   = 5,
+				SignalRight  = 6,
+				HeadLightEnv = 8,
+				SirenEnv     = 9,
+			};
+
 			LightNode(Version version) : Node(version, Light) {}
 			virtual ~LightNode() {};
 			virtual void read(std::ifstream& ifs);
 
-			int32_t unknown0;
-			int32_t unknown1;
-			float   unknown2[6];
-			float   unknown3[2];
+			LightType lightType;
+			int32_t   isTogglable;
+			float     unknown0;
+			float     brightness;
+			float     unknown1;
+			float     size;
+			float     unknown2;
+			Color4b   color;
+			float     unknown3;
+			float     unknown4;
 	};
 
 	class SmokeNode : public Node
@@ -193,7 +216,7 @@ namespace cmp
 	{
 		enum Type : uint16_t
 		{
-			TriangleList = 0x6001,
+			TriangleList  = 0x6001,
 			TriangleStrip = 0x8801,
 		};
 

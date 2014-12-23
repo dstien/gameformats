@@ -47,6 +47,29 @@ std::ostream& operator<<(std::ostream& lhs, cmp::Primitive::Type type)
 	return lhs;
 }
 
+std::ostream& operator<<(std::ostream& lhs, cmp::LightNode::LightType type)
+{
+	switch (type) {
+	case cmp::LightNode::HeadLight:    lhs << "HeadLight";    break;
+	case cmp::LightNode::BackLight:    lhs << "BackLight";    break;
+	case cmp::LightNode::BrakeLight:   lhs << "BrakeLight";   break;
+	case cmp::LightNode::ReverseLight: lhs << "ReverseLight"; break;
+	case cmp::LightNode::Siren:        lhs << "Siren";        break;
+	case cmp::LightNode::SignalLeft:   lhs << "SignalLeft";   break;
+	case cmp::LightNode::SignalRight:  lhs << "SignalRight";  break;
+	case cmp::LightNode::HeadLightEnv: lhs << "HeadLightEnv"; break;
+	case cmp::LightNode::SirenEnv:     lhs << "SirenEnv";     break;
+	default: lhs << "Unknown (" << (uint32_t)type << ")";
+	}
+
+	return lhs;
+}
+
+std::ostream& operator<<(std::ostream& lhs, cmp::Color4b color)
+{
+	return lhs << "(R: " << (int)color.r << " G: " << (int)color.g << " B: " << (int)color.b << " A: " << (int)color.a << ")";
+}
+
 void printNode(cmp::Node* node)
 {
 	static int level = 0;
@@ -57,21 +80,38 @@ void printNode(cmp::Node* node)
 
 	switch (node->type) {
 		case cmp::Node::Root:
-			break;
-		case cmp::Node::Transform:
-			{
-				cmp::TransformNode* transformNode = dynamic_cast<cmp::TransformNode*>(node);
-				if (transformNode && transformNode->meshIndex != -1) {
-					std::cout << std::setw(indent + 4) << "" << "Mesh index: " << transformNode->meshIndex << std::endl;
-				}
+		{
+			cmp::RootNode* rootNode = dynamic_cast<cmp::RootNode*>(node);
+			if (rootNode) {
+				std::cout << std::setw(indent + 4) << "" << "Version: " << rootNode->version << std::endl;
+				std::cout << std::setw(indent + 4) << "" << "Mesh nodes: " << rootNode->meshNodeCount << std::endl;
 			}
 			break;
+		}
+		case cmp::Node::Transform:
+		{
+			cmp::TransformNode* transformNode = dynamic_cast<cmp::TransformNode*>(node);
+			if (transformNode && transformNode->meshIndex != -1) {
+				std::cout << std::setw(indent + 4) << "" << "Mesh index: " << transformNode->meshIndex << std::endl;
+			}
+			break;
+		}
 		case cmp::Node::Axis:
+			break;
 		case cmp::Node::Light:
+		{
+			cmp::LightNode* lightNode = dynamic_cast<cmp::LightNode*>(node);
+			if (lightNode) {
+				std::cout << std::setw(indent + 4) << "" << "Type: " << lightNode->lightType << std::endl;
+				std::cout << std::setw(indent + 4) << "" << "Color: " << lightNode->color << std::endl;
+			}
+			break;
+		}
 		case cmp::Node::Smoke:
 			break;
 		case cmp::Node::Mesh1:
 		case cmp::Node::Mesh2:
+		{
 			cmp::MeshNode* meshNode = dynamic_cast<cmp::MeshNode*>(node);
 			if (meshNode) {
 				for (cmp::Mesh* mesh : meshNode->meshes) {
@@ -99,6 +139,7 @@ void printNode(cmp::Node* node)
 				}
 			}
 			break;
+		}
 	}
 
 	cmp::GroupNode* group = dynamic_cast<cmp::GroupNode*>(node);
