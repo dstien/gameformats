@@ -3,32 +3,33 @@
 //
 // File:     mm3omb.bt
 // Author:   Daniel Stien <daniel@stien.org>
-// Revision: 2014-12-13
+// Revision: 2014-12-24
 // Purpose:  Midtown Madness 3 binary car material set
 //--------------------------------------
 
 typedef struct {
-    ubyte r <format=hex>;
-    ubyte g <format=hex>;
     ubyte b <format=hex>;
-} Color3b <read=ReadColor3b>;
+    ubyte g <format=hex>;
+    ubyte r <format=hex>;
+    ubyte a <format=hex>;
+} Color4b <read=ReadColor4b>;
 
 typedef struct {
     string  name;
     string  texture;
-    Color3b diffuse;  //
-    Color3b ambient;  // Order not verified
-    Color3b specular; //
+    ubyte unknown0 <format=hex>;
+    Color4b diffuse;
+    Color4b unknown2;
 } Material <open=true>;
 
 ubyte    unknown;
 uint32   materialCount;
 Material materials[materialCount] <optimize=false>;
 
-// Color3b summary
-string ReadColor3b(Color3b &c)
+// Color4b summary
+string ReadColor4b(Color4b &c)
 {
     string s;
-    SPrintf(s, "%.2f, %.2f, %.2f", c.r/255.0, c.g/255.0, c.b/255.0);
+    SPrintf(s, "%.2f, %.2f, %.2f, %.2f", c.r/255.0, c.g/255.0, c.b/255.0, c.a/255.0);
     return s;
 }
