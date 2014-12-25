@@ -74,7 +74,8 @@ typedef struct {
     int u  : 11; // u  / 1024
     int v  : 11; // v  / 1024
     int unknown0 : 10;
-    ubyte unknown1;
+    ubyte unknown1 : 4;
+    ubyte materialId : 4;
     ubyte unknown2 : 5;
     ubyte meshId : 3;
     ubyte unknown3;
@@ -109,7 +110,7 @@ typedef struct {
     uint32 offset;
     uint32 count; // Primitive count + 1
     ubyte  isTriangleStrip;
-    uint32 material; // Index in external material set
+    uint32 materialId; // Index in external material set
 } Material <read=ReadMaterial>;
 
 typedef struct {
@@ -359,7 +360,7 @@ string ReadBoundBox(BoundBox &b)
 string ReadVertex(Vertex &v)
 {
     string s;
-    SPrintf(s, "%d, %d, %d", v.x, v.y, v.z);
+    SPrintf(s, "%d, %d, %d  Material: %d", v.x, v.y, v.z, v.materialId);
     return s;
 }
 
