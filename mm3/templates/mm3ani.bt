@@ -1,0 +1,32 @@
+//--------------------------------------
+//--- 010 Editor v5.0.2 Binary Template
+//
+// File:     mm3ani.bt
+// Author:   Daniel Stien <daniel@stien.org>
+// Revision: 2014-12-26
+// Purpose:  Midtown Madness 3 pedestrian animation
+//--------------------------------------
+
+typedef struct {
+    string name;
+    uint32 numFrames;
+    
+    float unk[numFrames];
+
+    struct {
+        float x, y, z;
+    } vertices[numFrames * 2];
+} Bone <optimize=false, read=ReadBone>;
+
+string ReadBone(Bone &b)
+{
+  string s;
+  SPrintf(s, "%s (%d)", b.name, b.numFrames);
+  return s;
+}
+
+string version;
+float  unk;
+uint32 numBones;
+
+Bone bones[numBones];
