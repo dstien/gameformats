@@ -1,0 +1,27 @@
+//--------------------------------------
+//--- 010 Editor v5.0.2 Binary Template
+//
+// File:     mm3ske.bt
+// Author:   Daniel Stien <daniel@stien.org>
+// Revision: 2014-12-26
+// Purpose:  Midtown Madness 3 pedestrian skeleton
+//--------------------------------------
+
+typedef struct {
+    uint32 id;
+    string name;
+    struct {
+        float x, y, z;
+    } vertices[4];
+    uint32 numChildren;
+    struct Bone children[numChildren];
+} Bone <optimize=false, open=true>;
+
+Bone root;
+
+string ReadBone(Bone &b)
+{
+  string s;
+  SPrintf(s, "%s (%d)", b.name, b.numChildren);
+  return s;
+}
