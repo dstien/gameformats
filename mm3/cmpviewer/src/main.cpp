@@ -1,12 +1,18 @@
 #include <cstring>
 #include <iomanip>
 #include <iostream>
+#include <osg/BlendFunc>
 #include <osg/Material>
 #include <osg/MatrixTransform>
+#include <osg/TexEnv>
+#include <osg/Texture2D>
+#include <osgDB/FileNameUtils>
+#include <osgDB/ReadFile>
 #include <osgGA/StateSetManipulator>
 #include <osgViewer/Viewer>
 
 #include "cmp.h"
+#include "omb.h"
 
 #define CULL_GROUP_AABB 1 <<  0
 #define CULL_MESH_AABB  1 <<  1
@@ -19,6 +25,8 @@
 #define CULL_LOD1       1 <<  8
 #define CULL_LOD2       1 <<  9
 #define CULL_LOD3       1 << 10
+
+typedef std::vector<osg::ref_ptr<osg::StateSet>> StateSetList;
 
 std::ostream& operator<<(std::ostream& lhs, cmp::Node::Type type)
 {
@@ -50,16 +58,16 @@ std::ostream& operator<<(std::ostream& lhs, cmp::Primitive::Type type)
 std::ostream& operator<<(std::ostream& lhs, cmp::LightNode::LightType type)
 {
 	switch (type) {
-	case cmp::LightNode::HeadLight:    lhs << "HeadLight";    break;
-	case cmp::LightNode::BackLight:    lhs << "BackLight";    break;
-	case cmp::LightNode::BrakeLight:   lhs << "BrakeLight";   break;
-	case cmp::LightNode::ReverseLight: lhs << "ReverseLight"; break;
-	case cmp::LightNode::Siren:        lhs << "Siren";        break;
-	case cmp::LightNode::SignalLeft:   lhs << "SignalLeft";   break;
-	case cmp::LightNode::SignalRight:  lhs << "SignalRight";  break;
-	case cmp::LightNode::HeadLightEnv: lhs << "HeadLightEnv"; break;
-	case cmp::LightNode::SirenEnv:     lhs << "SirenEnv";     break;
-	default: lhs << "Unknown (" << (uint32_t)type << ")";
+		case cmp::LightNode::HeadLight:    lhs << "HeadLight";    break;
+		case cmp::LightNode::BackLight:    lhs << "BackLight";    break;
+		case cmp::LightNode::BrakeLight:   lhs << "BrakeLight";   break;
+		case cmp::LightNode::ReverseLight: lhs << "ReverseLight"; break;
+		case cmp::LightNode::Siren:        lhs << "Siren";        break;
+		case cmp::LightNode::SignalLeft:   lhs << "SignalLeft";   break;
+		case cmp::LightNode::SignalRight:  lhs << "SignalRight";  break;
+		case cmp::LightNode::HeadLightEnv: lhs << "HeadLightEnv"; break;
+		case cmp::LightNode::SirenEnv:     lhs << "SirenEnv";     break;
+		default: lhs << "Unknown (" << (uint32_t)type << ")";
 	}
 
 	return lhs;
@@ -70,7 +78,7 @@ std::ostream& operator<<(std::ostream& lhs, cmp::Color4b color)
 	return lhs << "(R: " << (int)color.r << " G: " << (int)color.g << " B: " << (int)color.b << " A: " << (int)color.a << ")";
 }
 
-void printNode(cmp::Node* node)
+void printNode(cmp::Node* node, omb::MaterialSet* materials)
 {
 	static int level = 0;
 
@@ -121,7 +129,8 @@ void printNode(cmp::Node* node)
 						std::cout << std::setw(indent + 8) << "" << mesh->indexCount << " indices" << std::endl;
 						std::cout << std::setw(indent + 8) << "" << mesh->primitives.size() << " primitives" << std::endl;
 						for (int i = 0; i < mesh->primitives.size(); i++) {
-							std::cout << std::setw(indent + 12) << "" << "Type: " << std::left << std::setw(13) << mesh->primitives[i]->type << " Material: " << mesh->materials[i]->material << std::endl;
+							omb::Material material = materials->materials.at(mesh->materials[i]->material);
+							std::cout << std::setw(indent + 12) << "" << "Type: " << std::left << std::setw(13) << mesh->primitives[i]->type << " Material: \"" << material.name << "\" Texture: \"" << material.texture << "\"" << std::endl;
 						}
 						if (mesh->hasNumberPlate) {
 							std::cout << std::setw(indent + 8) << "" << mesh->numberPlateVertexCount << " number plate vertices" << std::endl;
@@ -146,10 +155,68 @@ void printNode(cmp::Node* node)
 	if (group) {
 		level++;
 		for (cmp::Node* node : group->children) {
-			printNode(node);
+			printNode(node, materials);
 		}
 		level--;
 	}
+}
+
+StateSetList generateOSGMaterials(omb::MaterialSet* materials, std::string basepath)
+{
+	StateSetList states;
+
+	for (omb::Material mat : materials->materials) {
+		osg::ref_ptr<osg::StateSet> state = new osg::StateSet();
+		osg::ref_ptr<osg::Material> material = new osg::Material();
+
+		if (mat.texture == "No") {
+			material->setName(mat.name);
+			material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(mat.color.r / 255.0, mat.color.g / 255.0f, mat.color.b / 255.0, mat.color.a / 255.0));
+		}
+		else {
+			osg::ref_ptr<osg::Image> img = osgDB::readImageFile(basepath + osgDB::getSimpleFileName(mat.texture));
+
+			if (!img) {
+				std::cerr << "Error: Couldn't load texture \"" << basepath << osgDB::getSimpleFileName(mat.texture) << "\"" << std::endl;
+			}
+			else {
+				osg::ref_ptr<osg::Texture2D> tex = new osg::Texture2D();
+				tex->setImage(img.get());
+				state->setTextureAttributeAndModes(0, tex.get(), osg::StateAttribute::ON);
+
+				osg::ref_ptr<osg::TexEnv> env = new osg::TexEnv(osg::TexEnv::Mode::MODULATE);
+				state->setTextureAttributeAndModes(0, env.get(), osg::StateAttribute::ON);
+
+				if (mat.mode == omb::TexMode::Modulate) {
+					material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(mat.color.r / 255.0, mat.color.g / 255.0f, mat.color.b / 255.0, mat.color.a / 255.0));
+				}
+				else if (mat.mode != omb::TexMode::Decal) {
+					material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(1.0, 1.0, 1.0, 1.0));
+				}
+
+				if (mat.mode == omb::TexMode::Transparency) {
+					osg::ref_ptr<osg::BlendFunc> blend = new osg::BlendFunc(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
+					state->setAttributeAndModes(blend.get(), osg::StateAttribute::ON);
+					state->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+				}
+			}
+		}
+
+		if (mat.color.a != 0xFF) {
+			state->setMode(GL_BLEND, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
+			state->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+			material->setAlpha(osg::Material::FRONT_AND_BACK, mat.color.a / 255.0);
+		}
+		else if (mat.mode != omb::TexMode::Modulate) {
+			state->setMode(GL_BLEND, osg::StateAttribute::OFF);
+		}
+
+		state->setAttributeAndModes(material.get(), osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
+
+		states.push_back(state);
+	}
+
+	return states;
 }
 
 osg::ref_ptr<osg::Geode> drawBoundBox(cmp::BoundBox* aabb, osg::Node::NodeMask mask)
@@ -207,37 +274,58 @@ osg::ref_ptr<osg::Geode> drawBoundBox(cmp::BoundBox* aabb, osg::Node::NodeMask m
 	return geode;
 }
 
-osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh, osg::Node::NodeMask mask)
+osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh, StateSetList* states, osg::Node::NodeMask mask)
 {
 	if (!mesh->length) {
 		if (mesh->reference) {
 			// TODO: Re-use geode.
-			return drawMesh(mesh->reference, mask);
+			return drawMesh(mesh->reference, states, mask);
 		}
 
 		osg::ref_ptr<osg::Geode> geode = new osg::Geode();
 		return geode.get();
 	}
 
+	osg::ref_ptr<osg::Geode> geode = new osg::Geode();
+
 	cmp::BoundBox* b = &mesh->aabb;
 	float maxX = (b->min.x - b->max.x) * -1;
 	float maxY = (b->min.y - b->max.y) * -1;
 	float maxZ = (b->min.z - b->max.z) * -1;
 
-	osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array();
-	osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array(osg::Array::BIND_PER_VERTEX);
+	osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array(mesh->vertexCount2);
+	osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array(osg::Array::BIND_PER_VERTEX, mesh->vertexCount2);
+	osg::ref_ptr<osg::Vec2Array> uvs = new osg::Vec2Array(osg::Array::BIND_PER_VERTEX, mesh->vertexCount2);
+	osg::ref_ptr<osg::Vec4Array> colors = new osg::Vec4Array(osg::Array::BIND_PER_VERTEX, mesh->vertexCount2);
 
 	for (unsigned i = 0; i < mesh->vertexCount2; i++) {
 		cmp::Vertex* v = &mesh->vertices[i];
-		vertices->push_back(osg::Vec3(v->scaleX(maxX), v->scaleY(maxY), -v->scaleZ(maxZ)));
-		normals->push_back(osg::Vec3(v->scaleNX(), v->scaleNY(), -v->scaleNZ()));
+		vertices->at(i) = osg::Vec3(v->scaleX(maxX), v->scaleY(maxY), -v->scaleZ(maxZ));
+		normals->at(i) = osg::Vec3(v->scaleNX(), v->scaleNY(), -v->scaleNZ());
+		uvs->at(i) = osg::Vec2(v->scaleU(), v->scaleV());
+
+		if (v->actualMaterialId() < states->size()) {
+			osg::ref_ptr<osg::Material> material = (osg::Material*)states->at(v->actualMaterialId())->getAttribute(osg::StateAttribute::MATERIAL);
+
+			if (material) {
+				colors->at(i) = material->getDiffuse(osg::Material::FRONT);
+			}
+		}
 	}
 
-	osg::ref_ptr<osg::Geometry> geometry = new osg::Geometry();
-	geometry->setVertexArray(vertices.get());
-	geometry->setNormalArray(normals.get());
-
+	unsigned int i = 0;
 	for (cmp::Primitive* primitive : mesh->primitives) {
+		// TODO: Combine primitives with same material
+		osg::ref_ptr<osg::Geometry> geometry = new osg::Geometry();
+		// TODO: Shared vertex buffer
+		geometry->setVertexArray(vertices.get());
+		geometry->setNormalArray(normals.get());
+		geometry->setTexCoordArray(0, uvs);
+		geometry->setColorArray(colors.get());
+		geometry->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+
+		int firstMaterialId = 0;
+
 		switch (primitive->type) {
 			case cmp::Primitive::Type::TriangleList:
 			{
@@ -265,30 +353,22 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh, osg::Node::NodeMask mask)
 					}
 
 					geometry->addPrimitiveSet(tristrip.get());
-					continue;
 				}
 				break;
 			}
 		}
-	}
 
-	if (mesh->color.a == 1.0f) {
-		osg::ref_ptr<osg::Vec4Array> colors = new osg::Vec4Array();
-		colors->push_back(osg::Vec4(mesh->color.r, mesh->color.g, mesh->color.b, mesh->color.a));
-		geometry->setColorArray(colors.get());
-		geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
-	}
-	else {
-		osg::ref_ptr<osg::StateSet> state = geometry->getOrCreateStateSet();
-		state->setMode(GL_BLEND, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
-		osg::ref_ptr<osg::Material> material = new osg::Material();
-		material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(mesh->color.r, mesh->color.g, mesh->color.b, mesh->color.a));
-		material->setAlpha(osg::Material::FRONT_AND_BACK, mesh->color.a);
-		state->setAttributeAndModes(material.get(), osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
-	}
+		unsigned materialId = mesh->materials.at(i)->material;
 
-	osg::ref_ptr<osg::Geode> geode = new osg::Geode();
-	geode->addDrawable(geometry.get());
+		// Use material if texture or alpha blending is set.
+		if (materialId < states->size() && (states->at(materialId)->getNumTextureAttributeLists() > 0 || states->at(materialId)->getMode(GL_BLEND))) {
+			geometry->setStateSet(states->at(materialId).get());
+		}
+
+		geode->addDrawable(geometry.get());
+
+		i++;
+	}
 
 	geode->setNodeMask(mask);
 
@@ -304,7 +384,7 @@ osg::Matrix cmpMatrix2osgMatrix(cmp::Mat4x3* m)
 			m->a[3][0], m->a[3][1], -m->a[3][2], 1.0f);
 }
 
-osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent, osg::Node::NodeMask mask = 0)
+osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent, StateSetList* states, osg::Node::NodeMask mask = 0)
 {
 	switch (node->type) {
 		case cmp::Node::Root:
@@ -341,7 +421,7 @@ osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent, osg::Node:
 			}
 
 			for (cmp::Node* node : groupNode->children) {
-				osg::ref_ptr<osg::Node> child = drawNode(node, group, mask);
+				osg::ref_ptr<osg::Node> child = drawNode(node, group, states, mask);
 				if (child) {
 					group->addChild(child.get());
 				}
@@ -379,7 +459,7 @@ osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent, osg::Node:
 
 				group->addChild(drawBoundBox(&mesh->aabb, CULL_MESH_AABB));
 
-				group->addChild(drawMesh(mesh, mask));
+				group->addChild(drawMesh(mesh, states, mask));
 				lod++;
 			}
 
@@ -447,32 +527,62 @@ class KeyHandler : public osgGA::GUIEventHandler
 
 int main(int argc, char** argv)
 {
-	if (argc != 2) {
-		std::cerr << "Usage: " << argv[0] << " filename.cmp" << std::endl;
+	if (argc < 2 || argc > 3) {
+		std::cerr << "Usage: " << argv[0] << " filename.cmp [materialSetNo]" << std::endl;
 		return 1;
 	}
+
+	std::string materialSetNo;
+	if (argc == 3) {
+		materialSetNo = argv[2];
+		if (materialSetNo.length() == 1) {
+			materialSetNo = "0" + materialSetNo;
+		}
+	}
+	else {
+		materialSetNo = "00";
+	}
+
+	std::string cmppath = argv[1];
+	std::string basepath = osgDB::getFilePath(cmppath) + osgDB::getNativePathSeparator();
+	std::string ombpath = basepath + "materialSet" + materialSetNo + ".omb";
 
 	std::ifstream ifs;
 	ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit | std::ifstream::eofbit);
 
-	std::cout << "Reading \"" << argv[1] << "\"" << std::endl;
+	std::cout << "Reading \"" << cmppath << "\"" << std::endl;
 
 	cmp::RootNode* root;
+	omb::MaterialSet* materials;
 
 	try {
-		ifs.open(argv[1], std::ifstream::in | std::ifstream::binary | std::ifstream::ate);
+		// CMP
+		{
+			ifs.open(cmppath, std::ifstream::in | std::ifstream::binary | std::ifstream::ate);
 
-		std::streampos length = ifs.tellg();
-		ifs.seekg(0);
+			std::streampos length = ifs.tellg();
+			ifs.seekg(0);
 
-		root = cmp::RootNode::readFile(ifs);
+			root = cmp::RootNode::readFile(ifs);
 
-		std::cout << "Finished reading with " << length - ifs.tellg() << " bytes left in file" << std::endl << std::endl;;
+			std::cout << "Finished reading CMP with " << length - ifs.tellg() << " bytes left in file" << std::endl << std::endl;;
 
-		ifs.close();
+			ifs.close();
+		}
+		// OMB
+		{
+			std::cout << "Reading \"" << ombpath << "\"" << std::endl;
+			ifs.open(ombpath, std::ifstream::in | std::ifstream::binary | std::ifstream::ate);
 
-		printNode(root);
-		std::cout << std::endl;
+			std::streampos length = ifs.tellg();
+			ifs.seekg(0);
+
+			materials = omb::MaterialSet::readFile(ifs);
+
+			std::cout << "Finished reading OMB with " << length - ifs.tellg() << " bytes left in file" << std::endl << std::endl;;
+
+			ifs.close();
+		}
 	}
 	catch (const std::ios_base::failure&) {
 		std::cerr << "Exception: " << ::strerror(errno) << std::endl;
@@ -483,11 +593,17 @@ int main(int argc, char** argv)
 		return 3;
 	}
 
+	printNode(root, materials);
+	std::cout << std::endl;
+
+	StateSetList states = generateOSGMaterials(materials, basepath);
+
 	osg::ref_ptr<osg::Group> world = new osg::Group();
-	osg::ref_ptr<osg::Node> model = drawNode(root, world);
+	osg::ref_ptr<osg::Node> model = drawNode(root, world, &states);
 	world->addChild(model.get());
 
 	delete root;
+	delete materials;
 
 	osgViewer::Viewer viewer;
 	viewer.setUpViewInWindow(100, 50, 800, 600);

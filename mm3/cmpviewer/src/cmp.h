@@ -25,7 +25,10 @@ namespace cmp
 		int u : 11;
 		int v : 11;
 		int unknown0 : 10;
-		uint32_t unknown1[3];
+		uint8_t materialId;
+		uint8_t unknown2 : 5;
+		uint8_t meshId : 3;
+		uint32_t unknown5[2];
 
 		float scaleX(float scale) { return ((float)x / 1024.0) * scale; }
 		float scaleY(float scale) { return ((float)y / 1024.0) * scale; }
@@ -35,6 +38,7 @@ namespace cmp
 		float scaleNZ() { return ((float)nz /  512.0); }
 		float scaleU() { return ((float)u / 1024.0); }
 		float scaleV() { return ((float)v / 1024.0); }
+		unsigned actualMaterialId() { return materialId / 11; }
 	};
 
 	struct  Vec3f
