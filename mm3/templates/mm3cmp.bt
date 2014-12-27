@@ -3,7 +3,7 @@
 //
 // File:     mm3cmp.bt
 // Author:   Daniel Stien <daniel@stien.org>
-// Revision: 2014-12-23
+// Revision: 2014-12-27
 // Purpose:  Midtown Madness 3 car mesh package
 //--------------------------------------
 
@@ -74,12 +74,11 @@ typedef struct {
     int u  : 11; // u  / 1024
     int v  : 11; // v  / 1024
     int unknown0 : 10;
-    ubyte unknown1 : 4;
-    ubyte materialId : 4;
-    ubyte unknown2 : 5;
-    ubyte meshId : 3;
-    ubyte unknown3;
-    ubyte unknown4;
+    int materialId : 8; // id / 11
+    int unknown1 : 5;
+    int meshId : 3;
+    int unknown2 : 8;
+    int unknown3 : 8;
     uint16 unknowns[4]; // ???, specular
 } Vertex <read=ReadVertex>;
 
@@ -360,7 +359,7 @@ string ReadBoundBox(BoundBox &b)
 string ReadVertex(Vertex &v)
 {
     string s;
-    SPrintf(s, "%d, %d, %d  Material: %d", v.x, v.y, v.z, v.materialId);
+    SPrintf(s, "%d, %d, %d  Material: %d Mesh: %d", v.x, v.y, v.z, v.materialId / 11, v.meshId);
     return s;
 }
 
@@ -376,7 +375,7 @@ string ReadPrimitive(Primitive &p)
 string ReadMaterial(Material &m)
 {
     string s;
-    SPrintf(s, "Material %d (%s: %d + %d)", m.material, (m.isTriangleStrip ? EnumToString(TriangleStrip) : EnumToString(TriangleList)), m.offset, m.count);
+    SPrintf(s, "Material %d (%s: %d + %d)", m.materialId, (m.isTriangleStrip ? EnumToString(TriangleStrip) : EnumToString(TriangleList)), m.offset, m.count);
     return s;
 }
 
