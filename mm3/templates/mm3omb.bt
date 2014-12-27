@@ -3,9 +3,20 @@
 //
 // File:     mm3omb.bt
 // Author:   Daniel Stien <daniel@stien.org>
-// Revision: 2014-12-24
+// Revision: 2014-12-27
 // Purpose:  Midtown Madness 3 binary car material set
 //--------------------------------------
+
+typedef enum <uint32> {
+    // Texture with vertex color for alpha channel.
+    Decal        = 0,
+    // Alpha channel is transparency.
+    Transparency = 1,
+    // No blending (?)
+    Replace      = 2,
+    // Mix texture with material color.
+    Modulate     = 3,
+} TexMode;
 
 typedef struct {
     ubyte b <format=hex>;
@@ -17,9 +28,9 @@ typedef struct {
 typedef struct {
     string  name;
     string  texture;
-    ubyte unknown0 <format=hex>;
+    ubyte   unknown0 <format=hex>;
     Color4b diffuse;
-    Color4b unknown2;
+    TexMode mode;
 } Material <open=true>;
 
 ubyte    unknown;
