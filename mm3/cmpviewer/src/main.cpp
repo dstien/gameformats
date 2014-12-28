@@ -9,6 +9,7 @@
 #include <osgDB/FileNameUtils>
 #include <osgDB/ReadFile>
 #include <osgGA/StateSetManipulator>
+#include <osgGA/TrackballManipulator>
 #include <osgViewer/Viewer>
 
 #include "cmp.h"
@@ -615,7 +616,21 @@ int main(int argc, char** argv)
 	// Wireframe/light toggling.
 	viewer.addEventHandler(new osgGA::StateSetManipulator(viewer.getCamera()->getOrCreateStateSet()));
 
+	osg::ref_ptr<osgGA::TrackballManipulator> trackball = new osgGA::TrackballManipulator();
+	viewer.setCameraManipulator(trackball.get());
+
 	viewer.setSceneData(world.get());
+
+	osg::Vec3d eye, center, up;
+	viewer.getCameraManipulator()->getHomePosition(eye, center, up);
+
+	// Set default rotation.
+	eye.set(-eye.y() * 0.5, -eye.y() * 0.3, eye.y() * 0.5);
+	center.set(0.0, center.y() * 0.5, 0.0);
+	up.set(0.0, 1.0, 0.0);
+	viewer.getCameraManipulator()->setHomePosition(eye, center, up);
+	viewer.home();
+
 	viewer.realize();
 
 	return viewer.run();
