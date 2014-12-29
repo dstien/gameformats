@@ -4,7 +4,6 @@
 #include <osg/BlendFunc>
 #include <osg/Material>
 #include <osg/MatrixTransform>
-#include <osg/TexEnv>
 #include <osg/Texture2D>
 #include <osgDB/FileNameUtils>
 #include <osgDB/ReadFile>
@@ -28,6 +27,83 @@
 #define CULL_LOD3       1 << 10
 
 typedef std::vector<osg::ref_ptr<osg::StateSet>> StateSetList;
+
+const char* vertexShader = R"(
+uniform mat4 osg_ModelViewProjectionMatrix;
+uniform mat3 osg_NormalMatrix;
+
+attribute vec4 osg_Vertex;
+attribute vec3 osg_Normal;
+attribute vec4 osg_Color;
+attribute vec4 osg_MultiTexCoord0;
+
+out vec4 color;
+out vec2 uv;
+out vec4 diffuse;
+
+void main()
+{
+	vec3 lightdir = vec3(0.0, 0.5, 1.0);
+	vec3 normal = normalize(osg_NormalMatrix * osg_Normal);
+	float diff = max(dot(lightdir, normal), 0.0);
+
+	gl_Position = osg_ModelViewProjectionMatrix * osg_Vertex;
+	color = osg_Color;
+	uv = osg_MultiTexCoord0;
+	diffuse = vec4(vec3(diff), 1.0);
+}
+)";
+
+const char* fragmentShaderSolid = R"(
+in vec4 color;
+in vec2 uv;
+in vec4 diffuse;
+
+void main(void)
+{
+	gl_FragColor = color * diffuse;
+}
+)";
+
+const char* fragmentShaderDecal = R"(
+uniform sampler2D osg_Sampler0;
+
+in vec4 color;
+in vec2 uv;
+in vec4 diffuse;
+
+void main(void)
+{
+	vec4 t = texture(osg_Sampler0, uv);
+	gl_FragColor = ((color * vec4(1.0 - t.a, 1.0 - t.a, 1.0 - t.a, 1.0)) + (t * vec4(t.a, t.a, t.a, 1.0))) * diffuse;
+}
+)";
+
+const char* fragmentShaderModulate = R"(
+uniform sampler2D osg_Sampler0;
+
+in vec4 color;
+in vec2 uv;
+in vec4 diffuse;
+
+void main(void)
+{
+	gl_FragColor = texture(osg_Sampler0, uv) * color * diffuse;
+}
+)";
+
+const char* fragmentShaderReplace = R"(
+uniform sampler2D osg_Sampler0;
+
+in vec4 color;
+in vec2 uv;
+in vec4 diffuse;
+
+void main(void)
+{
+	gl_FragColor = texture(osg_Sampler0, uv) * diffuse;
+}
+)";
 
 std::ostream& operator<<(std::ostream& lhs, cmp::Node::Type type)
 {
@@ -166,13 +242,34 @@ StateSetList generateOSGMaterials(omb::MaterialSet* materials, std::string basep
 {
 	StateSetList states;
 
+	osg::ref_ptr<osg::Shader> vert = new osg::Shader(osg::Shader::Type::VERTEX, vertexShader);
+
+	osg::ref_ptr<osg::Program> programSolid = new osg::Program();
+	programSolid->addShader(vert.get());
+	programSolid->addShader(new osg::Shader(osg::Shader::Type::FRAGMENT, fragmentShaderSolid));
+
+	osg::ref_ptr<osg::Program> programDecal = new osg::Program();
+	programDecal->addShader(vert.get());
+	programDecal->addShader(new osg::Shader(osg::Shader::Type::FRAGMENT, fragmentShaderDecal));
+
+	osg::ref_ptr<osg::Program> programModulate = new osg::Program();
+	programModulate->addShader(vert.get());
+	programModulate->addShader(new osg::Shader(osg::Shader::Type::FRAGMENT, fragmentShaderModulate));
+
+	osg::ref_ptr<osg::Program> programReplace = new osg::Program();
+	programReplace->addShader(vert.get());
+	programReplace->addShader(new osg::Shader(osg::Shader::Type::FRAGMENT, fragmentShaderReplace));
+
 	for (omb::Material mat : materials->materials) {
 		osg::ref_ptr<osg::StateSet> state = new osg::StateSet();
 		osg::ref_ptr<osg::Material> material = new osg::Material();
 
+		material->setName(mat.name);
+
+		material->setDiffuse(osg::Material::FRONT, osg::Vec4(mat.color.r / 255.0, mat.color.g / 255.0f, mat.color.b / 255.0, mat.color.a / 255.0));
+
 		if (mat.texture == "No") {
-			material->setName(mat.name);
-			material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(mat.color.r / 255.0, mat.color.g / 255.0f, mat.color.b / 255.0, mat.color.a / 255.0));
+			state->setAttributeAndModes(programSolid.get(), osg::StateAttribute::ON);
 		}
 		else {
 			osg::ref_ptr<osg::Image> img = osgDB::readImageFile(basepath + osgDB::getSimpleFileName(mat.texture));
@@ -184,31 +281,25 @@ StateSetList generateOSGMaterials(omb::MaterialSet* materials, std::string basep
 				osg::ref_ptr<osg::Texture2D> tex = new osg::Texture2D();
 				tex->setImage(img.get());
 				state->setTextureAttributeAndModes(0, tex.get(), osg::StateAttribute::ON);
+			}
 
-				osg::ref_ptr<osg::TexEnv> env = new osg::TexEnv(osg::TexEnv::Mode::MODULATE);
-				state->setTextureAttributeAndModes(0, env.get(), osg::StateAttribute::ON);
-
-				if (mat.mode == omb::TexMode::Modulate) {
-					material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(mat.color.r / 255.0, mat.color.g / 255.0f, mat.color.b / 255.0, mat.color.a / 255.0));
-				}
-				else if (mat.mode != omb::TexMode::Decal) {
-					material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4(1.0, 1.0, 1.0, 1.0));
-				}
-
-				if (mat.mode == omb::TexMode::Transparency) {
-					osg::ref_ptr<osg::BlendFunc> blend = new osg::BlendFunc(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
-					state->setAttributeAndModes(blend.get(), osg::StateAttribute::ON);
-					state->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
-				}
+			if (mat.mode == omb::TexMode::Decal) {
+				state->setAttributeAndModes(programDecal.get(), osg::StateAttribute::ON);
+			}
+			else if (mat.mode == omb::TexMode::Modulate) {
+				state->setAttributeAndModes(programModulate.get(), osg::StateAttribute::ON);
+			}
+			else {
+				state->setAttributeAndModes(programReplace.get(), osg::StateAttribute::ON);
 			}
 		}
 
-		if (mat.color.a != 0xFF) {
-			state->setMode(GL_BLEND, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
+		if (mat.mode == omb::TexMode::Transparency || mat.color.a != 0xFF) {
+			osg::ref_ptr<osg::BlendFunc> blend = new osg::BlendFunc(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
+			state->setAttributeAndModes(blend.get(), osg::StateAttribute::ON);
 			state->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
-			material->setAlpha(osg::Material::FRONT_AND_BACK, mat.color.a / 255.0);
 		}
-		else if (mat.mode != omb::TexMode::Modulate) {
+		else {
 			state->setMode(GL_BLEND, osg::StateAttribute::OFF);
 		}
 
@@ -314,18 +405,34 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh, StateSetList* states, osg::No
 		}
 	}
 
+	osg::ref_ptr<osg::VertexBufferObject> vbo = new osg::VertexBufferObject();
+	vbo->addArray(vertices.get());
+	vbo->addArray(normals.get());
+	vbo->addArray(uvs.get());
+	vbo->addArray(colors.get());
+
+	// One geometry per material.
+	osg::ref_ptr<osg::Geometry>* matgeo = new osg::ref_ptr<osg::Geometry>[states->size()];
+	::memset(matgeo, 0, sizeof(matgeo));
+
 	unsigned int i = 0;
 	for (cmp::Primitive* primitive : mesh->primitives) {
-		// TODO: Combine primitives with same material
-		osg::ref_ptr<osg::Geometry> geometry = new osg::Geometry();
-		// TODO: Shared vertex buffer
-		geometry->setVertexArray(vertices.get());
-		geometry->setNormalArray(normals.get());
-		geometry->setTexCoordArray(0, uvs);
-		geometry->setColorArray(colors.get());
-		geometry->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+		unsigned materialId = mesh->materials.at(i)->material;
 
-		int firstMaterialId = 0;
+		// Create new geometry node once per material.
+		if (!matgeo[materialId]) {
+			matgeo[materialId] = new osg::Geometry();
+
+			matgeo[materialId]->setUseVertexBufferObjects(true);
+			matgeo[materialId]->setVertexArray(vertices.get());
+			matgeo[materialId]->setNormalArray(normals.get());
+			matgeo[materialId]->setTexCoordArray(0, uvs.get());
+			matgeo[materialId]->setColorArray(colors.get());
+
+			matgeo[materialId]->setStateSet(states->at(materialId).get());
+
+			geode->addDrawable(matgeo[materialId].get());
+		}
 
 		switch (primitive->type) {
 			case cmp::Primitive::Type::TriangleList:
@@ -338,7 +445,7 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh, StateSetList* states, osg::No
 						//triangles->push_back(mesh->indices[list->offset + i]);
 					}
 
-					geometry->addPrimitiveSet(triangles.get());
+					matgeo[materialId]->addPrimitiveSet(triangles.get());
 				}
 				break;
 			}
@@ -351,25 +458,22 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh, StateSetList* states, osg::No
 					for (unsigned i = 0; i < strip->count + 3; i++) {
 						tristrip->insert(tristrip->begin(), strip->offset + i);
 						//tristrip->push_back(strip->offset + i);
+						if (materialId == 14) {
+						osg::Vec4f col = colors->at(strip->offset + i);
+						int test = 2;
+						}
 					}
 
-					geometry->addPrimitiveSet(tristrip.get());
+					matgeo[materialId]->addPrimitiveSet(tristrip.get());
 				}
 				break;
 			}
 		}
 
-		unsigned materialId = mesh->materials.at(i)->material;
-
-		// Use material if texture or alpha blending is set.
-		if (materialId < states->size() && (states->at(materialId)->getNumTextureAttributeLists() > 0 || states->at(materialId)->getMode(GL_BLEND))) {
-			geometry->setStateSet(states->at(materialId).get());
-		}
-
-		geode->addDrawable(geometry.get());
-
 		i++;
 	}
+
+	delete[] matgeo;
 
 	geode->setNodeMask(mask);
 
@@ -632,6 +736,11 @@ int main(int argc, char** argv)
 	viewer.home();
 
 	viewer.realize();
+
+	// VBO helpers.
+	osg::State* state = viewer.getCamera()->getGraphicsContext()->getState();
+	state->setUseModelViewAndProjectionUniforms(true);
+	state->setUseVertexAttributeAliasing(true);
 
 	return viewer.run();
 }
