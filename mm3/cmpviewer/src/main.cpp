@@ -2,6 +2,8 @@
 #include <iomanip>
 #include <iostream>
 #include <osg/BlendFunc>
+#include <osg/CullFace>
+#include <osg/FrontFace>
 #include <osg/Material>
 #include <osg/MatrixTransform>
 #include <osg/Texture2D>
@@ -439,10 +441,10 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh, StateSetList* states, osg::No
 			{
 				cmp::TriangleList* list = dynamic_cast<cmp::TriangleList*>(primitive);
 				if (list) {
-					osg::ref_ptr<osg::DrawElementsUInt> triangles = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES);
-					for (unsigned i = 0; i < (list->count * 3) + 3; i++) {
-						triangles->insert(triangles->begin(), mesh->indices[list->offset + i]);
-						//triangles->push_back(mesh->indices[list->offset + i]);
+					unsigned length = (list->count + 1) * 3;
+					osg::ref_ptr<osg::DrawElementsUInt> triangles = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, length);
+					for (unsigned i = 0; i < length; i++) {
+						triangles->at(i) = mesh->indices[list->offset + i];
 					}
 
 					matgeo[materialId]->addPrimitiveSet(triangles.get());
@@ -452,16 +454,12 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh, StateSetList* states, osg::No
 			case cmp::Primitive::Type::TriangleStrip:
 			{
 				cmp::TriangleStrip* strip = dynamic_cast<cmp::TriangleStrip*>(primitive);
-				if (primitive) {
-					osg::ref_ptr<osg::DrawElementsUInt> tristrip = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLE_STRIP);
+				if (strip) {
+					unsigned length = strip->count + 3;
+					osg::ref_ptr<osg::DrawElementsUInt> tristrip = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLE_STRIP, length);
 
-					for (unsigned i = 0; i < strip->count + 3; i++) {
-						tristrip->insert(tristrip->begin(), strip->offset + i);
-						//tristrip->push_back(strip->offset + i);
-						if (materialId == 14) {
-						osg::Vec4f col = colors->at(strip->offset + i);
-						int test = 2;
-						}
+					for (unsigned i = 0; i < length; i++) {
+						tristrip->at(i) = strip->offset + i;
 					}
 
 					matgeo[materialId]->addPrimitiveSet(tristrip.get());
@@ -706,6 +704,10 @@ int main(int argc, char** argv)
 	osg::ref_ptr<osg::Group> world = new osg::Group();
 	osg::ref_ptr<osg::Node> model = drawNode(root, world, &states);
 	world->addChild(model.get());
+
+	// Flip and cull back faces.
+	world->getOrCreateStateSet()->setAttributeAndModes(new osg::FrontFace(osg::FrontFace::Mode::CLOCKWISE));
+	world->getOrCreateStateSet()->setAttributeAndModes(new osg::CullFace(osg::CullFace::Mode::BACK));
 
 	delete root;
 	delete materials;
