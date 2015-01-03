@@ -31,13 +31,15 @@
 typedef std::vector<osg::ref_ptr<osg::StateSet>> StateSetList;
 
 const char* vertexShader = R"(
+#version 330
+
 uniform mat4 osg_ModelViewProjectionMatrix;
 uniform mat3 osg_NormalMatrix;
 
-attribute vec4 osg_Vertex;
-attribute vec3 osg_Normal;
-attribute vec4 osg_Color;
-attribute vec4 osg_MultiTexCoord0;
+in vec4 osg_Vertex;
+in vec3 osg_Normal;
+in vec4 osg_Color;
+in vec2 osg_MultiTexCoord0;
 
 out vec4 color;
 out vec2 uv;
@@ -57,6 +59,8 @@ void main()
 )";
 
 const char* fragmentShaderSolid = R"(
+#version 330
+
 in vec4 color;
 in vec2 uv;
 in vec4 diffuse;
@@ -68,6 +72,8 @@ void main(void)
 )";
 
 const char* fragmentShaderDecal = R"(
+#version 330
+
 uniform sampler2D osg_Sampler0;
 
 in vec4 color;
@@ -82,6 +88,8 @@ void main(void)
 )";
 
 const char* fragmentShaderModulate = R"(
+#version 330
+
 uniform sampler2D osg_Sampler0;
 
 in vec4 color;
@@ -95,6 +103,8 @@ void main(void)
 )";
 
 const char* fragmentShaderReplace = R"(
+#version 330
+
 uniform sampler2D osg_Sampler0;
 
 in vec4 color;
