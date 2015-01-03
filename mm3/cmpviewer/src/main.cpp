@@ -8,6 +8,7 @@
 #include <osg/MatrixTransform>
 #include <osg/Texture2D>
 #include <osgDB/FileNameUtils>
+#include <osgDB/FileUtils>
 #include <osgDB/ReadFile>
 #include <osgGA/StateSetManipulator>
 #include <osgGA/TrackballManipulator>
@@ -297,10 +298,16 @@ StateSetList generateOSGMaterials(omb::MaterialSet* materials, std::string basep
 			state->setAttributeAndModes(programSolid.get(), osg::StateAttribute::ON);
 		}
 		else {
-			osg::ref_ptr<osg::Image> img = osgDB::readImageFile(basepath + osgDB::getSimpleFileName(mat.texture));
+			std::string texpath = osgDB::findFileInDirectory(osgDB::getSimpleFileName(mat.texture), basepath, osgDB::CaseSensitivity::CASE_INSENSITIVE);
+
+			osg::ref_ptr<osg::Image> img = 0;
+
+			if (texpath != "") {
+				img = osgDB::readImageFile(texpath);
+			}
 
 			if (!img) {
-				std::cerr << "Error: Couldn't load texture \"" << basepath << osgDB::getSimpleFileName(mat.texture) << "\"" << std::endl;
+				std::cerr << "Error: Couldn't load texture \"" << basepath << osgDB::getNativePathSeparator() << osgDB::getSimpleFileName(mat.texture) << "\"" << std::endl;
 			}
 			else {
 				osg::ref_ptr<osg::Texture2D> tex = new osg::Texture2D();
@@ -670,8 +677,8 @@ int main(int argc, char** argv)
 	}
 
 	std::string cmppath = argv[1];
-	std::string basepath = osgDB::getFilePath(cmppath) + osgDB::getNativePathSeparator();
-	std::string ombpath = basepath + "materialSet" + materialSetNo + ".omb";
+	std::string basepath = osgDB::getFilePath(cmppath);
+	std::string ombpath = basepath + osgDB::getNativePathSeparator() + "materialSet" + materialSetNo + ".omb";
 
 	std::ifstream ifs;
 	ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit | std::ifstream::eofbit);
