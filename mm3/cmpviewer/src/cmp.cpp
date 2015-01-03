@@ -355,7 +355,7 @@ void Mesh::read(std::ifstream& ifs)
 			}
 			default:
 				std::ostringstream msg;
-				msg << "Unknown primitive type " << type << " in mesh \"" << name << "\".";
+				msg << "Unknown primitive type " << (int)type << " in mesh \"" << name << "\".";
 				throw std::runtime_error(msg.str());
 		}
 

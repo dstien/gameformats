@@ -415,7 +415,7 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh, StateSetList* states, osg::No
 
 	// One geometry per material.
 	osg::ref_ptr<osg::Geometry>* matgeo = new osg::ref_ptr<osg::Geometry>[states->size()];
-	::memset(matgeo, 0, sizeof(matgeo));
+	::memset(matgeo, 0, sizeof(osg::ref_ptr<osg::Geometry>) * states->size());
 
 	unsigned int i = 0;
 	for (cmp::Primitive* primitive : mesh->primitives) {
