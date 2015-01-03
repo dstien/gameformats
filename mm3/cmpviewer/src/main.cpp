@@ -245,22 +245,35 @@ StateSetList generateOSGMaterials(omb::MaterialSet* materials, std::string basep
 	StateSetList states;
 
 	osg::ref_ptr<osg::Shader> vert = new osg::Shader(osg::Shader::Type::VERTEX, vertexShader);
+	vert->setName("vertexShader");
 
 	osg::ref_ptr<osg::Program> programSolid = new osg::Program();
+	programSolid->setName("programSolid");
 	programSolid->addShader(vert.get());
-	programSolid->addShader(new osg::Shader(osg::Shader::Type::FRAGMENT, fragmentShaderSolid));
+	osg::ref_ptr<osg::Shader> fragSolid = new osg::Shader(osg::Shader::Type::FRAGMENT, fragmentShaderSolid);
+	fragSolid->setName("fragmentShaderSolid");
+	programSolid->addShader(fragSolid.get());
 
 	osg::ref_ptr<osg::Program> programDecal = new osg::Program();
+	programDecal->setName("programDecal");
 	programDecal->addShader(vert.get());
-	programDecal->addShader(new osg::Shader(osg::Shader::Type::FRAGMENT, fragmentShaderDecal));
+	osg::ref_ptr<osg::Shader> fragDecal = new osg::Shader(osg::Shader::Type::FRAGMENT, fragmentShaderDecal);
+	fragDecal->setName("fragmentShaderDecal");
+	programDecal->addShader(fragDecal.get());
 
 	osg::ref_ptr<osg::Program> programModulate = new osg::Program();
+	programModulate->setName("programModulate");
 	programModulate->addShader(vert.get());
-	programModulate->addShader(new osg::Shader(osg::Shader::Type::FRAGMENT, fragmentShaderModulate));
+	osg::ref_ptr<osg::Shader> fragModulate = new osg::Shader(osg::Shader::Type::FRAGMENT, fragmentShaderModulate);
+	fragModulate->setName("fragmentShaderModulate");
+	programModulate->addShader(fragModulate.get());
 
 	osg::ref_ptr<osg::Program> programReplace = new osg::Program();
+	programReplace->setName("programReplace");
 	programReplace->addShader(vert.get());
-	programReplace->addShader(new osg::Shader(osg::Shader::Type::FRAGMENT, fragmentShaderReplace));
+	osg::ref_ptr<osg::Shader> fragReplace = new osg::Shader(osg::Shader::Type::FRAGMENT, fragmentShaderReplace);
+	fragReplace->setName("fragmentShaderReplace");
+	programReplace->addShader(fragReplace.get());
 
 	for (omb::Material mat : materials->materials) {
 		osg::ref_ptr<osg::StateSet> state = new osg::StateSet();
