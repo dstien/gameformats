@@ -99,13 +99,7 @@ in vec4 diffuse;
 
 void main(void)
 {
-	vec4 t = texture(osg_Sampler0, uv);
-	if (t.a == 1.0) {
-		gl_FragColor = t * diffuse;
-	}
-	else {
-		gl_FragColor = (color - t) * diffuse;
-	}
+	gl_FragColor = texture(osg_Sampler0, uv) * color * diffuse;
 }
 )";
 
