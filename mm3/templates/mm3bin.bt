@@ -1,0 +1,95 @@
+//--------------------------------------
+//--- 010 Editor v5.0.2 Binary Template
+//
+// File:     mm3bin.bt
+// Author:   Daniel Stien <daniel@stien.org>
+// Revision: 2015-02-05
+// Purpose:  Midtown Madness 3 city object effects
+//--------------------------------------
+
+typedef enum <uint32> {
+    Normal       = 0,
+    SpecialFlipL = 1,
+    SpecialT     = 2,
+} ColType;
+
+typedef struct {
+    ubyte b <format=hex>;
+    ubyte g <format=hex>;
+    ubyte r <format=hex>;
+    ubyte a <format=hex>;
+} Color4b <read=ReadColor4b>;
+
+typedef struct {
+    uint32 unknown; // Object id?
+    uint32 offset;
+} TocEntry;
+
+typedef struct {
+    ubyte   data1[39]; // Mode / time/season?
+    uint32  soundIndex;
+    Color4b color <format=hex>;
+    ubyte   data2[22];
+    uint32  unknown;
+    float   flareSize;
+    ubyte   flareIntensity;
+    ubyte   data3;
+    float   spotLength;
+    ubyte   data4[3]; // Spot angle or intensity?
+} Effect;
+
+typedef struct {
+    uint16  effectCount;
+    ubyte   blobSize;
+    ubyte   blobIntensity;
+    uint32  unknown1; // Bubble size?
+    Color4b color; // ?
+    float   mass;
+    uint32  colSoundIndex; // + 1?
+    ColType colType;
+    uint32  unknowns[7];
+    Effect  effects[effectCount];
+} Content <read=ReadContent>;
+
+typedef struct {
+    string n;
+} Name <read=ReadName>;
+
+char   magic[4]; // = "OTF0"
+uint16 unknown0;
+uint16 fileCount;
+uint16 unknown1;
+uint16 unknown2;
+uint32 soundsOffset;
+
+TocEntry toc[fileCount];
+
+Content contents[fileCount + 1] <optimize=false>;
+
+while (!FEof()) {
+    Name sounds;
+}
+
+// Color4b summary
+string ReadColor4b(Color4b &c)
+{
+    string s;
+    SPrintf(s, "%02X %02X %02X %02X", c.r, c.g, c.b, c.a);
+    return s;
+}
+
+// Sound name summary
+string ReadName(Name &n)
+{
+    string s;
+    SPrintf(s, "%s", n.n);
+    return s;
+}
+
+// Object summary
+string ReadContent(Content &c)
+{
+    string s;
+    SPrintf(s, "%d  %d/%d  %d  %f  %d  - %d", c.effectCount, c.blobSize, c.blobIntensity, c.unknown1, c.mass, c.colSoundIndex, c.colType);
+    return s;
+}
