@@ -3,7 +3,7 @@
 //
 // File:     mm3xbc.bt
 // Author:   Daniel Stien <daniel@stien.org>
-// Revision: 2014-12-06
+// Revision: 2015-02-05
 // Purpose:  Midtown Madness 3 city
 //--------------------------------------
 
@@ -239,21 +239,21 @@ struct {
 struct {
     int32  numMatrices;
     Matrix matrices[numMatrices];
-    
+
     uint32 numMeshes;
     Mesh   meshes[numMeshes];
-    
+
     uint32 roadTilesDataLenSum;
     struct {
         Tile roadTiles[5];
     } roadTiles;
-    
+
     uint32 numMeshSections;
     MeshSection meshSections[numMeshSections];
 
     uint32 numObjectIndices;
     uint16 objectIndices[numObjectIndices]; // Index in name list
-    
+
     uint32 numObjectPositions;
     typedef struct {
       float f1, f2, f3, f4, f5, f6, f7;
@@ -265,16 +265,16 @@ struct {
 struct {
     uint32 numMesh2;
     Mesh2  meshes2[numMesh2];
-    
+
     uint32 houseTileDataLenSum;
     Tile houseTiles[6];
-    
+
     uint32 numMeshSections;
     MeshSection mesSections[numMeshSections];
-    
+
     uint32 numObjectIndices;
     uint16 objectIndices[numObjectIndices]; // Index in name list
-    
+
     uint32 numObjectPositions;
     Vertex4f objectPositions[numObjectPositions];
 } facades;
@@ -283,28 +283,28 @@ struct {
 struct {
     uint32 numUnk12;
     Vertex3 unk12[numUnk12]; // Not a vertex
-    
+
     uint32 numUnkSect3;
     UnkSect3 unkSect3[numUnkSect3];
-    
+
     uint32 numObjects;
     String objects[numObjects];
-    
+
     uint32 numUnk14;
-    Vertex3f unk14[numUnk14];
-    
+    Vertex3f unk14[numUnk14]; // Sprite vertices?
+
     uint32 numUnk15;
-    Vertex3f unk15[numUnk15 * 2];
-    
+    Vertex3f unk15[numUnk15 * 2]; // Object vertices?
+
     uint32 numUnk16;
     Vertex3f unk16[numUnk16];
-    
+
     uint32 numUnk17;
     Vertex4f unk17[numUnk17];
-    
+
     uint32 numUnk18;
     float unk18[numUnk18 * 7];
-    
+
     uint32 numUnk19;
     float  unk19[numUnk19 * 6];
 } objects;
@@ -316,7 +316,7 @@ struct {
 
     uint32 numTreeBases;
     TreeBase treeBases[numTreeBases];
-    
+
     uint32 numMesh3;
     Mesh3 mesh3[numMesh3]; // Tree leafs
 } trees;
@@ -330,7 +330,7 @@ struct {
     uint32 unk22; // Total size of whatever unk24 points to?
     uint32 numUnk23;
     uint16 unk23[numUnk23 * 4];
-    
+
     uint32 numUnk24;
     uint32 unk24[numUnk24]; // Offsets? Affects .pak textures?
     uint32 numUnk25;
