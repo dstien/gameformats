@@ -3,7 +3,7 @@
 //
 // File:     mm3cmp.bt
 // Author:   Daniel Stien <daniel@stien.org>
-// Revision: 2014-12-27
+// Revision: 2015-02-06
 // Purpose:  Midtown Madness 3 car mesh package
 //--------------------------------------
 
@@ -64,22 +64,32 @@ typedef struct {
 } BoundBox <read=ReadBoundBox>;
 
 typedef struct {
-    // D3DVSDT_NORMPACKED3
-    int x  : 11; // x  / 1024 * scale
-    int y  : 11; // y  / 1024 * scale
-    int z  : 10; // z  /  512 * scale
-    int nx : 11; // nx / 1024
-    int ny : 11; // ny / 1024
-    int nz : 10; // nz /  512
-    int u  : 11; // u  / 1024
-    int v  : 11; // v  / 1024
-    int unknown0 : 10;
-    int materialId : 8; // id / 11
-    int unknown1 : 5;
-    int meshId : 3;
-    int unknown2 : 8;
-    int unknown3 : 8;
-    uint16 unknowns[4]; // ???, specular
+    // Scaled position, D3DVSDT_NORMPACKED3
+    int   x  : 11;      // x  / 1024 * scale
+    int   y  : 11;      // y  / 1024 * scale
+    int   z  : 10;      // z  /  512 * scale
+    // Normal, D3DVSDT_NORMPACKED3
+    int   nx : 11;      // nx / 1024
+    int   ny : 11;      // ny / 1024
+    int   nz : 10;      // nz /  512
+    // UV0: main tex, UV1: demolition tex, D3DVSDT_NORMPACKED3
+    int   u0 : 11;      // u0 / 1024
+    int   v0 : 11;      // v0 / 1024
+    int   u1 : 10;      // u1 /  512
+    // Ids divided by max value to prevent overrun in shader.
+    ubyte materialId;   // id /   11
+    ubyte matrixId;     // id /   37
+    ubyte v1;           // v1 /  256
+    ubyte demolitionId; // id /   23
+    // Deformation position offsets, D3DVSDT_NORMPACKED3
+    int   dx : 11;      // dx / 1024
+    int   dy : 11;      // dy / 1024
+    int   dz : 10;      // dz /  512
+    // Lighting and reflection
+    ubyte specularPower;
+    ubyte envmapIntensity;
+    ubyte ambientIntensity;
+    ubyte specularIntensity;
 } Vertex <read=ReadVertex>;
 
 typedef struct {
@@ -255,12 +265,12 @@ typedef struct (Version version) {
     uint32    unknown9;
     float     unknown10[3];
     RootEntry rootEntries[rootEntryCount];
-    uint32   meshNodeCount;
+    uint32    matrixCount;
 } NodeDataRoot;
 
 typedef struct {
     Transformation transformation;
-    int32    meshIndex; // -1 if not applicable
+    int32    matrixId; // -1 if not applicable
     BoundBox aabb; // Axis-aligned bound box relative to parent's transformation.
 } NodeDataTransform;
 
@@ -359,7 +369,7 @@ string ReadBoundBox(BoundBox &b)
 string ReadVertex(Vertex &v)
 {
     string s;
-    SPrintf(s, "%d, %d, %d  Material: %d Mesh: %d", v.x, v.y, v.z, v.materialId / 11, v.meshId);
+    SPrintf(s, "Mat: %d Mtx: %d Dem: %d  X: %d Y: %d Z: %d", v.materialId / 11, v.matrixId / 37, v.demolitionId / 23, v.x, v.y, v.z);
     return s;
 }
 
