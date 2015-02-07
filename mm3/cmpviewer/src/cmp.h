@@ -16,29 +16,47 @@ namespace cmp
 
 	struct Vertex
 	{
-		int x : 11;
-		int y : 11;
-		int z : 10;
-		int nx : 11;
-		int ny : 11;
-		int nz : 10;
-		int u : 11;
-		int v : 11;
-		int unknown0 : 10;
-		uint8_t materialId;
-		uint8_t unknown2 : 5;
-		uint8_t meshId : 3;
-		uint32_t unknown5[2];
+		int      x  : 11;
+		int      y  : 11;
+		int      z  : 10;
+		int      nx : 11;
+		int      ny : 11;
+		int      nz : 10;
+		int      u0 : 11;
+		int      v0 : 11;
+		int      u1 : 10;
+		uint8_t  materialId;
+		uint8_t  matrixId;
+		uint8_t  v1;
+		uint8_t  demolitionId;
+		int      dx : 11;
+		int      dy : 11;
+		int      dz : 10;
+		uint8_t  specularPower;
+		uint8_t  envMapIntensity;
+		uint8_t  ambientIntensity;
+		uint8_t  specularIntensity;
 
-		float scaleX(float scale) { return ((float)x / 1024.0) * scale; }
-		float scaleY(float scale) { return ((float)y / 1024.0) * scale; }
-		float scaleZ(float scale) { return ((float)z /  512.0) * scale; }
-		float scaleNX() { return ((float)nx / 1024.0); }
-		float scaleNY() { return ((float)ny / 1024.0); }
-		float scaleNZ() { return ((float)nz /  512.0); }
-		float scaleU() { return ((float)u / 1024.0); }
-		float scaleV() { return ((float)v / 1024.0); }
-		unsigned actualMaterialId() { return materialId / 11; }
+		float    scaleX(float scale)       { return ((float)x / 1024.0) * scale; }
+		float    scaleY(float scale)       { return ((float)y / 1024.0) * scale; }
+		float    scaleZ(float scale)       { return ((float)z /  512.0) * scale; }
+		float    scaleNX()                 { return (float)nx / 1024.0; }
+		float    scaleNY()                 { return (float)ny / 1024.0; }
+		float    scaleNZ()                 { return (float)nz /  512.0; }
+		float    scaleU0()                 { return (float)u0 / 1024.0; }
+		float    scaleV0()                 { return (float)v0 / 1024.0; }
+		float    scaleU1()                 { return (float)u1 /  512.0; }
+		float    scaleV1()                 { return (float)v1 /  256.0; }
+		float    scaleDX()                 { return (float)dx / 1024.0; }
+		float    scaleDY()                 { return (float)dy / 1024.0; }
+		float    scaleDZ()                 { return (float)dz /  512.0; }
+		unsigned actualMaterialId()        { return materialId    / 11; }
+		unsigned actualMatrixId()          { return matrixId      / 37; }
+		unsigned actualDemolitionId()      { return demolitionId  / 23; }
+		float    actualEnvMapIntensity()   { return (float)envMapIntensity   / 256.0; }
+		float    actualAmbientIntensity()  { return (float)ambientIntensity  / 256.0; }
+		float    actualSpecularIntensity() { return (float)specularIntensity / 256.0; }
+		float    actualSpecularPower()     { return (float)specularPower     / 256.0; }
 	};
 
 	struct  Vec3f

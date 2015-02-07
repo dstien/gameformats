@@ -29,92 +29,144 @@
 #define CULL_LOD2       1 <<  9
 #define CULL_LOD3       1 << 10
 
+#define ATTRIB_NO_INTENSITIES  10
+#define ATTRIB_NM_INTENSITIES  "intensities"
+#define UNIFORM_TEX_MODE       "texMode"
+#define UNIFORM_DEMOLITION_MAP "demolitionMap"
+
 typedef std::vector<osg::ref_ptr<osg::StateSet>> StateSetList;
 
 const char* vertexShader = R"(
 #version 330
 
+uniform mat4 osg_ModelViewMatrix;
 uniform mat4 osg_ModelViewProjectionMatrix;
+uniform mat4 osg_ViewMatrix;
+uniform mat4 osg_ViewMatrixInverse;
 uniform mat3 osg_NormalMatrix;
 
 in vec4 osg_Vertex;
 in vec3 osg_Normal;
 in vec4 osg_Color;
 in vec2 osg_MultiTexCoord0;
+in vec2 osg_MultiTexCoord1;
+in vec4 intensities;
 
-out vec4 color;
-out vec2 uv;
-out vec4 diffuse;
+out vec3 N;
+out vec3 L;
+out vec3 E;
+
+out vec4 vcolor;
+out vec2 uv0;
+out vec2 uv1;
+out float ambientIntensity;
+out float specularIntensity;
+out float specularPower;
+out float envMapIntensity;
 
 void main()
 {
-	vec3 lightdir = vec3(0.0, 0.5, 1.0);
-	vec3 normal = normalize(osg_NormalMatrix * osg_Normal);
-	float diff = max(dot(lightdir, normal), 0.0);
+	N = osg_NormalMatrix * osg_Normal;
+	E = -(osg_ModelViewMatrix * osg_Vertex).xyz;
+	L = (osg_ViewMatrix * vec4(osg_ViewMatrixInverse[3].xyz, 1)).xyz + E;
+
+	vcolor = osg_Color;
+	uv0 = osg_MultiTexCoord0;
+	uv1 = osg_MultiTexCoord1;
+	ambientIntensity  = intensities.x;
+	specularIntensity = intensities.y;
+	specularPower     = intensities.z;
+	envMapIntensity   = intensities.w;
 
 	gl_Position = osg_ModelViewProjectionMatrix * osg_Vertex;
-	color = osg_Color;
-	uv = osg_MultiTexCoord0;
-	diffuse = vec4(vec3(diff), 1.0);
 }
 )";
 
-const char* fragmentShaderSolid = R"(
+const char* fragmentShader = R"(
 #version 330
 
-in vec4 color;
-in vec2 uv;
-in vec4 diffuse;
-
-void main(void)
-{
-	gl_FragColor = color * diffuse;
-}
-)";
-
-const char* fragmentShaderDecal = R"(
-#version 330
-
+uniform int texMode;
 uniform sampler2D osg_Sampler0;
+uniform sampler2D demolitionMap;
 
-in vec4 color;
-in vec2 uv;
-in vec4 diffuse;
+in vec3 N;
+in vec3 L;
+in vec3 E;
 
-void main(void)
-{
-	vec4 t = texture(osg_Sampler0, uv);
-	gl_FragColor = ((color * vec4(1.0 - t.a, 1.0 - t.a, 1.0 - t.a, 1.0)) + (t * vec4(t.a, t.a, t.a, 1.0))) * diffuse;
-}
-)";
+in vec4 vcolor;
+in vec2 uv0;
+in vec2 uv1;
+in float ambientIntensity;
+in float specularIntensity;
+in float specularPower;
+in float envMapIntensity;
 
-const char* fragmentShaderModulate = R"(
-#version 330
-
-uniform sampler2D osg_Sampler0;
-
-in vec4 color;
-in vec2 uv;
-in vec4 diffuse;
+out vec4 color;
 
 void main(void)
 {
-	gl_FragColor = texture(osg_Sampler0, uv) * color * diffuse;
-}
-)";
+	vec3 materialColor;
+	float alpha;
+	vec4 t0 = texture(osg_Sampler0, uv0);
+	vec4 t1 = texture(demolitionMap, uv1);
 
-const char* fragmentShaderReplace = R"(
-#version 330
+	float spec;
 
-uniform sampler2D osg_Sampler0;
+	switch (texMode) {
+		case -1: // Solid color
+			materialColor = vcolor.rgb;
+			alpha = vcolor.a;
+			break;
+		case 0: // Decal
+			materialColor = (vcolor.rgb * (vec3(1, 1, 1) - vec3(t0.a, t0.a, t0.a))) + (t0.rgb * vec3(t0.a, t0.a, t0.a));
+			alpha = vcolor.a;
+			break;
+		case 1: // Transparency
+		case 2: // Replace
+			materialColor = t0.rgb;
+			alpha = t0.a;
+			break;
+		case 3: // Modulate
+			if (t0.a == 1.0) {
+				materialColor = t0.rgb;
+			}
+			else {
+				materialColor = vcolor.rgb * t0.rgb;
+			}
+			alpha = vcolor.a;
+			break;
+		default: // Unknown
+			materialColor = vec3(0, 1, 0);
+			alpha = 1.0;
+	}
 
-in vec4 color;
-in vec2 uv;
-in vec4 diffuse;
+	/*
+	if (t1.a > 0.0) {
+		if (t1.a == 1.0) {
+			materialColor = t1.rgb;
+			alpha = 1.0;
+		}
+		else {
+			materialColor = mix(materialColor, t1.rgb, 0.5);
+		}
 
-void main(void)
-{
-	gl_FragColor = texture(osg_Sampler0, uv) * diffuse;
+		spec = 0.0;
+	}
+	else*/ {
+		spec = specularIntensity;
+	}
+
+	vec3 n = normalize(N);
+	vec3 l = normalize(L);
+	vec3 e = normalize(E);
+	vec3 r = reflect(-l, n);
+
+	vec3 ambient  = materialColor * vec3(ambientIntensity, ambientIntensity, ambientIntensity);
+	vec3 diffuse  = materialColor * clamp(dot(n, l), 0, 1);
+	vec3 specular = vec3(spec, spec, spec) * pow(clamp(dot(e, r), 0, 1), specularPower * 5.0);
+
+	color.rgb = ambient + diffuse + specular;
+	color.a = alpha;
 }
 )";
 
@@ -183,7 +235,7 @@ void printNode(cmp::Node* node, omb::MaterialSet* materials)
 			if (rootNode) {
 				std::cout << std::setw(indent + 4) << "" << "Version: " << rootNode->version << std::endl;
 				std::cout << std::setw(indent + 4) << "" << "Mesh nodes: " << rootNode->meshNodeCount << std::endl;
-			}
+				}
 			break;
 		}
 		case cmp::Node::Transform:
@@ -258,33 +310,37 @@ StateSetList generateOSGMaterials(omb::MaterialSet* materials, std::string basep
 	osg::ref_ptr<osg::Shader> vert = new osg::Shader(osg::Shader::Type::VERTEX, vertexShader);
 	vert->setName("vertexShader");
 
-	osg::ref_ptr<osg::Program> programSolid = new osg::Program();
-	programSolid->setName("programSolid");
-	programSolid->addShader(vert.get());
-	osg::ref_ptr<osg::Shader> fragSolid = new osg::Shader(osg::Shader::Type::FRAGMENT, fragmentShaderSolid);
-	fragSolid->setName("fragmentShaderSolid");
-	programSolid->addShader(fragSolid.get());
+	osg::ref_ptr<osg::Shader> frag = new osg::Shader(osg::Shader::Type::FRAGMENT, fragmentShader);
+	frag->setName("fragmentShader");
 
-	osg::ref_ptr<osg::Program> programDecal = new osg::Program();
-	programDecal->setName("programDecal");
-	programDecal->addShader(vert.get());
-	osg::ref_ptr<osg::Shader> fragDecal = new osg::Shader(osg::Shader::Type::FRAGMENT, fragmentShaderDecal);
-	fragDecal->setName("fragmentShaderDecal");
-	programDecal->addShader(fragDecal.get());
+	osg::ref_ptr<osg::Program> program = new osg::Program();
+	program->setName("program");
+	program->addShader(vert.get());
+	program->addShader(frag.get());
+	program->addBindAttribLocation(ATTRIB_NM_INTENSITIES, ATTRIB_NO_INTENSITIES);
 
-	osg::ref_ptr<osg::Program> programModulate = new osg::Program();
-	programModulate->setName("programModulate");
-	programModulate->addShader(vert.get());
-	osg::ref_ptr<osg::Shader> fragModulate = new osg::Shader(osg::Shader::Type::FRAGMENT, fragmentShaderModulate);
-	fragModulate->setName("fragmentShaderModulate");
-	programModulate->addShader(fragModulate.get());
+	// Load demolition texture.
+	osg::ref_ptr<osg::Uniform> demolitionUniform = 0;
+	osg::ref_ptr<osg::Texture2D> demolitionTex = 0;
+	{
+		std::string texpath = osgDB::findFileInDirectory("../demolition_texture.dds", basepath, osgDB::CaseSensitivity::CASE_INSENSITIVE);
 
-	osg::ref_ptr<osg::Program> programReplace = new osg::Program();
-	programReplace->setName("programReplace");
-	programReplace->addShader(vert.get());
-	osg::ref_ptr<osg::Shader> fragReplace = new osg::Shader(osg::Shader::Type::FRAGMENT, fragmentShaderReplace);
-	fragReplace->setName("fragmentShaderReplace");
-	programReplace->addShader(fragReplace.get());
+		osg::ref_ptr<osg::Image> img = 0;
+
+		if (texpath != "") {
+			img = osgDB::readImageFile(texpath);
+		}
+
+		if (!img) {
+			std::cerr << "Error: Couldn't load demolition texture \"" << basepath << osgDB::getNativePathSeparator() << ".." << osgDB::getNativePathSeparator() << "demolition_texture.dds\"" << std::endl;
+		}
+		else {
+			demolitionTex = new osg::Texture2D();
+			demolitionTex->setImage(img.get());
+			demolitionUniform = new osg::Uniform(osg::Uniform::SAMPLER_2D, UNIFORM_DEMOLITION_MAP); 
+			demolitionUniform->set(1);
+		}
+	}
 
 	for (omb::Material mat : materials->materials) {
 		osg::ref_ptr<osg::StateSet> state = new osg::StateSet();
@@ -293,9 +349,10 @@ StateSetList generateOSGMaterials(omb::MaterialSet* materials, std::string basep
 		material->setName(mat.name);
 
 		material->setDiffuse(osg::Material::FRONT, osg::Vec4(mat.color.r / 255.0, mat.color.g / 255.0f, mat.color.b / 255.0, mat.color.a / 255.0));
+		state->setAttributeAndModes(program.get(), osg::StateAttribute::ON);
 
 		if (mat.texture == "No") {
-			state->setAttributeAndModes(programSolid.get(), osg::StateAttribute::ON);
+			state->addUniform(new osg::Uniform(UNIFORM_TEX_MODE, -1));
 		}
 		else {
 			std::string texpath = osgDB::findFileInDirectory(osgDB::getSimpleFileName(mat.texture), basepath, osgDB::CaseSensitivity::CASE_INSENSITIVE);
@@ -308,22 +365,22 @@ StateSetList generateOSGMaterials(omb::MaterialSet* materials, std::string basep
 
 			if (!img) {
 				std::cerr << "Error: Couldn't load texture \"" << basepath << osgDB::getNativePathSeparator() << osgDB::getSimpleFileName(mat.texture) << "\"" << std::endl;
+				state->addUniform(new osg::Uniform(UNIFORM_TEX_MODE, -1));
 			}
 			else {
 				osg::ref_ptr<osg::Texture2D> tex = new osg::Texture2D();
 				tex->setImage(img.get());
 				state->setTextureAttributeAndModes(0, tex.get(), osg::StateAttribute::ON);
+				state->addUniform(new osg::Uniform(UNIFORM_TEX_MODE, (int)mat.mode));
 			}
+		}
 
-			if (mat.mode == omb::TexMode::Decal) {
-				state->setAttributeAndModes(programDecal.get(), osg::StateAttribute::ON);
-			}
-			else if (mat.mode == omb::TexMode::Modulate) {
-				state->setAttributeAndModes(programModulate.get(), osg::StateAttribute::ON);
-			}
-			else {
-				state->setAttributeAndModes(programReplace.get(), osg::StateAttribute::ON);
-			}
+		if (demolitionTex) {
+			state->setTextureAttributeAndModes(1, demolitionTex.get(), osg::StateAttribute::ON);
+			state->addUniform(demolitionUniform.get());
+		}
+		else {
+			std::cerr << "Demolition texture loading failed" << std::endl;
 		}
 
 		if (mat.mode == omb::TexMode::Transparency || mat.color.a != 0xFF) {
@@ -417,16 +474,26 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh, StateSetList* states, osg::No
 	float maxY = (b->min.y - b->max.y) * -1;
 	float maxZ = (b->min.z - b->max.z) * -1;
 
-	osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array(mesh->vertexCount2);
-	osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array(osg::Array::BIND_PER_VERTEX, mesh->vertexCount2);
-	osg::ref_ptr<osg::Vec2Array> uvs = new osg::Vec2Array(osg::Array::BIND_PER_VERTEX, mesh->vertexCount2);
-	osg::ref_ptr<osg::Vec4Array> colors = new osg::Vec4Array(osg::Array::BIND_PER_VERTEX, mesh->vertexCount2);
+	osg::ref_ptr<osg::Vec3Array> vertices    = new osg::Vec3Array(mesh->vertexCount2);
+	osg::ref_ptr<osg::Vec3Array> normals     = new osg::Vec3Array(osg::Array::BIND_PER_VERTEX, mesh->vertexCount2);
+	osg::ref_ptr<osg::Vec2Array> uvs0        = new osg::Vec2Array(osg::Array::BIND_PER_VERTEX, mesh->vertexCount2);
+	osg::ref_ptr<osg::Vec2Array> uvs1        = new osg::Vec2Array(osg::Array::BIND_PER_VERTEX, mesh->vertexCount2);
+	osg::ref_ptr<osg::Vec4Array> colors      = new osg::Vec4Array(osg::Array::BIND_PER_VERTEX, mesh->vertexCount2);
+	osg::ref_ptr<osg::Vec4Array> intensities = new osg::Vec4Array(osg::Array::BIND_PER_VERTEX, mesh->vertexCount2);
+
+	// TODO: Apply deformations in vertex shader.
+	float damage = 0.0f;
+
+	if (mesh->hasNumberPlate) {
+		damage = 0.0f;
+	}
 
 	for (unsigned i = 0; i < mesh->vertexCount2; i++) {
 		cmp::Vertex* v = &mesh->vertices[i];
-		vertices->at(i) = osg::Vec3(v->scaleX(maxX), v->scaleY(maxY), -v->scaleZ(maxZ));
+		vertices->at(i) = osg::Vec3(v->scaleX(maxX) + (v->scaleDX() * damage), v->scaleY(maxY) + (v->scaleDY() * damage), -v->scaleZ(maxZ) + (-v->scaleDZ() * damage));
 		normals->at(i) = osg::Vec3(v->scaleNX(), v->scaleNY(), -v->scaleNZ());
-		uvs->at(i) = osg::Vec2(v->scaleU(), v->scaleV());
+		uvs0->at(i) = osg::Vec2(v->scaleU0(), v->scaleV0());
+		uvs1->at(i) = osg::Vec2(v->scaleU1(), v->scaleV1());
 
 		if (v->actualMaterialId() < states->size()) {
 			osg::ref_ptr<osg::Material> material = (osg::Material*)states->at(v->actualMaterialId())->getAttribute(osg::StateAttribute::MATERIAL);
@@ -435,13 +502,17 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh, StateSetList* states, osg::No
 				colors->at(i) = material->getDiffuse(osg::Material::FRONT);
 			}
 		}
+
+		intensities->at(i) = osg::Vec4(v->actualAmbientIntensity(), v->actualSpecularIntensity(), v->actualSpecularPower(), v->actualEnvMapIntensity());
 	}
 
 	osg::ref_ptr<osg::VertexBufferObject> vbo = new osg::VertexBufferObject();
 	vbo->addArray(vertices.get());
 	vbo->addArray(normals.get());
-	vbo->addArray(uvs.get());
+	vbo->addArray(uvs0.get());
+	vbo->addArray(uvs1.get());
 	vbo->addArray(colors.get());
+	vbo->addArray(intensities.get());
 
 	// One geometry per material.
 	osg::ref_ptr<osg::Geometry>* matgeo = new osg::ref_ptr<osg::Geometry>[states->size()];
@@ -458,8 +529,12 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh, StateSetList* states, osg::No
 			matgeo[materialId]->setUseVertexBufferObjects(true);
 			matgeo[materialId]->setVertexArray(vertices.get());
 			matgeo[materialId]->setNormalArray(normals.get());
-			matgeo[materialId]->setTexCoordArray(0, uvs.get());
+			matgeo[materialId]->setTexCoordArray(0, uvs0.get());
+			matgeo[materialId]->setTexCoordArray(1, uvs1.get());
 			matgeo[materialId]->setColorArray(colors.get());
+
+			matgeo[materialId]->setVertexAttribArray(ATTRIB_NO_INTENSITIES, intensities.get());
+			matgeo[materialId]->setVertexAttribBinding(ATTRIB_NO_INTENSITIES, osg::Geometry::BIND_PER_VERTEX);
 
 			matgeo[materialId]->setStateSet(states->at(materialId).get());
 
