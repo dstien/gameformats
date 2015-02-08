@@ -341,9 +341,9 @@ namespace cmp
 			bool hasBound() { return type == Mesh2; }
 
 			int32_t            unknown0;
+			int32_t            loose;
+			int32_t            drop;
 			int32_t            unknown1;
-			int32_t            unknown2;
-			int32_t            unknown3;
 			BoundBox           aabb;
 			std::vector<Mesh*> meshes;
 	};

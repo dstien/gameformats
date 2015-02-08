@@ -421,9 +421,9 @@ void MeshNode::read(std::ifstream& ifs)
 	Node::read(ifs);
 
 	parse(ifs, unknown0);
+	parse(ifs, loose);
+	parse(ifs, drop);
 	parse(ifs, unknown1);
-	parse(ifs, unknown2);
-	parse(ifs, unknown3);
 
 	int maxMeshes = 2;
 	if (type == Mesh2) {
