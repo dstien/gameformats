@@ -3,7 +3,7 @@
 //
 // File:     mm3cmp.bt
 // Author:   Daniel Stien <daniel@stien.org>
-// Revision: 2015-02-06
+// Revision: 2015-02-08
 // Purpose:  Midtown Madness 3 car mesh package
 //--------------------------------------
 
@@ -207,9 +207,9 @@ typedef struct (Version version) {
 
 typedef struct (Version version, NodeType type) {
     uint32 unknown0;
+    uint32 loose;
+    uint32 drop;
     uint32 unknown1;
-    uint32 unknown2;
-    uint32 unknown3;
 
   // Regular cars (Mesh1) have body and shadow mesh,
   // ambient cars (Mesh2) have body, shadow and lod mesh.
