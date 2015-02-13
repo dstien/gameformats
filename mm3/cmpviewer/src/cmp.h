@@ -92,8 +92,8 @@ namespace cmp
 		float    unknown1;
 	};
 
-	class Mesh;
-	typedef std::vector<Mesh*> MeshList;
+	class MeshData;
+	typedef std::vector<MeshData*> MeshList;
 
 	class Element
 	{
@@ -118,11 +118,11 @@ namespace cmp
 			{
 				Root      = 0,
 				Transform = 1,
-				Mesh1     = 2,
+				Mesh      = 2,
 				Axis      = 3,
 				Light     = 4,
 				Smoke     = 5,
-				Mesh2     = 6,
+				MultiMesh = 6,
 			};
 
 			Node(Version version, Type type);
@@ -175,7 +175,7 @@ namespace cmp
 			uint32_t       unknown8;
 			float          unknown9[3];
 			RootEntry*     rootEntries;
-			uint32_t       meshNodeCount;
+			uint32_t       matrixCount;
 	};
 
 	class TransformNode : public GroupNode
@@ -186,7 +186,7 @@ namespace cmp
 			virtual void read(std::ifstream& ifs);
 
 			Transformation transformation;
-			int32_t        meshIndex;
+			int32_t        matrixId;
 	};
 
 	class AxisNode : public Node
@@ -284,11 +284,11 @@ namespace cmp
 		uint32_t unknown[7];
 	};
 
-	class Mesh : public Element
+	class MeshData : public Element
 	{
 		public:
-			Mesh(Version version);
-			virtual ~Mesh();
+			MeshData(Version version);
+			virtual ~MeshData();
 			virtual void read(std::ifstream& ifs);
 
 			uint32_t    length;
@@ -328,7 +328,7 @@ namespace cmp
 			uint32_t    numberPlateVertexCount;
 			NumberPlateVertex* numberPlateVertices;
 
-			Mesh*       reference;
+			MeshData*   reference;
 	};
 
 	class MeshNode : public Node
@@ -338,13 +338,13 @@ namespace cmp
 			virtual ~MeshNode();
 			virtual void read(std::ifstream& ifs);
 			virtual void findMeshes(MeshList* meshList);
-			bool hasBound() { return type == Mesh2; }
+			bool hasBound() { return type == MultiMesh; }
 
 			int32_t            unknown0;
 			int32_t            loose;
 			int32_t            drop;
 			int32_t            unknown1;
 			BoundBox           aabb;
-			std::vector<Mesh*> meshes;
+			std::vector<MeshData*> meshes;
 	};
 }

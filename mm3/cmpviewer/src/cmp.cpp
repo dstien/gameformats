@@ -26,15 +26,15 @@ Node::Node(Version version, Type type) : Element(version)
 	switch (type) {
 		case Root:
 		case Transform:
-		case Mesh1:
+		case Mesh:
 		case Axis:
 		case Light:
 		case Smoke:
-		case Mesh2:
+		case MultiMesh:
 			break;
 		default:
 			std::ostringstream msg;
-			msg << "Unknown node type. Expected " << Root << " - " << Mesh2 << ", got " << type << ".";
+			msg << "Unknown node type. Expected " << Root << " - " << MultiMesh << ", got " << type << ".";
 			throw std::runtime_error(msg.str());
 	}
 
@@ -63,8 +63,8 @@ Node* Node::readNode(std::ifstream& ifs, Version version)
 		case Transform:
 			node = new TransformNode(version);
 			break;
-		case Mesh1:
-		case Mesh2:
+		case Mesh:
+		case MultiMesh:
 			node = new MeshNode(version, type);
 			break;
 		case Axis:
@@ -78,7 +78,7 @@ Node* Node::readNode(std::ifstream& ifs, Version version)
 			break;
 		default:
 			std::ostringstream msg;
-			msg << "Unknown node type. Expected " << Transform << " - " << Mesh2 << ", got " << type << ".";
+			msg << "Unknown node type. Expected " << Transform << " - " << MultiMesh << ", got " << type << ".";
 			throw std::runtime_error(msg.str());
 	}
 
@@ -173,19 +173,19 @@ void RootNode::read(std::ifstream& ifs)
 	rootEntries = new RootEntry[rootEntryCount];
 	ifs.read(reinterpret_cast<char*>(rootEntries), sizeof(RootEntry) * rootEntryCount);
 
-	parse(ifs, meshNodeCount);
+	parse(ifs, matrixCount);
 
 	GroupNode::read(ifs);
 }
 
 void RootNode::resolveReferences()
 {
-	std::vector<Mesh*> meshes;
+	std::vector<MeshData*> meshes;
 	findMeshes(&meshes);
 
-	for (Mesh* empty : meshes) {
+	for (MeshData* empty : meshes) {
 		if (empty->length == 0) {
-			for (Mesh* mesh : meshes) {
+			for (MeshData* mesh : meshes) {
 				if (mesh != empty && mesh->length > 0 && mesh->name == empty->name) {
 					empty->reference = mesh;
 					break;
@@ -200,7 +200,7 @@ void TransformNode::read(std::ifstream& ifs)
 	Node::read(ifs);
 
 	parse(ifs, transformation);
-	parse(ifs, meshIndex);
+	parse(ifs, matrixId);
 	parse(ifs, aabb);
 
 	GroupNode::read(ifs);
@@ -236,7 +236,7 @@ void SmokeNode::read(std::ifstream& ifs)
 	parse(ifs, unknown0);
 }
 
-Mesh::Mesh(Version version) : Element(version)
+MeshData::MeshData(Version version) : Element(version)
 {
 	indices = 0;
 	vertices = 0;
@@ -244,7 +244,7 @@ Mesh::Mesh(Version version) : Element(version)
 	reference = 0;
 }
 
-Mesh::~Mesh()
+MeshData::~MeshData()
 {
 	if (indices) {
 		delete[] indices;
@@ -267,7 +267,7 @@ Mesh::~Mesh()
 	}
 }
 
-void Mesh::read(std::ifstream& ifs)
+void MeshData::read(std::ifstream& ifs)
 {
 	parse(ifs, name);
 	parse(ifs, length);
@@ -404,14 +404,14 @@ void Mesh::read(std::ifstream& ifs)
 
 MeshNode::~MeshNode()
 {
-	for (Mesh* mesh : meshes) {
+	for (MeshData* mesh : meshes) {
 		delete mesh;
 	}
 }
 
 void MeshNode::findMeshes(MeshList* meshList)
 {
-	for (cmp::Mesh* mesh : meshes) {
+	for (cmp::MeshData* mesh : meshes) {
 		meshList->push_back(mesh);
 	}
 }
@@ -426,7 +426,7 @@ void MeshNode::read(std::ifstream& ifs)
 	parse(ifs, unknown1);
 
 	int maxMeshes = 2;
-	if (type == Mesh2) {
+	if (type == MultiMesh) {
 		maxMeshes = 3;
 		parse(ifs, aabb);
 	}
@@ -436,7 +436,7 @@ void MeshNode::read(std::ifstream& ifs)
 		parse(ifs, meshFollows);
 
 		if (meshFollows) {
-			Mesh* mesh = new Mesh(version);
+			MeshData* mesh = new MeshData(version);
 			mesh->read(ifs);
 			meshes.push_back(mesh);
 		}

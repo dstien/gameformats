@@ -175,11 +175,11 @@ std::ostream& operator<<(std::ostream& lhs, cmp::Node::Type type)
 	switch (type) {
 		case cmp::Node::Root:      lhs << "Root";      break;
 		case cmp::Node::Transform: lhs << "Transform"; break;
-		case cmp::Node::Mesh1:     lhs << "Mesh1";     break;
+		case cmp::Node::Mesh:      lhs << "Mesh";      break;
 		case cmp::Node::Axis:      lhs << "Axis";      break;
 		case cmp::Node::Light:     lhs << "Light";     break;
 		case cmp::Node::Smoke:     lhs << "Smoke";     break;
-		case cmp::Node::Mesh2:     lhs << "Mesh2";     break;
+		case cmp::Node::MultiMesh: lhs << "MultiMesh"; break;
 		default: lhs << "Unknown (" << (uint32_t)type << ")";
 	}
 
@@ -234,15 +234,15 @@ void printNode(cmp::Node* node, omb::MaterialSet* materials)
 			cmp::RootNode* rootNode = dynamic_cast<cmp::RootNode*>(node);
 			if (rootNode) {
 				std::cout << std::setw(indent + 4) << "" << "Version: " << rootNode->version << std::endl;
-				std::cout << std::setw(indent + 4) << "" << "Mesh nodes: " << rootNode->meshNodeCount << std::endl;
+				std::cout << std::setw(indent + 4) << "" << "Matrices: " << rootNode->matrixCount << std::endl;
 				}
 			break;
 		}
 		case cmp::Node::Transform:
 		{
 			cmp::TransformNode* transformNode = dynamic_cast<cmp::TransformNode*>(node);
-			if (transformNode && transformNode->meshIndex != -1) {
-				std::cout << std::setw(indent + 4) << "" << "Mesh index: " << transformNode->meshIndex << std::endl;
+			if (transformNode && transformNode->matrixId != -1) {
+				std::cout << std::setw(indent + 4) << "" << "Matrix id: " << transformNode->matrixId << std::endl;
 			}
 			break;
 		}
@@ -259,12 +259,12 @@ void printNode(cmp::Node* node, omb::MaterialSet* materials)
 		}
 		case cmp::Node::Smoke:
 			break;
-		case cmp::Node::Mesh1:
-		case cmp::Node::Mesh2:
+		case cmp::Node::Mesh:
+		case cmp::Node::MultiMesh:
 		{
 			cmp::MeshNode* meshNode = dynamic_cast<cmp::MeshNode*>(node);
 			if (meshNode) {
-				for (cmp::Mesh* mesh : meshNode->meshes) {
+				for (cmp::MeshData* mesh : meshNode->meshes) {
 					std::cout << std::setw(indent + 4) << "" << "Mesh \"" << mesh->name << "\" (" << mesh->length << " bytes)" << std::endl;
 					if (mesh->length) {
 						std::cout << std::setw(indent + 8) << "" << mesh->vertexCount2 << " vertices" << std::endl;
@@ -455,7 +455,7 @@ osg::ref_ptr<osg::Geode> drawBoundBox(cmp::BoundBox* aabb, osg::Node::NodeMask m
 	return geode;
 }
 
-osg::ref_ptr<osg::Geode> drawMesh(cmp::Mesh* mesh, StateSetList* states, osg::Node::NodeMask mask)
+osg::ref_ptr<osg::Geode> drawMesh(cmp::MeshData* mesh, StateSetList* states, osg::Node::NodeMask mask)
 {
 	if (!mesh->length) {
 		if (mesh->reference) {
@@ -637,8 +637,8 @@ osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent, StateSetLi
 
 			return group;
 		}
-		case cmp::Node::Mesh1:
-		case cmp::Node::Mesh2:
+		case cmp::Node::Mesh:
+		case cmp::Node::MultiMesh:
 		{
 			cmp::MeshNode* meshNode = dynamic_cast<cmp::MeshNode*>(node);
 
@@ -653,7 +653,7 @@ osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent, StateSetLi
 			}
 
 			int lod = 0;
-			for (cmp::Mesh* mesh : meshNode->meshes) {
+			for (cmp::MeshData* mesh : meshNode->meshes) {
 				switch (lod) {
 					case 0:
 						//mask |= CULL_LOD1;
