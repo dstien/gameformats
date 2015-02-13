@@ -31,6 +31,10 @@
 
 #define ATTRIB_NO_INTENSITIES  10
 #define ATTRIB_NM_INTENSITIES  "intensities"
+#define ATTRIB_NO_IDS          11
+#define ATTRIB_NM_IDS          "ids"
+#define UNIFORM_MATRICES       "matrices"
+#define UNIFORM_MATRICES_LEN   37
 #define UNIFORM_TEX_MODE       "texMode"
 #define UNIFORM_DEMOLITION_MAP "demolitionMap"
 
@@ -44,6 +48,7 @@ uniform mat4 osg_ModelViewProjectionMatrix;
 uniform mat4 osg_ViewMatrix;
 uniform mat4 osg_ViewMatrixInverse;
 uniform mat3 osg_NormalMatrix;
+uniform mat4 matrices[37];
 
 in vec4 osg_Vertex;
 in vec3 osg_Normal;
@@ -51,6 +56,7 @@ in vec4 osg_Color;
 in vec2 osg_MultiTexCoord0;
 in vec2 osg_MultiTexCoord1;
 in vec4 intensities;
+in vec4 ids;
 
 out vec3 N;
 out vec3 L;
@@ -66,8 +72,19 @@ out float envMapIntensity;
 
 void main()
 {
-	N = osg_NormalMatrix * osg_Normal;
-	E = -(osg_ModelViewMatrix * osg_Vertex).xyz;
+	vec4 vert;
+	vec3 norm;
+	if (bool(ids.w)) {
+		vert = matrices[int(ids.y)] * osg_Vertex;
+		norm = transpose(inverse(mat3(matrices[int(ids.y)]))) * osg_Normal;
+	}
+	else {
+		vert = osg_Vertex;
+		norm = osg_Normal;
+	}
+
+	N = osg_NormalMatrix * norm;
+	E = -(osg_ModelViewMatrix * vert).xyz;
 	L = (osg_ViewMatrix * vec4(osg_ViewMatrixInverse[3].xyz, 1)).xyz + E;
 
 	vcolor = osg_Color;
@@ -78,7 +95,7 @@ void main()
 	specularPower     = intensities.z;
 	envMapIntensity   = intensities.w;
 
-	gl_Position = osg_ModelViewProjectionMatrix * osg_Vertex;
+	gl_Position = osg_ModelViewProjectionMatrix * vert;
 }
 )";
 
@@ -303,7 +320,7 @@ void printNode(cmp::Node* node, omb::MaterialSet* materials)
 	}
 }
 
-StateSetList generateOSGMaterials(omb::MaterialSet* materials, std::string basepath)
+StateSetList generateOSGMaterials(omb::MaterialSet* materials, std::string basepath, osg::ref_ptr<osg::Uniform> matricesUniform)
 {
 	StateSetList states;
 
@@ -318,6 +335,7 @@ StateSetList generateOSGMaterials(omb::MaterialSet* materials, std::string basep
 	program->addShader(vert.get());
 	program->addShader(frag.get());
 	program->addBindAttribLocation(ATTRIB_NM_INTENSITIES, ATTRIB_NO_INTENSITIES);
+	program->addBindAttribLocation(ATTRIB_NM_IDS, ATTRIB_NO_IDS);
 
 	// Load demolition texture.
 	osg::ref_ptr<osg::Uniform> demolitionUniform = 0;
@@ -392,6 +410,8 @@ StateSetList generateOSGMaterials(omb::MaterialSet* materials, std::string basep
 			state->setMode(GL_BLEND, osg::StateAttribute::OFF);
 		}
 
+		state->addUniform(matricesUniform.get());
+
 		state->setAttributeAndModes(material.get(), osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
 
 		states.push_back(state);
@@ -455,12 +475,12 @@ osg::ref_ptr<osg::Geode> drawBoundBox(cmp::BoundBox* aabb, osg::Node::NodeMask m
 	return geode;
 }
 
-osg::ref_ptr<osg::Geode> drawMesh(cmp::MeshData* mesh, StateSetList* states, osg::Node::NodeMask mask)
+osg::ref_ptr<osg::Geode> drawMesh(cmp::MeshData* mesh, StateSetList* states, bool isMultiMesh, osg::Node::NodeMask mask)
 {
 	if (!mesh->length) {
 		if (mesh->reference) {
 			// TODO: Re-use geode.
-			return drawMesh(mesh->reference, states, mask);
+			return drawMesh(mesh->reference, states, isMultiMesh, mask);
 		}
 
 		osg::ref_ptr<osg::Geode> geode = new osg::Geode();
@@ -480,6 +500,7 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::MeshData* mesh, StateSetList* states, osg
 	osg::ref_ptr<osg::Vec2Array> uvs1        = new osg::Vec2Array(osg::Array::BIND_PER_VERTEX, mesh->vertexCount2);
 	osg::ref_ptr<osg::Vec4Array> colors      = new osg::Vec4Array(osg::Array::BIND_PER_VERTEX, mesh->vertexCount2);
 	osg::ref_ptr<osg::Vec4Array> intensities = new osg::Vec4Array(osg::Array::BIND_PER_VERTEX, mesh->vertexCount2);
+	osg::ref_ptr<osg::Vec4bArray> ids        = new osg::Vec4bArray(osg::Array::BIND_PER_VERTEX, mesh->vertexCount2);
 
 	// TODO: Apply deformations in vertex shader.
 	float damage = 0.0f;
@@ -504,6 +525,7 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::MeshData* mesh, StateSetList* states, osg
 		}
 
 		intensities->at(i) = osg::Vec4(v->actualAmbientIntensity(), v->actualSpecularIntensity(), v->actualSpecularPower(), v->actualEnvMapIntensity());
+		ids->at(i) = osg::Vec4b(v->actualMaterialId(), v->actualMatrixId(), v->actualDemolitionId(), isMultiMesh);
 	}
 
 	osg::ref_ptr<osg::VertexBufferObject> vbo = new osg::VertexBufferObject();
@@ -513,6 +535,7 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::MeshData* mesh, StateSetList* states, osg
 	vbo->addArray(uvs1.get());
 	vbo->addArray(colors.get());
 	vbo->addArray(intensities.get());
+	vbo->addArray(ids.get());
 
 	// One geometry per material.
 	osg::ref_ptr<osg::Geometry>* matgeo = new osg::ref_ptr<osg::Geometry>[states->size()];
@@ -535,6 +558,9 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::MeshData* mesh, StateSetList* states, osg
 
 			matgeo[materialId]->setVertexAttribArray(ATTRIB_NO_INTENSITIES, intensities.get());
 			matgeo[materialId]->setVertexAttribBinding(ATTRIB_NO_INTENSITIES, osg::Geometry::BIND_PER_VERTEX);
+
+			matgeo[materialId]->setVertexAttribArray(ATTRIB_NO_IDS, ids.get());
+			matgeo[materialId]->setVertexAttribBinding(ATTRIB_NO_IDS, osg::Geometry::BIND_PER_VERTEX);
 
 			matgeo[materialId]->setStateSet(states->at(materialId).get());
 
@@ -592,7 +618,7 @@ osg::Matrix cmpMatrix2osgMatrix(cmp::Mat4x3* m)
 			m->a[3][0], m->a[3][1], -m->a[3][2], 1.0f);
 }
 
-osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent, StateSetList* states, osg::Node::NodeMask mask = 0)
+osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent, StateSetList* states, osg::Uniform* matricesUniform, osg::Node::NodeMask mask = 0)
 {
 	switch (node->type) {
 		case cmp::Node::Root:
@@ -608,6 +634,10 @@ osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent, StateSetLi
 			cmp::TransformNode* transNode = dynamic_cast<cmp::TransformNode*>(node);
 			if (transNode) {
 				group->setMatrix(cmpMatrix2osgMatrix(&transNode->transformation.relative));
+
+				if (transNode->matrixId >= 0) {
+					matricesUniform->setElement(transNode->matrixId, cmpMatrix2osgMatrix(&transNode->transformation.world));
+				}
 			}
 
 			if (mask == 0) {
@@ -629,7 +659,7 @@ osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent, StateSetLi
 			}
 
 			for (cmp::Node* node : groupNode->children) {
-				osg::ref_ptr<osg::Node> child = drawNode(node, group, states, mask);
+				osg::ref_ptr<osg::Node> child = drawNode(node, group, states, matricesUniform, mask);
 				if (child) {
 					group->addChild(child.get());
 				}
@@ -667,7 +697,7 @@ osg::ref_ptr<osg::Node> drawNode(cmp::Node* node, osg::Group* parent, StateSetLi
 
 				group->addChild(drawBoundBox(&mesh->aabb, CULL_MESH_AABB));
 
-				group->addChild(drawMesh(mesh, states, mask));
+				group->addChild(drawMesh(mesh, states, node->type == cmp::Node::MultiMesh && lod == 0, mask));
 				lod++;
 			}
 
@@ -804,10 +834,12 @@ int main(int argc, char** argv)
 	printNode(root, materials);
 	std::cout << std::endl;
 
-	StateSetList states = generateOSGMaterials(materials, basepath);
+	osg::ref_ptr<osg::Uniform> matricesUniform = new osg::Uniform(osg::Uniform::FLOAT_MAT4, UNIFORM_MATRICES, UNIFORM_MATRICES_LEN);
+
+	StateSetList states = generateOSGMaterials(materials, basepath, matricesUniform);
 
 	osg::ref_ptr<osg::Group> world = new osg::Group();
-	osg::ref_ptr<osg::Node> model = drawNode(root, world, &states);
+	osg::ref_ptr<osg::Node> model = drawNode(root, world, &states, matricesUniform);
 	world->addChild(model.get());
 
 	// Flip and cull back faces.
