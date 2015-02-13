@@ -3,7 +3,7 @@
 //
 // File:     mm3cmp.bt
 // Author:   Daniel Stien <daniel@stien.org>
-// Revision: 2015-02-08
+// Revision: 2015-02-13
 // Purpose:  Midtown Madness 3 car mesh package
 //--------------------------------------
 
@@ -16,11 +16,11 @@ typedef enum <uint32> {
 typedef enum <uint32> {
     Root      = 0,
     Transform = 1,
-    Mesh1     = 2,
+    Mesh      = 2,
     Axis      = 3,
     Light     = 4,
     Smoke     = 5,
-    Mesh2     = 6,
+    MultiMesh = 6,
 } NodeType;
 
 typedef enum <uint32> {
@@ -195,13 +195,13 @@ typedef struct (Version version) {
     else if (meshSectionLeft < 0) {
         MessageBox(idOk, "Warning", "Read past meshSectionLength (%d)", meshSectionLeft);
     }
-} Mesh;
+} MeshData;
 
 typedef struct (Version version) {
     ubyte meshFollows;
     if (meshFollows) {
-        string path;
-        Mesh   mesh(version);
+        string   path;
+        MeshData mesh(version);
     }
 } MeshContainer <read=ReadMeshContainer>;
 
@@ -211,10 +211,10 @@ typedef struct (Version version, NodeType type) {
     uint32 drop;
     uint32 unknown1;
 
-  // Regular cars (Mesh1) have body and shadow mesh,
-  // ambient cars (Mesh2) have body, shadow and lod mesh.
+  // Regular cars (Mesh) have body and shadow mesh,
+  // ambient cars (MultiMesh) have body, shadow and lod mesh.
   local int i, maxMeshes = 2;
-  if (type == Mesh2) {
+  if (type == MultiMesh) {
     maxMeshes = 3;
     BoundBox aabb;
   }
@@ -298,8 +298,8 @@ typedef struct (Version version) {
         case Transform:
             NodeDataTransform data;
             break;
-        case Mesh1:
-        case Mesh2:
+        case Mesh:
+        case MultiMesh:
             NodeDataMesh data(version, type);
             break;
         case Axis:
