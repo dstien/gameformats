@@ -315,7 +315,7 @@ StateSetList generateOSGMaterials(omb::MaterialSet* materials, std::string basep
 
 		material->setName(mat.name);
 
-		material->setDiffuse(osg::Material::FRONT, osg::Vec4(mat.color.r / 255.0, mat.color.g / 255.0f, mat.color.b / 255.0, mat.color.a / 255.0));
+		material->setDiffuse(osg::Material::FRONT, osg::Vec4(mat.color.r / 255.0f, mat.color.g / 255.0f, mat.color.b / 255.0f, mat.color.a / 255.0f));
 		state->setAttributeAndModes(program.get(), osg::StateAttribute::ON);
 
 		if (mat.texture == "No") {
@@ -817,9 +817,9 @@ int main(int argc, char** argv)
 	viewer.getCameraManipulator()->getHomePosition(eye, center, up);
 
 	// Set default rotation.
-	eye.set(-eye.y() * 0.5, -eye.y() * 0.3, eye.y() * 0.5);
-	center.set(0.0, center.y() * 0.5, 0.0);
-	up.set(0.0, 1.0, 0.0);
+	eye.set(-eye.y() * 0.5f, -eye.y() * 0.3f, eye.y() * 0.5f);
+	center.set(0.0f, center.y() * 0.5f, 0.0f);
+	up.set(0.0f, 1.0f, 0.0f);
 	viewer.getCameraManipulator()->setHomePosition(eye, center, up);
 	viewer.home();
 

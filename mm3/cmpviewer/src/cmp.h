@@ -41,26 +41,26 @@ namespace cmp
 		uint8_t  ambientIntensity;
 		uint8_t  specularIntensity;
 
-		float    getX(float scale)      { return ((float)x / 1024.0) * scale; }
-		float    getY(float scale)      { return ((float)y / 1024.0) * scale; }
-		float    getZ(float scale)      { return ((float)z /  512.0) * scale; }
-		float    getNX()                { return (float)nx / 1024.0; }
-		float    getNY()                { return (float)ny / 1024.0; }
-		float    getNZ()                { return (float)nz /  512.0; }
-		float    getU0()                { return (float)u0 / 1024.0; }
-		float    getV0()                { return (float)v0 / 1024.0; }
-		float    getU1()                { return (float)u1 /  512.0; }
-		float    getV1()                { return (float)v1 /  256.0; }
-		float    getDX()                { return (float)dx / 1024.0; }
-		float    getDY()                { return (float)dy / 1024.0; }
-		float    getDZ()                { return (float)dz /  512.0; }
+		float    getX(float scale)      { return ((float)x / 1024.0f) * scale; }
+		float    getY(float scale)      { return ((float)y / 1024.0f) * scale; }
+		float    getZ(float scale)      { return ((float)z /  512.0f) * scale; }
+		float    getNX()                { return (float)nx / 1024.0f; }
+		float    getNY()                { return (float)ny / 1024.0f; }
+		float    getNZ()                { return (float)nz /  512.0f; }
+		float    getU0()                { return (float)u0 / 1024.0f; }
+		float    getV0()                { return (float)v0 / 1024.0f; }
+		float    getU1()                { return (float)u1 /  512.0f; }
+		float    getV1()                { return (float)v1 /  256.0f; }
+		float    getDX()                { return (float)dx / 1024.0f; }
+		float    getDY()                { return (float)dy / 1024.0f; }
+		float    getDZ()                { return (float)dz /  512.0f; }
 		unsigned getMaterialId()        { return materialId   / MaxMaterials;   }
 		unsigned getMatrixId()          { return matrixId     / MaxMatrices;    }
 		unsigned getDemolitionId()      { return demolitionId / MaxDemolitions; }
-		float    getEnvMapIntensity()   { return (float)envMapIntensity   / 256.0; }
-		float    getAmbientIntensity()  { return (float)ambientIntensity  / 256.0; }
-		float    getSpecularIntensity() { return (float)specularIntensity / 256.0; }
-		float    getSpecularPower()     { return (float)specularPower     / 256.0; }
+		float    getEnvMapIntensity()   { return (float)envMapIntensity   / 256.0f; }
+		float    getAmbientIntensity()  { return (float)ambientIntensity  / 256.0f; }
+		float    getSpecularIntensity() { return (float)specularIntensity / 256.0f; }
+		float    getSpecularPower()     { return (float)specularPower     / 256.0f; }
 	};
 
 	struct  Vec3f
