@@ -449,3 +449,53 @@ void MeshNode::read(std::ifstream& ifs)
 		}
 	}
 }
+
+std::ostream& operator<<(std::ostream& lhs, cmp::Node::Type type)
+{
+	switch (type) {
+		case cmp::Node::Root:      lhs << "Root";      break;
+		case cmp::Node::Transform: lhs << "Transform"; break;
+		case cmp::Node::Mesh:      lhs << "Mesh";      break;
+		case cmp::Node::Axis:      lhs << "Axis";      break;
+		case cmp::Node::Light:     lhs << "Light";     break;
+		case cmp::Node::Smoke:     lhs << "Smoke";     break;
+		case cmp::Node::MultiMesh: lhs << "MultiMesh"; break;
+		default: lhs << "Unknown (" << (uint32_t)type << ")";
+	}
+
+	return lhs;
+}
+
+std::ostream& operator<<(std::ostream& lhs, cmp::Primitive::Type type)
+{
+	switch (type) {
+		case cmp::Primitive::TriangleList:  lhs << "TriangleList";  break;
+		case cmp::Primitive::TriangleStrip: lhs << "TriangleStrip"; break;
+		default: lhs << "Unknown (" << (uint16_t)type << ")";
+	}
+
+	return lhs;
+}
+
+std::ostream& operator<<(std::ostream& lhs, cmp::LightNode::LightType type)
+{
+	switch (type) {
+		case cmp::LightNode::HeadLight:    lhs << "HeadLight";    break;
+		case cmp::LightNode::BackLight:    lhs << "BackLight";    break;
+		case cmp::LightNode::BrakeLight:   lhs << "BrakeLight";   break;
+		case cmp::LightNode::ReverseLight: lhs << "ReverseLight"; break;
+		case cmp::LightNode::Siren:        lhs << "Siren";        break;
+		case cmp::LightNode::SignalLeft:   lhs << "SignalLeft";   break;
+		case cmp::LightNode::SignalRight:  lhs << "SignalRight";  break;
+		case cmp::LightNode::HeadLightEnv: lhs << "HeadLightEnv"; break;
+		case cmp::LightNode::SirenEnv:     lhs << "SirenEnv";     break;
+		default: lhs << "Unknown (" << (uint32_t)type << ")";
+	}
+
+	return lhs;
+}
+
+std::ostream& operator<<(std::ostream& lhs, cmp::Color4b color)
+{
+	return lhs << "(R: " << (int)color.r << " G: " << (int)color.g << " B: " << (int)color.b << " A: " << (int)color.a << ")";
+}

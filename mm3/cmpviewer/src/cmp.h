@@ -352,3 +352,8 @@ namespace cmp
 			std::vector<MeshData*> meshes;
 	};
 }
+
+std::ostream& operator<<(std::ostream& lhs, cmp::Node::Type type);
+std::ostream& operator<<(std::ostream& lhs, cmp::Primitive::Type type);
+std::ostream& operator<<(std::ostream& lhs, cmp::LightNode::LightType type);
+std::ostream& operator<<(std::ostream& lhs, cmp::Color4b color);
