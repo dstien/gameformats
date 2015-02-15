@@ -336,7 +336,7 @@ void MeshData::read(std::ifstream& ifs)
 
 	parse(ifs, primitiveAndMaterialCount);
 
-	for (int i = 0; i < primitiveAndMaterialCount / 2; i++) {
+	for (unsigned i = 0; i < primitiveAndMaterialCount / 2; i++) {
 		Primitive::Type type;
 		parse(ifs, type);
 
@@ -371,7 +371,7 @@ void MeshData::read(std::ifstream& ifs)
 
 	parse(ifs, materialCount);
 
-	for (int i = 0; i < materialCount; i++) {
+	for (unsigned i = 0; i < materialCount; i++) {
 		Material* material = new Material();
 		parse(ifs, material->minIndex);
 		parse(ifs, material->vertexCount);
