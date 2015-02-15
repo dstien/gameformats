@@ -5,6 +5,10 @@
 
 using namespace cmp;
 
+const int cmp::MaxMaterials   = 11;
+const int cmp::MaxMatrices    = 37;
+const int cmp::MaxDemolitions = 23;
+
 Element::Element(Version version)
 {
 	switch (version) {

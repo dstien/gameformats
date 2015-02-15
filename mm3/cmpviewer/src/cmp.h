@@ -7,6 +7,10 @@
 
 namespace cmp
 {
+	extern const int MaxMaterials;
+	extern const int MaxMatrices;
+	extern const int MaxDemolitions;
+
 	enum Version : uint32_t
 	{
 		Version109 = 109,
@@ -50,9 +54,9 @@ namespace cmp
 		float    scaleDX()                 { return (float)dx / 1024.0; }
 		float    scaleDY()                 { return (float)dy / 1024.0; }
 		float    scaleDZ()                 { return (float)dz /  512.0; }
-		unsigned actualMaterialId()        { return materialId    / 11; }
-		unsigned actualMatrixId()          { return matrixId      / 37; }
-		unsigned actualDemolitionId()      { return demolitionId  / 23; }
+		unsigned actualMaterialId()        { return materialId   / MaxMaterials;   }
+		unsigned actualMatrixId()          { return matrixId     / MaxMatrices;    }
+		unsigned actualDemolitionId()      { return demolitionId / MaxDemolitions; }
 		float    actualEnvMapIntensity()   { return (float)envMapIntensity   / 256.0; }
 		float    actualAmbientIntensity()  { return (float)ambientIntensity  / 256.0; }
 		float    actualSpecularIntensity() { return (float)specularIntensity / 256.0; }

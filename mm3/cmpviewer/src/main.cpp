@@ -34,7 +34,6 @@
 #define ATTRIB_NO_IDS          11
 #define ATTRIB_NM_IDS          "ids"
 #define UNIFORM_MATRICES       "matrices"
-#define UNIFORM_MATRICES_LEN   37
 #define UNIFORM_TEX_MODE       "texMode"
 #define UNIFORM_DEMOLITION_MAP "demolitionMap"
 
@@ -834,7 +833,7 @@ int main(int argc, char** argv)
 	printNode(root, materials);
 	std::cout << std::endl;
 
-	osg::ref_ptr<osg::Uniform> matricesUniform = new osg::Uniform(osg::Uniform::FLOAT_MAT4, UNIFORM_MATRICES, UNIFORM_MATRICES_LEN);
+	osg::ref_ptr<osg::Uniform> matricesUniform = new osg::Uniform(osg::Uniform::FLOAT_MAT4, UNIFORM_MATRICES, cmp::MaxMatrices);
 
 	StateSetList states = generateOSGMaterials(materials, basepath, matricesUniform);
 
