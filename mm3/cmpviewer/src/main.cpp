@@ -510,21 +510,21 @@ osg::ref_ptr<osg::Geode> drawMesh(cmp::MeshData* mesh, StateSetList* states, boo
 
 	for (unsigned i = 0; i < mesh->vertexCount2; i++) {
 		cmp::Vertex* v = &mesh->vertices[i];
-		vertices->at(i) = osg::Vec3(v->scaleX(maxX) + (v->scaleDX() * damage), v->scaleY(maxY) + (v->scaleDY() * damage), -v->scaleZ(maxZ) + (-v->scaleDZ() * damage));
-		normals->at(i) = osg::Vec3(v->scaleNX(), v->scaleNY(), -v->scaleNZ());
-		uvs0->at(i) = osg::Vec2(v->scaleU0(), v->scaleV0());
-		uvs1->at(i) = osg::Vec2(v->scaleU1(), v->scaleV1());
+		vertices->at(i) = osg::Vec3(v->getX(maxX) + (v->getDX() * damage), v->getY(maxY) + (v->getDY() * damage), -v->getZ(maxZ) + (-v->getDZ() * damage));
+		normals->at(i) = osg::Vec3(v->getNX(), v->getNY(), -v->getNZ());
+		uvs0->at(i) = osg::Vec2(v->getU0(), v->getV0());
+		uvs1->at(i) = osg::Vec2(v->getU1(), v->getV1());
 
-		if (v->actualMaterialId() < states->size()) {
-			osg::ref_ptr<osg::Material> material = (osg::Material*)states->at(v->actualMaterialId())->getAttribute(osg::StateAttribute::MATERIAL);
+		if (v->getMaterialId() < states->size()) {
+			osg::ref_ptr<osg::Material> material = (osg::Material*)states->at(v->getMaterialId())->getAttribute(osg::StateAttribute::MATERIAL);
 
 			if (material) {
 				colors->at(i) = material->getDiffuse(osg::Material::FRONT);
 			}
 		}
 
-		intensities->at(i) = osg::Vec4(v->actualAmbientIntensity(), v->actualSpecularIntensity(), v->actualSpecularPower(), v->actualEnvMapIntensity());
-		ids->at(i) = osg::Vec4b(v->actualMaterialId(), v->actualMatrixId(), v->actualDemolitionId(), isMultiMesh);
+		intensities->at(i) = osg::Vec4(v->getAmbientIntensity(), v->getSpecularIntensity(), v->getSpecularPower(), v->getEnvMapIntensity());
+		ids->at(i) = osg::Vec4b(v->getMaterialId(), v->getMatrixId(), v->getDemolitionId(), isMultiMesh);
 	}
 
 	osg::ref_ptr<osg::VertexBufferObject> vbo = new osg::VertexBufferObject();
