@@ -1,344 +1,466 @@
 //--------------------------------------
-//--- 010 Editor v5.0 Binary Template
+//--- 010 Editor v5.0.2 Binary Template
 //
 // File:     mm3xbc.bt
 // Author:   Daniel Stien <daniel@stien.org>
-// Revision: 2015-02-05
+// Revision: 2015-03-20
 // Purpose:  Midtown Madness 3 city
 //--------------------------------------
 
+typedef enum <uint16> {
+    TriangleList = 0x6001,
+    QuadList     = 0xC001,
+} PrimitiveType;
+
+typedef enum <uint32> {
+    DXT1          = 0, // 4 bpp
+    DXT1GlassMask = 1, // 4 bpp * 2, interleaved in 8-byte blocks
+    DXT1AlphaMask = 2, // 4 bpp * 2, interleaved in 8-byte blocks
+    L8            = 3, // 8 bpp
+} TextureFormat;
+
 typedef struct {
-    float x[4];
-    float y[4];
-    float z[4];
-    float w[3];
+    float x, y;
+} Vec2f <read=ReadVec2f>;
+
+typedef struct {
+    float x, y, z;
+} Vec3f <read=ReadVec3f>;
+
+typedef struct {
+    float x, y, z, w;
+} Vec4f <read=ReadVec4f>;
+
+typedef struct {
+    Vec2f min, max;
+} BoundBox2 <read=ReadBoundBox2>;
+
+typedef struct {
+    Vec3f min, max;
+} BoundBox3 <read=ReadBoundBox3>;
+
+typedef struct {
+    Vec3f x, y, z;
+    Vec3f p1, p2;
 } Matrix;
 
 typedef struct {
-    float x;
-    float y;
-    float z;
-} Vertex3f;
-
-typedef struct {
-    float x;
-    float y;
-    float z;
-    float w;
-} Vertex4f;
-
-typedef struct {
+    // Position
     int16 x;
     int16 y;
     int16 z;
-    ubyte unk[14];
-} Vertex1;
+    int16 unknown;
+    // Normal, D3DVSDT_NORMPACKED3
+    int   nx : 11;
+    int   ny : 11;
+    int   nz : 10;
+    // Us, D3DVSDT_NORMPACKED3
+    int   u0 : 11;
+    int   u1 : 11;
+    int   u2 : 10;
+    // Vs, D3DVSDT_NORMPACKED3
+    int   v0 : 11;
+    int   v1 : 11;
+    int   v2 : 10;
+} RoadVertex <read=ReadRoadVertex>;
 
 typedef struct {
-    int16 x;
-    int16 y;
-    int16 z;
-    ubyte unk[10];
-} Vertex2;
+    // Position, D3DVSDT_NORMPACKED3
+    int   x : 11;
+    int   y : 11;
+    int   z : 10;
+    int32 unknown;
+    // Us, D3DVSDT_NORMPACKED3
+    int   u0 : 11;
+    int   u1 : 11;
+    int   u2 : 10;
+    // Vs, D3DVSDT_NORMPACKED3
+    int   v0 : 11;
+    int   v1 : 11;
+    int   v2 : 10;
+} FacadeVertex <read=ReadFacadeVertex>;
 
 typedef struct {
-    /*int x : 11;
-    int y : 11;
-    int z : 10;*/
-    int16 x;
-    int16 y;
-    //int w : 2;
-    float unknown;
-} Vertex3;
+    uint32       vertexCount;
+    uint32       indexCount;
+    RoadVertex   vertices[vertexCount];
+    uint16       indices[indexCount];
+} RoadMesh <optimize=false>;
 
 typedef struct {
-    uint32 numVertices;
-    uint32 numIndices;
-    Vertex1 vertices[numVertices];
-    uint16 indices[numIndices];
-} Mesh <optimize=false>;
+    uint32       vertexCount;
+    uint32       indexCount;
+    FacadeVertex vertices[vertexCount];
+    uint16       indices[indexCount];
+} FacadeMesh <optimize=false>;
 
 typedef struct {
-    uint32  numVertices;
-    uint32  numIndices;
-    Vertex2 vertices[numVertices];
-    uint16  indices[numIndices];
-} Mesh2 <optimize=false>;
-
-typedef struct {
-    float x;
-    float y;
-    float z;
-    float u;
-    float v;
-    uint16 u1;
-    uint16 u2;
-} Mesh3Vertex1;
-
-typedef struct {
-    int x : 10;
-    int y : 11;
-    int z : 11;
-    int nx : 10;
-    int ny : 11;
-    int nz : 11;
-    int u : 10;
-    int v : 11;
-    int w : 11;
-    uint32 unk;
-} Mesh3Vertex2;
-
-typedef struct {
-    uint32 numVert1;
-    Mesh3Vertex1 vert1[numVert1];
-    uint32 numVert2;
-    Mesh3Vertex2 vert2[numVert2]; // Must be another data type
-    uint32 numIndices;
-    uint16 indices[numIndices];
-} Mesh3 <optimize=false>;
-
-typedef struct {
-    uint32 unk1;
+    uint32 unknown0;
     uint32 meshId;
-    uint16 sectDef;
-    uint16 firstVertexId; // ?
-    uint16 indexCount;
-    uint16 indexOffset;
-    uint16 numQuads;
-    uint16 unk2;
-    uint16 unk3[10]; // uint16 offsets + lengths in indices list
-    uint32 objectsOffset;
-    uint32 numObjects;
-    uint32 indexInObjectsUnk12;
-    uint32 entriesInObjectsUnk12;
-    float  unkBbox[12];
-    uint32 unk4;
-    if (unk4 > 0x0100) { // Facade mesh
-        uint32 unk5[5]; // separate collision mesh?
+    PrimitiveType type;
+
+    // DrawIndexedPrimitives() parameters
+    uint16 minIndex;
+    uint16 vertexCount;
+    uint16 offset;
+    uint16 count;
+
+    uint16    unknown1;
+    uint16    unknown2[10]; // uint16 offset + lengths in indices list
+    uint32    objectOffset;
+    uint32    objectCount;
+    uint32    indexInObjectsUnknown0;
+    uint32    entriesInObjectsUnknown0;
+    BoundBox3 aabb1;
+    BoundBox3 aabb2;
+    uint32    unknown3;
+    if (unknown3 > 0x0100) { // Facade mesh
+        uint32 unknown4[5]; // separate collision mesh?
     }
 } MeshSection <optimize=false, read=ReadMeshSection>;
 
-string ReadMeshSection(MeshSection &d)
-{
-  string s;
-  SPrintf(s, "%d: %d", d.meshId, d.unk3[2]);
-  //SPrintf(s, "%d   %d   %d   %d", d.unk1, d.sectDef, d.unk2[0], d.unk2[5]);
-  return s;
-}
-
-// Objcet mesh section...
 typedef struct {
-    uint32 unk1;
-    uint16 unk2;
+    Vec4f rotation;
+	Vec3f position;
+} RoadObjectPosition <read=ReadRoadObjectPosition>;
+
+typedef struct {
+    float unknown;
+	Vec3f position;
+} FacadeObjectPosition <read=ReadFacadeObjectPosition>;
+
+typedef struct {
+    int16 unknown0, unknown1;
+    float unknown2;
+} ObjectUnknown0;
+
+typedef struct {
+    Vec3f position;
+    Vec2f uv;
+    uint16 unknown0;
+    uint16 unknown1;
+} TreeVertex1 <read=ReadTreeVertex1>;
+
+typedef struct {
+    uint32 unknown[4];
+} TreeVertex2;
+
+typedef struct {
+    uint32      vertex1Count;
+    TreeVertex1 vertices1[vertex1Count];
+    uint32      vertex2Count;
+    TreeVertex2 vertices2[vertex2Count];
+    uint32      indexCount;
+    uint16      indices[indexCount];
+} TreeMesh <optimize=false>;
+
+// Object mesh section...
+typedef struct {
+    uint32 unknown0;
+    uint16 unknown1;
     uint16 id;
-    float  unk3[48];
-    uint16 unk3;
+    BoundBox3 aabb;
+    float  unknown2[42];
+    uint16 unknown3;
     uint16 bound; 
-    uint16 unk4;
-    uint16 unk5;
+    uint16 unknown4;
+    uint16 unknown5;
     uint16 verticesIndex;
     uint16 indicesIndex;
-    uint16 unk6;
-    uint32 unk7[5];
-    uint16 unk8[5];
-} UnkSect3;
+    uint16 unknown6;
+    uint32 unknown7[5];
+    uint16 unknown8[5];
+} ObjectUnknown1;
 
 typedef struct {
-    uint32 dataLen;
+    uint32 dataLength;
     string name;
     uint32 type;
-    uint32 tileUnk10;
+    uint32 unknown; // Index?
     uint32 width;
     uint32 height;
     uint32 stride;
     uint32 mips;
-    uint32 tileUnk13;
-/*local int i = 0, w = width, h = height, len = 0;
-
-    for (i = 0; i < tileUnk12; i++) {
-        switch (type) {
-            case 16: // Unk
-                len += w * h;
-                break;
-            case 19: // DXT1 (4 bit per pixel)
-                len += w * h / 2;
-                break;
-        }
-        w /= 2;
-        h /= 2;
-    }
-    ubyte data[len];*/
-} TileHeader;
+    TextureFormat format;
+} TextureHeader <read=ReadTextureHeader>;
 
 typedef struct {
-    TileHeader header;
-    ubyte data[header.dataLen];
-} Tile <optimize=false, read=ReadTile>;
-
-string ReadTile(Tile &d)
-{
-  string s;
-  SPrintf(s, "%s (%d)", d.header.name, d.header.type /*d.header.dataLen*/);
-  return s;
-}
+    TextureHeader header;
+    ubyte data[header.dataLength];
+} Texture <optimize=false, read=ReadTexture>;
 
 typedef struct {
-    TileHeader header; // Original header?
-    Tile tile; // Compressed?
-} ProcessedTile <optimize=false, read=ReadProcessedTile>;
-
-string ReadProcessedTile(ProcessedTile &d)
-{
-  string s;
-  SPrintf(s, "%s (%d)", d.header.name, d.tile.header.type /*d.header.dataLen*/);
-  return s;
-}
+    TextureHeader header; // Bigger version in .pak file if type in range 10 - 13.
+    Texture       texture;
+} ProcessedTexture <optimize=false, read=ReadProcessedTexture>;
 
 typedef struct {
     string name;
-    uint32 num;
-    uint16 data[num];
+    uint32 unknownCount;
+    uint16 unknown[unknownCount];
 } TreeBase <optimize=false, read=ReadTreeBase>;
-
-string ReadTreeBase(TreeBase &d)
-{
-  string s;
-  SPrintf(s, "%s (%d)", d.name, d.num);
-  return s;
-}
 
 // Must encapsulate string in struct in order to read string arrays.
 typedef struct {
     string s;
 } String <optimize=false, read=ReadStringVal>;
 
+// Header
+struct {
+    string    version;
+    uint32    colCount; // Grid of city parts
+    uint32    rowCount;
+    string    name;
+    BoundBox3 aabb3;
+    BoundBox2 aabb2;
+    float     maxY;
+    uint32    unknown0[11];
+    float     unknown1[7];
+    int32     cellCount1; // City cells in .pak file (colCount * rowCount)
+    int32     unknownPerCell[cellCount1]; // no impact?
+    int32     cellCount2;
+    int32     subfilesPerCell[cellCount2]; // Number of additional subfiles after city cell in .pak file
+    // These bytes matches the content of the last subfile in the .pak file.
+    // No impact as long as they're matching. EOF indicator or 128-bit hash?
+    ubyte     eof[16];
+    int32     matrixCount;
+    Matrix    matrices[matrixCount];
+} header <open=true>;
+
+// Roads
+struct {
+    uint32 meshCount;
+    struct {
+        RoadMesh meshes[meshCount];
+    } meshes;
+
+    uint32 textureLength;
+    struct {
+        Texture textures[5];
+    } textures;
+
+    uint32 meshSectionCount;
+    struct {
+        MeshSection meshSections[meshSectionCount];
+    } meshSections;
+
+    uint32 objectIndexCount;
+    uint16 objectIndices[objectIndexCount]; // Index in name list
+
+    uint32 objectPositionCount;
+    RoadObjectPosition objectPositions[objectPositionCount];
+} roads <open=true>;
+
+// Facades
+struct {
+    uint32 meshCount;
+    struct {
+        FacadeMesh meshes[meshCount];
+    } meshes;
+
+    uint32 textureLength;
+    struct {
+        Texture textures[6];
+    } textures;
+
+    uint32 meshSectionCount;
+    struct {
+        MeshSection meshSections[meshSectionCount];
+    } meshSections;
+
+    uint32 objectIndexCount;
+    uint16 objectIndices[objectIndexCount]; // Index in name list
+
+    uint32 objectPositionCount;
+    FacadeObjectPosition objectPositions[objectPositionCount];
+} facades <open=true>;
+
+// Objects
+struct {
+    uint32 unknown0Count;
+    ObjectUnknown0 unknown0[unknown0Count];
+
+    uint32 unknown1Count;
+    ObjectUnknown1 unknown1[unknown1Count];
+
+    uint32 nameCount;
+    struct {
+        String names[nameCount];
+    } names;
+
+    uint32 unknown2Count;
+    Vec3f  unknown2[unknown2Count]; // Sprite vertices?
+
+    uint32 unknown3Count;
+    Vec3f  unknown3[unknown3Count * 2]; // Object vertices?
+
+    uint32 unknown4Count;
+    Vec3f  unknown4[unknown4Count];
+
+    uint32 unknown5Count;
+    Vec4f  unknown5[unknown5Count];
+
+    uint32 unknown6Count;
+    float  unknown6[unknown6Count * 7];
+
+    uint32 unknown7Count;
+    float  unknown7[unknown7Count * 6];
+} objects <open=true>;
+
+// Tree bases
+struct {
+    uint32 unknown0Count;
+    Vec4f  unknown0[unknown0Count];
+
+    uint32 baseCount;
+    struct {
+        TreeBase bases[baseCount];
+    } bases;
+
+    uint32   meshCount;
+    struct {
+        TreeMesh meshes[meshCount]; // Tree leafs
+    } meshes;
+} trees <open=true>;
+
+struct {
+    Texture seasons[12];
+} seasons;
+
+struct {
+    uint32 unknown0; // Size?
+    uint32 unknown1; // Total size of whatever unknown3 points to?
+    uint32 unknown2Count;
+    uint16 unknown2[unknown2Count * 4];
+
+    uint32 unknown3Count;
+    uint32 unknown3[unknown3Count]; // Offsets? Affects .pak textures?
+    uint32 unknown4Count;
+    uint32 unknown4[unknown4Count]; // sum(unknown4) == unknown3Count...
+} unknown <open=true>;
+
+struct {
+    uint32           textureCount;
+    struct {
+        ProcessedTexture processed[textureCount];
+    } processed;
+    Texture          noise;
+} textures <open=true>;
+
+// Vec2f summary
+string ReadVec2f(Vec2f &v)
+{
+    string s;
+    SPrintf(s, "%f, %f", v.x, v.y);
+    return s;
+}
+
+// Vec3f summary
+string ReadVec3f(Vec3f &v)
+{
+    string s;
+    SPrintf(s, "%f, %f, %f", v.x, v.y, v.z);
+    return s;
+}
+
+// Vec4f summary
+string ReadVec4f(Vec4f &v)
+{
+    string s;
+    SPrintf(s, "%f, %f, %f, %f", v.x, v.y, v.z, v.w);
+    return s;
+}
+
+// BoundBox3 summary
+string ReadBoundBox3(BoundBox3 &b)
+{
+    string s;
+    SPrintf(s, "(%f, %f, %f), (%f, %f, %f)", b.min.x, b.min.y, b.min.z, b.max.x, b.max.y, b.max.z);
+    return s;
+}
+
+// BoundBox2 summary
+string ReadBoundBox2(BoundBox2 &b)
+{
+    string s;
+    SPrintf(s, "(%f, %f), (%f, %f)", b.min.x, b.min.y, b.max.x, b.max.y);
+    return s;
+}
+
+// RoadVertex summary
+string ReadRoadVertex(RoadVertex &v)
+{
+    string s;
+    SPrintf(s, "%d, %d, %d", v.x, v.y, v.z);
+    return s;
+}
+
+// FacadeVertex summary
+string ReadFacadeVertex(FacadeVertex &v)
+{
+    string s;
+    SPrintf(s, "%d, %d, %d", v.x, v.y, v.z);
+    return s;
+}
+
+// MeshSection summary
+string ReadMeshSection(MeshSection &d)
+{
+  string s;
+  SPrintf(s, "%d: %s", d.meshId, EnumToString(d.type));
+  return s;
+}
+
+// RoadObjectPosition summary
+string ReadRoadObjectPosition(RoadObjectPosition &p)
+{
+    return ReadVec3f(p.position);
+}
+
+// FacadeObjectPosition summary
+string ReadFacadeObjectPosition(FacadeObjectPosition &p)
+{
+    return ReadVec3f(p.position);
+}
+
+// TreeVertex1 summary
+string ReadTreeVertex1(TreeVertex1 &v)
+{
+    return ReadVec3f(v.position);
+}
+
+// TextureHeader summary
+string ReadTextureHeader(TextureHeader &h)
+{
+    string s;
+    SPrintf(s, "%s (%d, %d, %d)", h.name, h.format, h.type, h.unknown);
+    return s;
+}
+
+// Texture summary
+string ReadTexture(Texture &t)
+{
+    return ReadTextureHeader(t.header);
+}
+
+// ProcessedTexture summary
+string ReadProcessedTexture(ProcessedTexture &t)
+{
+    return ReadTextureHeader(t.header);
+}
+
+// TreeBase summary
+string ReadTreeBase(TreeBase &d)
+{
+  string s;
+  SPrintf(s, "%s (%d)", d.name, d.unknownCount);
+  return s;
+}
+
+// Encapsulated string summary
 string ReadStringVal(String &d)
 {
   string s;
   SPrintf(s, "%s", d.s);
   return s;
 }
-
-// Header
-struct {
-    string version;
-    uint32 numCellCols; // Grid of city parts
-    uint32 numCellRows;
-    string name;
-    float  bbox[11];
-    uint32 unk3[11];
-    float  unk4[7];
-    int32  numCells1; // City cells in .pak file (numCellCols * numCellRows)
-    int32  unk5[numCells1]; // no impact?
-    int32  numCells2;
-    int32  numBuildings[numCells2]; // Number of additional subfiles after city cell in .pak file
-    ubyte  eof[16]; // these bytes matches the content of the last subfile in the .pak file. no impact as long as they're matching. eof indicator?
-} header;
-
-// Roads
-struct {
-    int32  numMatrices;
-    Matrix matrices[numMatrices];
-
-    uint32 numMeshes;
-    Mesh   meshes[numMeshes];
-
-    uint32 roadTilesDataLenSum;
-    struct {
-        Tile roadTiles[5];
-    } roadTiles;
-
-    uint32 numMeshSections;
-    MeshSection meshSections[numMeshSections];
-
-    uint32 numObjectIndices;
-    uint16 objectIndices[numObjectIndices]; // Index in name list
-
-    uint32 numObjectPositions;
-    typedef struct {
-      float f1, f2, f3, f4, f5, f6, f7;
-    } ObjectPosition;
-    ObjectPosition objectPositions[numObjectPositions];
-} roads;
-
-// Houses
-struct {
-    uint32 numMesh2;
-    Mesh2  meshes2[numMesh2];
-
-    uint32 houseTileDataLenSum;
-    Tile houseTiles[6];
-
-    uint32 numMeshSections;
-    MeshSection mesSections[numMeshSections];
-
-    uint32 numObjectIndices;
-    uint16 objectIndices[numObjectIndices]; // Index in name list
-
-    uint32 numObjectPositions;
-    Vertex4f objectPositions[numObjectPositions];
-} facades;
-
-// Objects
-struct {
-    uint32 numUnk12;
-    Vertex3 unk12[numUnk12]; // Not a vertex
-
-    uint32 numUnkSect3;
-    UnkSect3 unkSect3[numUnkSect3];
-
-    uint32 numObjects;
-    String objects[numObjects];
-
-    uint32 numUnk14;
-    Vertex3f unk14[numUnk14]; // Sprite vertices?
-
-    uint32 numUnk15;
-    Vertex3f unk15[numUnk15 * 2]; // Object vertices?
-
-    uint32 numUnk16;
-    Vertex3f unk16[numUnk16];
-
-    uint32 numUnk17;
-    Vertex4f unk17[numUnk17];
-
-    uint32 numUnk18;
-    float unk18[numUnk18 * 7];
-
-    uint32 numUnk19;
-    float  unk19[numUnk19 * 6];
-} objects;
-
-// Tree bases
-struct {
-    uint32 numUnk20;
-    float  unk20[numUnk20 * 4];
-
-    uint32 numTreeBases;
-    TreeBase treeBases[numTreeBases];
-
-    uint32 numMesh3;
-    Mesh3 mesh3[numMesh3]; // Tree leafs
-} trees;
-
-struct {
-Tile seasons[12];
-} seasons;
-
-struct {
-    uint32 unk21; // Size?
-    uint32 unk22; // Total size of whatever unk24 points to?
-    uint32 numUnk23;
-    uint16 unk23[numUnk23 * 4];
-
-    uint32 numUnk24;
-    uint32 unk24[numUnk24]; // Offsets? Affects .pak textures?
-    uint32 numUnk25;
-    uint32 unk25[numUnk25]; // sum(unk25) == numUnk24...
-} unknown;
-
-struct {
-    uint32 numProcessedTiles;
-    ProcessedTile processedTiles[numProcessedTiles];
-    Tile nullTile;
-} tiles;
