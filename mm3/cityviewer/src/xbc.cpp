@@ -80,6 +80,8 @@ void Texture::read(std::ifstream& ifs)
 			((uint64_t*)maskData)[i] = ((uint64_t*)tmp)[i * 2];
 			((uint64_t*)mainData)[i] = ((uint64_t*)tmp)[i * 2 + 1];
 		}
+
+		delete[] tmp;
 	}
 	else {
 		mainData = tmp;
@@ -211,6 +213,8 @@ Xbc::Xbc()
 	unknown.unknown3 = 0;
 	unknown.unknown4 = 0;
 	textures.textures = 0;
+
+	pakTextureCount = 0;
 }
 
 Xbc::~Xbc()
@@ -492,6 +496,10 @@ void Xbc::read(std::ifstream& ifs)
 	textures.textures = new ProcessedTexture[textures.textureCount];
 	for (unsigned i = 0; i < textures.textureCount; i++) {
 		textures.textures[i].read(ifs);
+
+		if (textures.textures[i].hasDataInPak()) {
+			pakTextureCount++;
+		}
 	}
 
 	textures.noise.read(ifs);

@@ -1,15 +1,15 @@
 //--------------------------------------
-//--- 010 Editor v5.0 Binary Template
+//--- 010 Editor v5.0.2 Binary Template
 //
 // File:     mm3pak-cell.bt
 // Author:   Daniel Stien <daniel@stien.org>
-// Revision: 2014-12-06
+// Revision: 2015-03-24
 // Purpose:  Midtown Madness 3 city cell from .pak archive
 //--------------------------------------
 
 struct {
     uint32 id;
-    uint32 unk2; // Additional files except buildings?
+    uint32 shadowMapCount;
     uint32 numFacadeSections;
     uint32 offFacadeSections;
     uint32 unkNoise1Offset;
@@ -48,10 +48,10 @@ struct {
     float unk4b[4];
 
     struct {
-        uint32 unk; // 0x80
+        uint32 unknown;
         uint32 offset;
-        uint32 width; // 101
-    } Map;
+        uint32 width;
+    } heightMap;
 
     float unk5[9]; // mtx?
     uint32 unkSectXNum1;
@@ -154,8 +154,8 @@ ubyte pad11[Header.unkSect12Offset - FTell()];
 
 uint16 unkSect12[Header.unkSect12Num];
 
-ubyte pad12[Header.Map.offset - FTell()];
+ubyte pad12[Header.heightMap.offset - FTell()];
 
-ubyte mapImageData[Header.Map.width * Header.Map.width];
+ubyte heightMapData[Header.heightMap.width * Header.heightMap.width];
 
-ubyte padMap[FileSize() - FTell()];
+ubyte heightMapPadding[FileSize() - FTell()];

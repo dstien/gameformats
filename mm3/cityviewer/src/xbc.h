@@ -345,5 +345,7 @@ namespace xbc
 				ProcessedTexture*     textures;
 				Texture               noise;
 			} textures;
+
+			unsigned                  pakTextureCount;
 	};
 }
