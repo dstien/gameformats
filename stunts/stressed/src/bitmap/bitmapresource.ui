@@ -1,0 +1,440 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>BitmapResource</class>
+ <widget class="QWidget" name="BitmapResource">
+  <layout class="QVBoxLayout">
+   <property name="margin">
+    <number>0</number>
+   </property>
+   <item>
+    <layout class="QGridLayout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="labelWidth">
+       <property name="text">
+        <string>Width</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLineEdit" name="editWidth">
+       <property name="maximumSize">
+        <size>
+         <width>50</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Monospace, Courier</family>
+        </font>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="labelHeight">
+       <property name="text">
+        <string>Height</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="editHeight">
+       <property name="maximumSize">
+        <size>
+         <width>50</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Monospace, Courier</family>
+        </font>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="5">
+      <spacer>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="1" column="3">
+      <widget class="QLabel" name="labelY">
+       <property name="text">
+        <string>Y</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="3">
+      <widget class="QLabel" name="labelX">
+       <property name="text">
+        <string>X</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="4">
+      <widget class="QLineEdit" name="editX">
+       <property name="maximumSize">
+        <size>
+         <width>50</width>
+         <height>16777215</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="4">
+      <widget class="QLineEdit" name="editY">
+       <property name="maximumSize">
+        <size>
+         <width>50</width>
+         <height>16777215</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2">
+      <spacer>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Fixed</enum>
+       </property>
+       <property name="sizeHint">
+        <size>
+         <width>20</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout">
+     <item>
+      <widget class="QLineEdit" name="editUnk1">
+       <property name="maximumSize">
+        <size>
+         <width>50</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Monospace, Courier</family>
+        </font>
+       </property>
+       <property name="inputMask">
+        <string>HHHH;</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="editUnk2">
+       <property name="maximumSize">
+        <size>
+         <width>50</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Monospace, Courier</family>
+        </font>
+       </property>
+       <property name="inputMask">
+        <string>HHHH;</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="editUnk3">
+       <property name="maximumSize">
+        <size>
+         <width>25</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Monospace, Courier</family>
+        </font>
+       </property>
+       <property name="inputMask">
+        <string>HH;</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="editUnk4">
+       <property name="maximumSize">
+        <size>
+         <width>25</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Monospace, Courier</family>
+        </font>
+       </property>
+       <property name="inputMask">
+        <string>HH;</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="editUnk5">
+       <property name="maximumSize">
+        <size>
+         <width>25</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Monospace, Courier</family>
+        </font>
+       </property>
+       <property name="inputMask">
+        <string>HH;</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="editUnk6">
+       <property name="maximumSize">
+        <size>
+         <width>25</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Monospace, Courier</family>
+        </font>
+       </property>
+       <property name="inputMask">
+        <string>HH;</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QScrollArea" name="scrollArea">
+     <property name="backgroundRole">
+      <enum>QPalette::Dark</enum>
+     </property>
+     <widget class="QLabel" name="imageLabel" />
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout">
+     <item>
+      <widget class="QCheckBox" name="checkAlpha">
+       <property name="text">
+        <string>&amp;Alpha</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="radioScale1">
+       <property name="text">
+        <string>&amp;1X</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="radioScale2">
+       <property name="text">
+        <string>&amp;2X</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="radioScale4">
+       <property name="text">
+        <string>&amp;4X</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="buttonExport">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>&amp;Export...</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="buttonImport">
+       <property name="text">
+        <string>&amp;Import...</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>editX</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>BitmapResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>editY</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>BitmapResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>editUnk1</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>BitmapResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>editUnk2</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>BitmapResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>editUnk3</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>BitmapResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>editUnk4</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>BitmapResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>editUnk5</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>BitmapResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>editUnk6</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>BitmapResource</receiver>
+   <slot>isModified()</slot>
+  </connection>
+  <connection>
+   <sender>checkAlpha</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>BitmapResource</receiver>
+   <slot>toggleAlpha(bool)</slot>
+  </connection>
+  <connection>
+   <sender>radioScale1</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>BitmapResource</receiver>
+   <slot>scale()</slot>
+  </connection>
+  <connection>
+   <sender>radioScale2</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>BitmapResource</receiver>
+   <slot>scale()</slot>
+  </connection>
+  <connection>
+   <sender>radioScale4</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>BitmapResource</receiver>
+   <slot>scale()</slot>
+  </connection>
+  <connection>
+   <sender>buttonExport</sender>
+   <signal>clicked()</signal>
+   <receiver>BitmapResource</receiver>
+   <slot>exportFile()</slot>
+  </connection>
+  <connection>
+   <sender>buttonImport</sender>
+   <signal>clicked()</signal>
+   <receiver>BitmapResource</receiver>
+   <slot>importFile()</slot>
+  </connection>
+ </connections>
+</ui>

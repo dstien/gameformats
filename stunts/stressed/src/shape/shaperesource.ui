@@ -1,0 +1,495 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ShapeResource</class>
+ <widget class="QWidget" name="shapeResource">
+  <layout class="QVBoxLayout">
+   <property name="margin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QSplitter">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <widget class="ShapeView" native="1" name="shapeView">
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectRows</enum>
+      </property>
+     </widget>
+     <widget class="QWidget" name="">
+      <layout class="QVBoxLayout">
+       <item>
+        <layout class="QHBoxLayout">
+         <item>
+          <widget class="QLabel" name="paintJobLabel">
+           <property name="text">
+            <string>Paint-job</string>
+           </property>
+           <property name="buddy">
+            <cstring>paintJobSpinBox</cstring>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="paintJobSpinBox">
+           <property name="minimum">
+            <number>1</number>
+           </property>
+           <property name="maximum">
+            <number>1</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="wireframeCheckBox">
+           <property name="text">
+            <string>&amp;Wireframe</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="showCullDataCheckBox">
+           <property name="text">
+            <string>Show &amp;cull data</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="deselectButton">
+           <property name="text">
+            <string>&amp;Deselect all</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer>
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QPushButton" name="exportButton">
+           <property name="text">
+            <string>&amp;Export...</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="importButton">
+           <property name="text">
+            <string>&amp;Import...</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QSplitter">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <widget class="QTableView" name="primitivesView">
+          <property name="contextMenuPolicy">
+           <enum>Qt::CustomContextMenu</enum>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <property name="cornerButtonEnabled">
+           <bool>false</bool>
+          </property>
+         </widget>
+         <widget class="QWidget">
+          <layout class="QVBoxLayout">
+           <item>
+            <widget class="QTableView" name="verticesView">
+             <property name="contextMenuPolicy">
+              <enum>Qt::CustomContextMenu</enum>
+             </property>
+             <property name="selectionBehavior">
+              <enum>QAbstractItemView::SelectRows</enum>
+             </property>
+             <property name="cornerButtonEnabled">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="weldCheckBox">
+             <property name="text">
+              <string>&amp;Weld coexisting</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget">
+          <layout class="QVBoxLayout">
+           <item>
+            <widget class="QTableView" name="materialsView">
+             <property name="contextMenuPolicy">
+              <enum>Qt::CustomContextMenu</enum>
+             </property>
+             <property name="selectionBehavior">
+              <enum>QAbstractItemView::SelectRows</enum>
+             </property>
+             <property name="cornerButtonEnabled">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout">
+             <item>
+              <widget class="QLabel" name="numPaintJobsLabel">
+               <property name="text">
+                <string>Number of paint-jobs</string>
+               </property>
+               <property name="buddy">
+                <cstring>numPaintJobsSpinBox</cstring>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="numPaintJobsSpinBox">
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>127</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+  <widget class="QMenu" name="primitivesMenu">
+   <action name="moveFirstPrimitivesAction">
+    <property name="text">
+     <string>Move &amp;first</string>
+    </property>
+   </action>
+   <action name="moveUpPrimitivesAction">
+    <property name="text">
+     <string>Move &amp;up</string>
+    </property>
+   </action>
+   <action name="moveToPrimitivesAction">
+    <property name="text">
+     <string>Move &amp;to...</string>
+    </property>
+   </action>
+   <action name="moveDownPrimitivesAction">
+    <property name="text">
+     <string>Move &amp;down</string>
+    </property>
+   </action>
+   <action name="moveLastPrimitivesAction">
+    <property name="text">
+     <string>Move &amp;last</string>
+    </property>
+   </action>
+   <action name="insertPrimitiveAction">
+    <property name="text">
+     <string>&amp;Insert</string>
+    </property>
+   </action>
+   <action name="duplicatePrimitiveAction">
+    <property name="text">
+     <string>Du&amp;plicate</string>
+    </property>
+   </action>
+   <action name="mirrorXPrimitiveAction">
+    <property name="text">
+     <string>Mirror &amp;X</string>
+    </property>
+   </action>
+   <action name="computeCullPrimitivesAction">
+    <property name="text">
+     <string>&amp;Compute cull data</string>
+    </property>
+   </action>
+   <action name="removePrimitivesAction">
+    <property name="text">
+     <string>&amp;Remove</string>
+    </property>
+   </action>
+   <addaction name="moveFirstPrimitivesAction" />
+   <addaction name="moveUpPrimitivesAction" />
+   <addaction name="moveToPrimitivesAction" />
+   <addaction name="moveDownPrimitivesAction" />
+   <addaction name="moveLastPrimitivesAction" />
+   <addaction name="separator" />
+   <addaction name="insertPrimitiveAction" />
+   <addaction name="duplicatePrimitiveAction" />
+   <addaction name="mirrorXPrimitiveAction" />
+   <addaction name="computeCullPrimitivesAction" />
+   <addaction name="separator" />
+   <addaction name="removePrimitivesAction" />
+  </widget>
+  <widget class="QMenu" name="verticesMenu">
+   <action name="flipVerticesAction">
+    <property name="text">
+     <string>&amp;Flip</string>
+    </property>
+   </action>
+   <action name="invertXVerticesAction">
+    <property name="text">
+     <string>Invert &amp;X</string>
+    </property>
+   </action>
+   <addaction name="flipVerticesAction" />
+   <addaction name="invertXVerticesAction" />
+  </widget>
+  <widget class="QMenu" name="materialsMenu">
+   <action name="replaceMaterialsAction">
+    <property name="text">
+     <string>&amp;Replace all...</string>
+    </property>
+   </action>
+   <action name="moveUpPaintJobsAction">
+    <property name="text">
+     <string>Move &amp;up</string>
+    </property>
+   </action>
+   <action name="moveDownPaintJobsAction">
+    <property name="text">
+     <string>Move &amp;down</string>
+    </property>
+   </action>
+   <action name="moveFirstPaintJobsAction">
+    <property name="text">
+     <string>Move &amp;first</string>
+    </property>
+   </action>
+   <action name="moveLastPaintJobsAction">
+    <property name="text">
+     <string>Move &amp;last</string>
+    </property>
+   </action>
+   <action name="moveToPaintJobsAction">
+    <property name="text">
+     <string>Move &amp;to...</string>
+    </property>
+   </action>
+   <addaction name="replaceMaterialsAction" />
+   <addaction name="separator" />
+   <addaction name="moveFirstPaintJobsAction" />
+   <addaction name="moveUpPaintJobsAction" />
+   <addaction name="moveToPaintJobsAction" />
+   <addaction name="moveDownPaintJobsAction" />
+   <addaction name="moveLastPaintJobsAction" />
+  </widget>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ShapeView</class>
+   <extends>QWidget</extends>
+   <header>shapeview.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>paintJobSpinBox</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>shapeView</receiver>
+   <slot>setCurrentPaintJob(int)</slot>
+  </connection>
+  <connection>
+   <sender>wireframeCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>shapeView</receiver>
+   <slot>toggleWireframe(bool)</slot>
+  </connection>
+  <connection>
+   <sender>showCullDataCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>shapeView</receiver>
+   <slot>toggleShowCullData(bool)</slot>
+  </connection>
+  <connection>
+   <sender>deselectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>deselectAll()</slot>
+  </connection>
+  <connection>
+   <sender>weldCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>shapeResource</receiver>
+   <slot>toggleWeld(bool)</slot>
+  </connection>
+  <connection>
+   <sender>numPaintJobsSpinBox</sender>
+   <signal>editingFinished()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>setNumPaintJobs()</slot>
+  </connection>
+  <connection>
+   <sender>exportButton</sender>
+   <signal>clicked()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>exportFile()</slot>
+  </connection>
+  <connection>
+   <sender>importButton</sender>
+   <signal>clicked()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>importFile()</slot>
+  </connection>
+  <connection>
+   <sender>primitivesView</sender>
+   <signal>customContextMenuRequested(QPoint)</signal>
+   <receiver>shapeResource</receiver>
+   <slot>primitivesContextMenu(QPoint)</slot>
+  </connection>
+  <connection>
+   <sender>moveFirstPrimitivesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>moveFirstPrimitives()</slot>
+  </connection>
+  <connection>
+   <sender>moveUpPrimitivesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>moveUpPrimitives()</slot>
+  </connection>
+  <connection>
+   <sender>moveToPrimitivesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>moveToPrimitives()</slot>
+  </connection>
+  <connection>
+   <sender>moveDownPrimitivesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>moveDownPrimitives()</slot>
+  </connection>
+  <connection>
+   <sender>moveLastPrimitivesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>moveLastPrimitives()</slot>
+  </connection>
+  <connection>
+   <sender>insertPrimitiveAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>insertPrimitive()</slot>
+  </connection>
+  <connection>
+   <sender>duplicatePrimitiveAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>duplicatePrimitive()</slot>
+  </connection>
+  <connection>
+   <sender>mirrorXPrimitiveAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>mirrorXPrimitive()</slot>
+  </connection>
+  <connection>
+   <sender>computeCullPrimitivesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>computeCullPrimitives()</slot>
+  </connection>
+  <connection>
+   <sender>removePrimitivesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>removePrimitives()</slot>
+  </connection>
+  <connection>
+   <sender>verticesView</sender>
+   <signal>customContextMenuRequested(QPoint)</signal>
+   <receiver>shapeResource</receiver>
+   <slot>verticesContextMenu(QPoint)</slot>
+  </connection>
+  <connection>
+   <sender>flipVerticesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>flipVertices()</slot>
+  </connection>
+  <connection>
+   <sender>invertXVerticesAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>invertXVertices()</slot>
+  </connection>
+  <connection>
+   <sender>materialsView</sender>
+   <signal>customContextMenuRequested(QPoint)</signal>
+   <receiver>shapeResource</receiver>
+   <slot>materialsContextMenu(QPoint)</slot>
+  </connection>
+  <connection>
+   <sender>replaceMaterialsAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>replaceMaterials()</slot>
+  </connection>
+  <connection>
+   <sender>moveUpPaintJobsAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>moveUpPaintJobs()</slot>
+  </connection>
+  <connection>
+   <sender>moveDownPaintJobsAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>moveDownPaintJobs()</slot>
+  </connection>
+  <connection>
+   <sender>moveFirstPaintJobsAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>moveFirstPaintJobs()</slot>
+  </connection>
+  <connection>
+   <sender>moveLastPaintJobsAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>moveLastPaintJobs()</slot>
+  </connection>
+  <connection>
+   <sender>moveToPaintJobsAction</sender>
+   <signal>triggered()</signal>
+   <receiver>shapeResource</receiver>
+   <slot>moveToPaintJobs()</slot>
+  </connection>
+  <connection>
+   <sender>shapeResource</sender>
+   <signal>paintJobMoved(int, int)</signal>
+   <receiver>shapeView</receiver>
+   <slot>adjustCurrentPaintJobAfterMove(int, int)</slot>
+  </connection>
+  <connection>
+   <sender>shapeView</sender>
+   <signal>selectedPaintJobChangeRequested(int)</signal>
+   <receiver>paintJobSpinBox</receiver>
+   <slot>setValue(int)</slot>
+  </connection>
+ </connections>
+</ui>
