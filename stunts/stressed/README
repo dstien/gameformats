@@ -19,6 +19,21 @@ DEPENDENCIES
 BUILDING
 
  Run "qmake" to generate makefiles and then "make" to build.
+ 
+ Build with VS2019 Community/Qt5.15 Open Source under Win7:
+   install Qt with maintainance tool or build from source
+   enter folder with stressed.pro
+   qmake
+   nmake
+   goto to the folder src\app\release
+   add following Qt dlls
+    
+   Qt5Core.dll
+   Qt5Gui.dll
+   Qt5OpenGL.dll
+   Qt5Widgets.dll
+   \platforms
+     qwindows.dll
 
 USAGE
 
@@ -33,4 +48,4 @@ CONTACT
 
  Daniel Stien <daniel@stien.org>
  Daniel Mlot <duplode_1@yahoo.com.br>
- http://stuntstools.googlecode.com/
+ https://github.com/dstien/gameformats/tree/master/stunts/stressed

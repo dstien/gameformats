@@ -11,20 +11,20 @@ INCLUDEPATH += $$DEPENDPATH
 
 win32 {
   CONFIG(release, debug|release) {
-    PRE_TARGETDEPS += ../animation/release/libanimation.a \
-                      ../bitmap/release/libbitmap.a \
-                      ../raw/release/libraw.a \
-                      ../shape/release/libshape.a \
-                      ../speed/release/libspeed.a \
-                      ../text/release/libtext.a
+    PRE_TARGETDEPS += ../animation/release/animation.lib \
+                      ../bitmap/release/bitmap.lib \
+                      ../raw/release/raw.lib \
+                      ../shape/release/shape.lib \
+                      ../speed/release/speed.lib \
+                      ../text/release/text.lib
   }
   else {
-    PRE_TARGETDEPS += ../animation/debug/libanimation.a \
-                      ../bitmap/debug/libbitmap.a \
-                      ../raw/debug/libraw.a \
-                      ../shape/debug/libshape.a \
-                      ../speed/debug/libspeed.a \
-                      ../text/debug/libtext.a
+    PRE_TARGETDEPS += ../animation/debug/animation.lib \
+                      ../bitmap/debug/bitmap.lib \
+                      ../raw/debug/raw.lib \
+                      ../shape/debug/shape.lib \
+                      ../speed/debug/speed.lib \
+                      ../text/debug/text.lib
   }
   LIBS += $$PRE_TARGETDEPS -lopengl32 -lglu32
 

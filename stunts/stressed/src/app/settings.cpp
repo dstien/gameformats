@@ -27,7 +27,7 @@ const char Settings::APP_AUTHOR[]  = "Daniel Stien";
 const char Settings::APP_CONTACT[] = "daniel@stien.org";
 
 const char Settings::ORG_NAME[] = "stuntstools";
-const char Settings::ORG_URL[]  = "http://stuntstools.googlecode.com/";
+const char Settings::ORG_URL[]  = "https://github.com/dstien/gameformats/tree/master/stunts/stressed";
 const char Settings::MAN_URL[]  = "http://wiki.stunts.hu/index.php/Stressed_user_reference";
 
 const char Settings::DEFAULTS[] = ":/conf/defaults.conf";

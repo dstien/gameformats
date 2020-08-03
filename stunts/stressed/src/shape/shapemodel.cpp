@@ -18,7 +18,8 @@
 #include <QItemSelectionModel>
 #include <QStringList>
 #include <QVector3D>
-#include <cmath>
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 #include "materialsmodel.h"
 #include "shapemodel.h"
@@ -446,9 +447,9 @@ void ShapeModel::computeCull(Primitive& primitive)
     QVector3D edge2 = vertices->at(2).toQ() - vertices->at(0).toQ();
     QVector3D normal = QVector3D::normal(edge1, edge2);
 
-    float yAngle = std::acos(QVector3D::dotProduct(normal, QVector3D(0.0f, 1.0f, 0.0f))) * (180.0f / M_PI);
+    float yAngle = acos(QVector3D::dotProduct(normal, QVector3D(0.0f, 1.0f, 0.0f))) * (180.0f / M_PI);
 
-    if (!std::isnan(yAngle)) {
+    if (!isnan(yAngle)) {
       // C1 flags
       if (yAngle >= 0.0f && yAngle < 135.0f) {   // C1+
         primitive.cull1 |= PRIM_CULL_POS_FLAG;
@@ -506,7 +507,7 @@ void ShapeModel::computeCull(Primitive& primitive)
       }
 
       // Rotate fields
-      int rotation  = (int)(((M_PI + std::atan2(normal.x(), normal.z())) / (2.0f * M_PI)) * 15.0f + 0.5f);
+      int rotation  = (int)(((M_PI + atan2(normal.x(), normal.z())) / (2.0f * M_PI)) * 15.0f + 0.5f);
 
       if (c1p) {
         if (c1p == PRIM_CULL_15BITS) {

@@ -15,11 +15,13 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+#include <windows.h>
 #include <GL/glu.h>
 #include <QGLWidget>
 #include <QPaintEvent>
 #include <QVector3D>
-#include <cmath>
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 #include "app/settings.h"
 #include "materialsmodel.h"
@@ -321,8 +323,8 @@ void ShapeView::drawSphere(const VerticesFList* vertices)
   glBegin(GL_TRIANGLE_FAN);
   for (int j = 0; j < CIRCLE_STEPS; j++) {
     glVertex3f(
-        std::cos((PI2 * (j + 1)) / CIRCLE_STEPS) * radius,
-        std::sin((PI2 * (j + 1)) / CIRCLE_STEPS) * radius,
+        cos((PI2 * (j + 1)) / CIRCLE_STEPS) * radius,
+        sin((PI2 * (j + 1)) / CIRCLE_STEPS) * radius,
         0.0f);
   }
   glEnd();
@@ -348,14 +350,14 @@ void ShapeView::drawWheel(const VerticesFList* vertices, int& material, bool& pa
   QVector3D edge2 = vertices->at(2).toQ() - vertices->at(0).toQ();
   QVector3D normal = QVector3D::normal(edge1, edge2);
 
-  float rotation  = std::atan2(normal.x(), normal.z()) * (180.0f / M_PI);
+  float rotation  = atan2(normal.x(), normal.z()) * (180.0f / M_PI);
   glRotatef(rotation, 0.0f, 1.0f, 0.0f);
 
   // X/Y coordinates
   float x1[CIRCLE_STEPS], y1[CIRCLE_STEPS], x2[CIRCLE_STEPS], y2[CIRCLE_STEPS];
   for (int i = 0; i < CIRCLE_STEPS; i++) {
-    float x = std::cos((PI2 * (i + 1)) / CIRCLE_STEPS);
-    float y = std::sin((PI2 * (i + 1)) / CIRCLE_STEPS);
+    float x = cos((PI2 * (i + 1)) / CIRCLE_STEPS);
+    float y = sin((PI2 * (i + 1)) / CIRCLE_STEPS);
     x1[i] = x * radius1h;
     y1[i] = y * radius1v;
     x2[i] = x * radius2h;
@@ -463,8 +465,8 @@ void ShapeView::drawCullData(const Primitive& primitive)
       if (j % 2) m_glWidget->qglColor(Qt::darkGreen);
       else       m_glWidget->qglColor(Qt::green);
     }
-    x =  std::cos((PI2 * (j + 1)) / steps);
-    z = -std::sin((PI2 * (j + 1)) / steps);
+    x =  cos((PI2 * (j + 1)) / steps);
+    z = -sin((PI2 * (j + 1)) / steps);
     glVertex3f(x * radius2 + center.x, center.y, z * radius2 + center.z);
     glVertex3f(x * radius3 + center.x, center.y, z * radius3 + center.z);
   }
@@ -482,8 +484,8 @@ void ShapeView::drawCullData(const Primitive& primitive)
       if (j % 2) m_glWidget->qglColor(Qt::darkGreen);
       else       m_glWidget->qglColor(Qt::green);
     }
-    x = std::cos((PI2 * (j + 1)) / steps);
-    z = std::sin((PI2 * (j + 1)) / steps);
+    x = cos((PI2 * (j + 1)) / steps);
+    z = sin((PI2 * (j + 1)) / steps);
     glVertex3f(x * radius2 + center.x, center.y, z * radius2 + center.z);
     glVertex3f(x * radius3 + center.x, center.y, z * radius3 + center.z);
   }
@@ -501,8 +503,8 @@ void ShapeView::drawCullData(const Primitive& primitive)
       if (j % 2) m_glWidget->qglColor(Qt::darkYellow);
       else       m_glWidget->qglColor(Qt::yellow);
     }
-    x =  std::cos((PI2 * (j + 1)) / steps);
-    z = -std::sin((PI2 * (j + 1)) / steps);
+    x =  cos((PI2 * (j + 1)) / steps);
+    z = -sin((PI2 * (j + 1)) / steps);
     glVertex3f(x * radius1 + center.x, center.y, z * radius1 + center.z);
     glVertex3f(x * radius2 + center.x, center.y, z * radius2 + center.z);
   }
@@ -520,8 +522,8 @@ void ShapeView::drawCullData(const Primitive& primitive)
       if (j % 2) m_glWidget->qglColor(Qt::darkYellow);
       else       m_glWidget->qglColor(Qt::yellow);
     }
-    x = std::cos((PI2 * (j + 1)) / steps);
-    z = std::sin((PI2 * (j + 1)) / steps);
+    x = cos((PI2 * (j + 1)) / steps);
+    z = sin((PI2 * (j + 1)) / steps);
     glVertex3f(x * radius1 + center.x, center.y, z * radius1 + center.z);
     glVertex3f(x * radius2 + center.x, center.y, z * radius2 + center.z);
   }
