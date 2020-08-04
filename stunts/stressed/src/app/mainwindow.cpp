@@ -319,7 +319,7 @@ void MainWindow::about()
   QMessageBox::about(this, tr("About stressed"),
       tr("<div align=\"center\"><h1>%1 %2</h1><br/>"
          "%3<br/>"
-         "Using Qt 5.15/%5<br/>"
+         "Using Qt " QT_VERSION_STR "/%5<br/>"
          "<a href=\"%4\">%4</a><br/><br/>"
          "<em>Thanks to the Stunts community<br>"
          "for keeping the game alive!</em><br><br>"
