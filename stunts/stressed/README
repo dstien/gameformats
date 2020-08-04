@@ -23,15 +23,14 @@ BUILDING
  Build Examples:
  
  Build with VS2019 Community/Qt5.15 Open Source under Win7:
-   1. install Qt 32 and 64 Bit with maintainance tool or build from source
+   1. install Qt 32 and/or 64 Bit with maintainance tool or build from source
    2. start Visual Studio Command shell (or vcvars) to have build tools available
    3. git clone https://github.com/dstien/gameformats.git
    4. cd gameformats/stunts/stressed
-   5. enter folder with stressed.pro
-   6. c:\Qt\5.15.0\msvc2019\bin\qmake.exe
-   7. nmake
-   8. goto to the folder src\app\release
-   9. add following Qt dlls from your Qt Installation
+   5. c:\Qt\5.15.0\msvc2019\bin\qmake.exe
+   6. nmake
+   7. goto to the folder src\app\release
+   8. add following Qt dlls from your Qt Installation
     
       Qt5Core.dll
       Qt5Gui.dll
