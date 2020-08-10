@@ -45,12 +45,13 @@ BUILDING
     3. sudo apt install build-essential # for gcc
     4. sudo apt install mesa-common-dev # for opengl
     5. sudo apt install qt5-default
-    6. sudo apt install git
-    7. git clone https://github.com/dstien/gameformats.git
-    8. cd gameformats/stunts/stressed
-    9. qmake
-    10. make
-    11. ./src/app/stressed
+    6. sudo apt install libqt5opengl5-dev # needed for Mint 19.3, Ubuntu 18.04
+    7. sudo apt install git
+    8. git clone https://github.com/dstien/gameformats.git
+    9. cd gameformats/stunts/stressed
+    10. qmake
+    11. make
+    12. ./src/app/stressed
 
 USAGE
 
