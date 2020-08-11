@@ -213,7 +213,7 @@ bool ShapeModel::setData(const QModelIndex &index, const QVariant& value, int ro
       }
     }
   }
-  else if (Qt::CheckStateRole) {
+  else if (role == Qt::CheckStateRole) {
     if (col == 1) {
       m_primitives[row].twoSided = value.toBool();
     }
