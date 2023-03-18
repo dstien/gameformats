@@ -18,10 +18,15 @@
  */
 
 #include <errno.h>
-#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#if defined(__WATCOMC__)
+#include <unistd.h>
+#else
+#include <getopt.h>
+#endif
 
 #include "stunpack.h"
 
@@ -35,6 +40,11 @@ int main(int argc, char **argv)
 {
 	char *srcFileName = NULL, *dstFileName = NULL;
 	int retval = 0, opt, passes = 0, verbose = 1, srcFileNameLen = 0;
+#if defined(__WATCOMC__)
+	const int dstFileNamePostfixLen = 0;
+#else
+	const int dstFileNamePostfixLen = 4;
+#endif
 
 	// Parse options.
 	while ((opt = getopt(argc, argv, "p:hqv")) != -1) {
@@ -77,12 +87,16 @@ int main(int argc, char **argv)
 	// Generate destination file name if omitted.
 	if (dstFileName == NULL) {
 		srcFileNameLen = strlen(srcFileName);
-		if ((dstFileName = (char*)malloc(sizeof(char) * (srcFileNameLen + 5))) == NULL) {
+		if ((dstFileName = (char*)malloc(sizeof(char) * (srcFileNameLen + dstFileNamePostfixLen + 1))) == NULL) {
 			STPK_ERR1("Error allocating memory for generated destination file name. (%s)\n", strerror(errno));
 			return 1;
 		}
 		strcpy(dstFileName, srcFileName);
+#if defined(__WATCOMC__)
+		dstFileName[srcFileNameLen - 1] = '_';
+#else
 		strcat(dstFileName, ".out");
+#endif
 	}
 
 	retval = decompress(srcFileName, dstFileName, passes, verbose);

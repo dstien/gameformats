@@ -86,9 +86,6 @@ uint stpk_vleGenEsc(stpk_Buffer *src, ushort *esc1, ushort *esc2, uint widthsLen
 void stpk_vleGenLookup(stpk_Buffer *src, uint widthsLen, uchar *alphabet, uchar *symbols, uchar *widths, int verbose);
 uint stpk_vleDecode(stpk_Buffer *src, stpk_Buffer *dst, uchar *alphabet, uchar *symbols, uchar *widths, ushort *esc1, ushort *esc2, int verbose, char *err);
 
-inline void stpk_getLength(stpk_Buffer *buf, uint *len);
-
-char stpk_b16[16 + 1];
 char *stpk_stringBits16(ushort val);
 void stpk_printArray(uchar *arr, uint len, char *name);
 
