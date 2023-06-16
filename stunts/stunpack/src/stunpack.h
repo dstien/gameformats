@@ -72,9 +72,6 @@ typedef struct {
 	uint  len;
 } stpk_Buffer;
 
-#ifdef __cplusplus
-extern "C"
-#endif
 uint stpk_decomp(stpk_Buffer *src, stpk_Buffer *dst, int maxPasses, int verbose, char *err);
 
 uint stpk_decompRLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err);
@@ -90,4 +87,3 @@ char *stpk_stringBits16(ushort val);
 void stpk_printArray(uchar *arr, uint len, char *name);
 
 #endif
-
