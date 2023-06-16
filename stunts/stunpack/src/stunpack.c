@@ -24,6 +24,8 @@
 
 #include "stunpack.h"
 
+inline void stpk_getLength(stpk_Buffer *buf, uint *len);
+
 // Decompress sub-files in source buffer.
 uint stpk_decomp(stpk_Buffer *src, stpk_Buffer *dst, int maxPasses, int verbose, char *err)
 {
@@ -105,6 +107,7 @@ uint stpk_decompRLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err)
 {
 	uint retval = 1, srcLen, i;
 	uchar unk, escLen, esc[STPK_RLE_ESCLEN_MAX], escLookup[STPK_RLE_ESCLOOKUP_LEN];
+	stpk_Buffer tmp, *finalSrc;
 
 	stpk_getLength(src, &srcLen);
 	STPK_VERBOSE1("  %-10s %d\n", "srcLen", srcLen);
@@ -140,7 +143,6 @@ uint stpk_decompRLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err)
 
 	STPK_NOVERBOSE("Run-length ");
 
-	stpk_Buffer tmp, *finalSrc;
 	tmp.data = NULL;
 
 	if (!STPK_GET_FLAG(escLen, STPK_RLE_ESCLEN_NOSEQ)) {
@@ -546,6 +548,7 @@ inline void stpk_getLength(stpk_Buffer *buf, uint *len)
 // Write bit values as string to stpk_b16. Used in verbose output.
 char *stpk_stringBits16(ushort val)
 {
+	static char stpk_b16[16 + 1];
 	int i;
 	for (i = 0; i <  16; i++) stpk_b16[(16 - 1) - i] = '0' + STPK_GET_FLAG(val, (1 << i));
 	stpk_b16[i] = 0;
