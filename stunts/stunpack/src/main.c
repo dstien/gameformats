@@ -30,8 +30,8 @@
 
 #include "stunpack.h"
 
-char *banner = STPK_NAME" "STPK_VERSION" - Stunts/4D [Sports] Driving game resource unpacker\n\n";
-char *usage  = "Usage: %s [OPTIONS]... SOURCE-FILE [DESTINATION-FILE]\n";
+#define BANNER STPK_NAME" "STPK_VERSION" - Stunts/4D [Sports] Driving game resource unpacker\n\n"
+#define USAGE  "Usage: %s [OPTIONS]... SOURCE-FILE [DESTINATION-FILE]\n"
 
 void printHelp(char *progName);
 int decompress(char *srcFileName, char *dstFileName, int passes, int verbose);
@@ -67,12 +67,12 @@ int main(int argc, char **argv)
 	}
 
 	if ((argc == optind) | (argc - optind > 2) | retval) {
-		fprintf(stderr, usage, argv[0]);
+		fprintf(stderr, USAGE, argv[0]);
 		fprintf(stderr, "Try \"%s -h\" for help.\n", argv[0]);
 		return 1;
 	}
 
-	STPK_MSG(banner);
+	STPK_MSG(BANNER);
 
 	// Max two additional params (file names).
 	for (; optind < argc; optind++) {
@@ -111,9 +111,9 @@ int main(int argc, char **argv)
 
 void printHelp(char *progName)
 {
-	printf(banner);
+	printf(BANNER);
 
-	printf(usage, progName);
+	printf(USAGE, progName);
 	printf("  -p NUM   limit to NUM decompression passes\n");
 	printf("  -v       verbose output\n");
 	printf("  -vv      very verbose output\n");
