@@ -71,12 +71,12 @@ uint stpk_decomp(stpk_Buffer *src, stpk_Buffer *dst, int maxPasses, int verbose,
 				STPK_VERBOSE1("  %-10s Run-length encoding\n", "type");
 				retval = stpk_decompRLE(src, dst, verbose, err);
 				break;
-			case STPK_TYPE_VLE:
-				STPK_VERBOSE1("  %-10s Variable-length encoding\n", "type");
-				retval = stpk_decompVLE(src, dst, verbose, err);
+			case STPK_TYPE_HUFF:
+				STPK_VERBOSE1("  %-10s Huffman coding\n", "type");
+				retval = stpk_decompHuff(src, dst, verbose, err);
 				break;
 			default:
-				STPK_ERR2("Error parsing source file. Expected type 1 (run-length) or 2 (variable-length), got %02X\n", type);
+				STPK_ERR2("Error parsing source file. Expected type 1 (run-length) or 2 (Huffman), got %02X\n", type);
 				return 1;
 		}
 
@@ -338,31 +338,34 @@ uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbo
 	return 0;
 }
 
-// Decompress variable-length sub-file.
-uint stpk_decompVLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err)
+// Decompress Huffman coded sub-file.
+uint stpk_decompHuff(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err)
 {
-	uchar widthsLen, alphabet[STPK_VLE_ALPH_LEN], symbols[STPK_VLE_ALPH_LEN], widths[STPK_VLE_ALPH_LEN];
-	ushort esc1[STPK_VLE_ESCARR_LEN], esc2[STPK_VLE_ESCARR_LEN];
-	uint i, widthsOffset, codesOffset, alphLen;
+	uchar levels, delta, leafNodesPerLevel[STPK_HUFF_LEVELS_MAX], alphabet[STPK_HUFF_ALPH_LEN], symbols[STPK_HUFF_PREFIX_LEN], widths[STPK_HUFF_PREFIX_LEN];
+	short codeOffsets[STPK_HUFF_LEVELS_MAX];
+	ushort totalCodes[STPK_HUFF_LEVELS_MAX];
+	uint i, alphLen;
 
-	widthsLen = src->data[src->offset++];
-	widthsOffset = src->offset;
+	levels = src->data[src->offset++];
+	delta = STPK_GET_FLAG(levels, STPK_HUFF_LEVELS_DELTA);
+	levels &= STPK_HUFF_LEVELS_MASK;
 
-	STPK_VERBOSE1("  %-10s %d (unknown flag = %d)\n\n", "widthsLen", widthsLen & STPK_VLE_WDTLEN_MASK, STPK_GET_FLAG(widthsLen, STPK_VLE_WDTLEN_UNK));
+	STPK_VERBOSE1("  %-10s %d\n", "levels", levels);
+	STPK_VERBOSE1("  %-10s %d\n\n", "delta", delta);
 
-	if (STPK_GET_FLAG(widthsLen, STPK_VLE_WDTLEN_UNK)) {
-		STPK_ERR2("Invalid source file. Unknown flag set in widthsLen\n");
+	if ((levels & STPK_HUFF_LEVELS_MASK) > STPK_HUFF_LEVELS_MAX) {
+		STPK_ERR2("Huffman tree levels greater than %d, got %d\n", STPK_HUFF_LEVELS_MAX, levels & STPK_HUFF_LEVELS_MASK);
 		return 1;
 	}
-	else if ((widthsLen & STPK_VLE_WDTLEN_MASK) > STPK_VLE_WDTLEN_MAX) {
-		STPK_ERR2("widthsLen & STPK_VLE_WDTLEN_MASK greater than %02X, got %02X\n", STPK_VLE_WDTLEN_MAX, widthsLen & STPK_VLE_WDTLEN_MASK);
-		return 1;
+
+	for (i = 0; i < levels; i++) {
+		leafNodesPerLevel[i] = src->data[src->offset++];
 	}
 
-	alphLen = stpk_vleGenEsc(src, esc1, esc2, widthsLen, verbose);
+	alphLen = stpk_huffGenOffsets(levels, leafNodesPerLevel, codeOffsets, totalCodes, verbose);
 
-	if (alphLen > STPK_VLE_ALPH_LEN) {
-		STPK_ERR2("alphLen greater than %02X, got %02X\n", STPK_VLE_ALPH_LEN, alphLen);
+	if (alphLen > STPK_HUFF_ALPH_LEN) {
+		STPK_ERR2("Alphabet longer than than %d, got %d\n", STPK_HUFF_ALPH_LEN, alphLen);
 		return 1;
 	}
 
@@ -371,161 +374,152 @@ uint stpk_decompVLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err)
 	STPK_VERBOSE_ARR(alphabet, alphLen, "alphabet");
 
 	if (src->offset > src->len) {
-		STPK_ERR2("Reached end of source buffer while parsing variable-length header\n");
+		STPK_ERR2("Reached end of source buffer while parsing Huffman header\n");
 		return 1;
 	}
 
-	codesOffset = src->offset;
-	src->offset = widthsOffset;
+	stpk_huffGenPrefix(levels, leafNodesPerLevel, alphabet, symbols, widths, verbose);
 
-	stpk_vleGenLookup(src, widthsLen, alphabet, symbols, widths, verbose);
-
-	src->offset = codesOffset;
-
-	return stpk_vleDecode(src, dst, alphabet, symbols, widths, esc1, esc2, verbose, err);
+	return stpk_huffDecode(src, dst, alphabet, symbols, widths, codeOffsets, totalCodes, verbose, err);
 }
 
-// Read widths to generate escape table and return length of alphabet.
-uint stpk_vleGenEsc(stpk_Buffer *src, ushort *esc1, ushort *esc2, uint widthsLen, int verbose)
+// Generate offset table for translating Huffman codes wider than 8 bits to alphabet indices.
+uint stpk_huffGenOffsets(uint levels, uchar *leafNodesPerLevel, short *codeOffsets, ushort *totalCodes, int verbose)
 {
-	uchar tmp;
-	uint i, inc = 0, alphLen = 0;
+	uint level, codes = 0, alphLen = 0;
 
-	for (i = 0; i < widthsLen; i++) {
-		inc *= 2;
-		esc1[i] = alphLen - inc;
-		tmp = src->data[src->offset++];
+	for (level = 0; level < levels; level++) {
+		codes *= 2;
+		codeOffsets[level] = alphLen - codes;
 
-		inc += tmp;
-		alphLen += tmp;
+		codes += leafNodesPerLevel[level];
+		alphLen += leafNodesPerLevel[level];
 
-		esc2[i] = inc;
+		totalCodes[level] = codes;
 
-		STPK_VERBOSE1("  esc1[%02X] = %04X  esc2[%02X] = %04X\n", i, esc1[i], i, esc2[i]);
+		STPK_VERBOSE1("  codeOffsets[%2d] = %6d  totalCodes[%2d] = %6d\n", level, codeOffsets[level], level, totalCodes[level]);
 	}
 	STPK_VERBOSE1("\n");
 
 	return alphLen;
 }
 
-// Generate code lookup table for symbols and widths.
-void stpk_vleGenLookup(stpk_Buffer *src, uint widthsLen, uchar *alphabet, uchar *symbols, uchar *widths, int verbose)
+// Generate prefix table for direct lookup of Huffman codes up to 8 bits wide.
+void stpk_huffGenPrefix(uint levels, uchar *leafNodesPerLevel, uchar *alphabet, uchar *symbols, uchar *widths, int verbose)
 {
-	uint i, j, width = 1, widthDistrLen = (widthsLen >= 8 ? 8 : widthsLen);
-	uchar symbsWidth, symbsCount = STPK_VLE_BYTE_MSB, symbsCountLeft;
+	uint prefix, alphabetIndex, width = 1, maxWidth = STPK_MIN(levels, STPK_HUFF_PREFIX_WIDTH);
+	uchar leafNodes, totalNodes = STPK_HUFF_PREFIX_MSB, remainingNodes;
 
-	// Distribution of symbols and widths.
-	for (i = 0, j = 0; width <= widthDistrLen; width++, symbsCount >>= 1) {
-		for (symbsWidth = src->data[src->offset++]; symbsWidth > 0; symbsWidth--, j++) {
-			for (symbsCountLeft = symbsCount; symbsCountLeft; symbsCountLeft--, i++) {
-				symbols[i] = alphabet[j];
-				widths[i] = width;
+	// Fill all prefixes with data from last leaf node.
+	for (prefix = 0, alphabetIndex = 0; width <= maxWidth; width++, totalNodes >>= 1) {
+		for (leafNodes = leafNodesPerLevel[width - 1]; leafNodes > 0; leafNodes--, alphabetIndex++) {
+			for (remainingNodes = totalNodes; remainingNodes; remainingNodes--, prefix++) {
+				symbols[prefix] = alphabet[alphabetIndex];
+				widths[prefix] = width;
 			}
 		}
 	}
-	STPK_VERBOSE_ARR(symbols, i, "symbols");
+	STPK_VERBOSE_ARR(symbols, prefix, "symbols");
 
-	// Pad widths.
-	for (; i < STPK_VLE_ALPH_LEN; i++) widths[i] = STPK_VLE_ESC_WIDTH;
-	STPK_VERBOSE_ARR(widths, i, "widths");
+	// Pad with escape value for codes wider than 8 bits.
+	for (; prefix < STPK_HUFF_ALPH_LEN; prefix++) widths[prefix] = STPK_HUFF_WIDTH_ESC;
+	STPK_VERBOSE_ARR(widths, prefix, "widths");
 }
 
-// Decode variable-length compression codes.
-uint stpk_vleDecode(stpk_Buffer *src, stpk_Buffer *dst, uchar *alphabet, uchar *symbols, uchar *widths, ushort *esc1, ushort *esc2, int verbose, char *err)
+// Decode Huffman codes.
+uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, uchar *alphabet, uchar *symbols, uchar *widths, short *codeOffsets, ushort *totalCodes, int verbose, char *err)
 {
-	uchar curWidth = 8, nextWidth = 0, code, ind;
+	uchar readWidth = 8, curWidth = 0, code, level;
 	ushort curWord = 0;
 	uint progress = 0, done;
 
 	curWord = src->data[src->offset++] << 8;
 	curWord |= src->data[src->offset++];
 
-	STPK_NOVERBOSE("Var-length [");
+	STPK_NOVERBOSE("Huffman    [");
 
-	STPK_VERBOSE1("Decoding compression codes... \n");
-	STPK_VERBOSE2("\nsrcOff dstOff cW nW curWord               cd    Description\n");
+	STPK_VERBOSE1("Decoding Huffman codes... \n");
+	STPK_VERBOSE2("\nsrcOff dstOff rW cW curWord               cd    Description\n");
 
 	while (dst->offset < dst->len) {
 		STPK_VERBOSE2("~~~~~~ ~~~~~~ ~~ ~~ ~~~~~~~~~~~~~~~~~~~~~ ~~    ~~~~~~~~~~~~~~~~~~\n");
 
 		code = (curWord & 0xFF00) >> 8;
-		STPK_VERBOSE_VLE("Shifted %d bits", nextWidth);
+		STPK_VERBOSE_HUFF("Shifted %d bits", curWidth);
 
-		nextWidth = widths[code];
+		curWidth = widths[code];
 
-		if (nextWidth > 8) {
-			if (nextWidth != STPK_VLE_ESC_WIDTH) {
-				STPK_ERR2("Invalid escape value. nextWidth != %02X, got %02X\n", STPK_VLE_ESC_WIDTH, nextWidth);
+		// If code is wider than 8 bits, read more bits and decode with offset table.
+		if (curWidth > STPK_HUFF_PREFIX_WIDTH) {
+			if (curWidth != STPK_HUFF_WIDTH_ESC) {
+				STPK_ERR2("Invalid escape value. curWidth != %02X, got %02X\n", STPK_HUFF_WIDTH_ESC, curWidth);
 				return 1;
 			}
 
 			code = (curWord & 0x00FF);
-			curWord >>= 8;
-			STPK_VERBOSE_VLE("Escaping");
+			curWord >>= STPK_HUFF_PREFIX_WIDTH;
+			STPK_VERBOSE_HUFF("Escaping to offset table");
 
-			ind = 7;
-			done = 0;
-
-			while (!done) {
-				if (!curWidth) {
+			for (level = STPK_HUFF_PREFIX_WIDTH, done = 0; !done; level++) {
+				if (!readWidth) {
 					code = src->data[src->offset++];
-					curWidth = 8;
-					STPK_VERBOSE_VLE("Read %02X", src->data[src->offset - 1]);
+					readWidth = STPK_HUFF_PREFIX_WIDTH;
+					STPK_VERBOSE_HUFF("Read %02X", src->data[src->offset - 1]);
 				}
 
-				curWord = (curWord << 1) + STPK_GET_FLAG(code, STPK_VLE_BYTE_MSB);
+				curWord = (curWord << 1) + STPK_GET_FLAG(code, STPK_HUFF_PREFIX_MSB);
 				code <<= 1;
-				curWidth--;
-				ind++;
-				STPK_VERBOSE_VLE("ind = %02X", ind);
+				readWidth--;
+				STPK_VERBOSE_HUFF("level = %d", level);
 
-				if (ind >= STPK_VLE_ESCARR_LEN) {
-					STPK_ERR2("Escape array index out of bounds (%04X >= %04X)\n", ind, STPK_VLE_ESCARR_LEN);
+				if (level >= STPK_HUFF_LEVELS_MAX) {
+					STPK_ERR2("Offset table out of bounds (%d >= %d)\n", level, STPK_HUFF_LEVELS_MAX);
 					return 1;
 				}
 
-				if (curWord < esc2[ind]) {
-					curWord += esc1[ind];
+				if (curWord < totalCodes[level]) {
+					curWord += codeOffsets[level];
 
 					if (curWord > 0xFF) {
-						STPK_ERR2("Alphabet index out of bounds (%04X > %04X)\n", curWord, STPK_VLE_ALPH_LEN);
+						STPK_ERR2("Alphabet index out of bounds (%04X > %04X)\n", curWord, STPK_HUFF_ALPH_LEN);
 						return 1;
 					}
 
 					dst->data[dst->offset++] = alphabet[curWord];
-					STPK_VERBOSE_VLE("Wrote %02X", dst->data[dst->offset - 1]);
+					STPK_VERBOSE_HUFF("Wrote %02X using offset table", dst->data[dst->offset - 1]);
 
 					done = 1;
 				}
 			}
 
-			// Reset and continue.
-			curWord = (code << curWidth) | src->data[src->offset++];
-			nextWidth = 8 - curWidth;
-			curWidth = 8;
-			STPK_VERBOSE_VLE("Read %02X, returning", src->data[src->offset - 1]);
+			// Read another byte since the processed code was wider than a byte.
+			curWord = (code << readWidth) | src->data[src->offset++];
+			curWidth = 8 - readWidth;
+			readWidth = 8;
+			STPK_VERBOSE_HUFF("Read %02X", src->data[src->offset - 1]);
 		}
+		// Code is 8 bits wide or less, do direct prefix lookup.
 		else {
 			dst->data[dst->offset++] = symbols[code];
-			STPK_VERBOSE_VLE("Wrote %02X", dst->data[dst->offset - 1]);
+			STPK_VERBOSE_HUFF("Wrote %02X from prefix table", dst->data[dst->offset - 1]);
 
-			if (curWidth < nextWidth) {
-				curWord <<= curWidth;
-				STPK_VERBOSE_VLE("Shifted %d bits", curWidth);
+			if (readWidth < curWidth) {
+				curWord <<= readWidth;
+				STPK_VERBOSE_HUFF("Shifted %d bits", readWidth);
 
-				nextWidth -= curWidth;
-				curWidth = 8;
+				curWidth -= readWidth;
+				readWidth = 8;
 
 				curWord |= src->data[src->offset++];
-				STPK_VERBOSE_VLE("Read %02X", src->data[src->offset - 1]);
+				STPK_VERBOSE_HUFF("Read %02X", src->data[src->offset - 1]);
 			}
 		}
 
-		curWord <<= nextWidth;
-		curWidth -= nextWidth;
+		curWord <<= curWidth;
+		readWidth -= curWidth;
 
 		if ((src->offset - 1) > src->len && dst->offset < dst->len) {
-			STPK_ERR2("Reached unexpected end of source buffer while decoding variable-length compression codes\n");
+			STPK_ERR2("Reached unexpected end of source buffer while decoding Huffman codes\n");
 			return 1;
 		}
 
@@ -539,7 +533,7 @@ uint stpk_vleDecode(stpk_Buffer *src, stpk_Buffer *dst, uchar *alphabet, uchar *
 	STPK_VERBOSE1("\n");
 
 	if (src->offset < src->len) {
-		STPK_WARN("Variable-length decoding finished with unprocessed data left in source buffer (%d bytes left)\n", src->len - src->offset);
+		STPK_WARN("Huffman decoding finished with unprocessed data left in source buffer (%d bytes left)\n", src->len - src->offset);
 	}
 
 	return 0;

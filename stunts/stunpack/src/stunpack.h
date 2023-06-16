@@ -34,18 +34,19 @@
 #define STPK_VERBOSE1(msg, ...)  if (verbose > 1)  printf(msg, ## __VA_ARGS__)
 #define STPK_VERBOSE2(msg, ...)  if (verbose > 2)  printf(msg, ## __VA_ARGS__)
 #define STPK_VERBOSE_ARR(arr, len, name) if (verbose > 1) stpk_printArray(arr, len, name)
-#define STPK_VERBOSE_VLE(msg, ...) STPK_VERBOSE2("%6d %6d %2d %2d %04X %s %02X -> " msg "\n", \
-					src->offset, dst->offset, curWidth, nextWidth, curWord, \
+#define STPK_VERBOSE_HUFF(msg, ...) STPK_VERBOSE2("%6d %6d %2d %2d %04X %s %02X -> " msg "\n", \
+					src->offset, dst->offset, readWidth, curWidth, curWord, \
 					stpk_stringBits16(curWord), code, ## __VA_ARGS__)
 
 #define STPK_GET_FLAG(data, mask) ((data & mask) == mask)
+#define STPK_MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
 #define STPK_MAX_SIZE          0xFFFFFF
 #define STPK_PASSES_MASK       0x7F
 #define STPK_PASSES_RECUR      0x80
 
 #define STPK_TYPE_RLE          0x01
-#define STPK_TYPE_VLE          0x02
+#define STPK_TYPE_HUFF         0x02
 
 #define STPK_RLE_ESCLEN_MASK   0x7F
 #define STPK_RLE_ESCLEN_MAX    0x0A
@@ -53,14 +54,15 @@
 #define STPK_RLE_ESCLOOKUP_LEN 0x100
 #define STPK_RLE_ESCSEQ_POS    0x01
 
-#define STPK_VLE_WDTLEN_MASK   0x7F
-#define STPK_VLE_WDTLEN_MAX    0x0F
-#define STPK_VLE_WDTLEN_UNK    0x80
+#define STPK_HUFF_LEVELS_MASK  0x7F
+#define STPK_HUFF_LEVELS_MAX   0x10
+#define STPK_HUFF_LEVELS_DELTA 0x80
 
-#define STPK_VLE_ESCARR_LEN    0x10
-#define STPK_VLE_ALPH_LEN      0x100
-#define STPK_VLE_ESC_WIDTH     0x40
-#define STPK_VLE_BYTE_MSB      0x80
+#define STPK_HUFF_ALPH_LEN     0x100
+#define STPK_HUFF_PREFIX_WIDTH 0x08
+#define STPK_HUFF_PREFIX_LEN   (1 << STPK_HUFF_PREFIX_WIDTH)
+#define STPK_HUFF_PREFIX_MSB   (1 << (STPK_HUFF_PREFIX_WIDTH - 1))
+#define STPK_HUFF_WIDTH_ESC    0x40
 
 typedef unsigned char  uchar;
 typedef unsigned short ushort;
@@ -78,10 +80,10 @@ uint stpk_decompRLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err);
 uint stpk_rleDecodeSeq(stpk_Buffer *src, stpk_Buffer *dst, uchar esc, int verbose, char *err);
 uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbose, char *err);
 
-uint stpk_decompVLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err);
-uint stpk_vleGenEsc(stpk_Buffer *src, ushort *esc1, ushort *esc2, uint widthsLen, int verbose);
-void stpk_vleGenLookup(stpk_Buffer *src, uint widthsLen, uchar *alphabet, uchar *symbols, uchar *widths, int verbose);
-uint stpk_vleDecode(stpk_Buffer *src, stpk_Buffer *dst, uchar *alphabet, uchar *symbols, uchar *widths, ushort *esc1, ushort *esc2, int verbose, char *err);
+uint stpk_decompHuff(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err);
+uint stpk_huffGenOffsets(uint levels, uchar *leafNodesPerLevel, short *codeOffsets, ushort *totalCodes, int verbose);
+void stpk_huffGenPrefix(uint levels, uchar *leafNodesPerLevel, uchar *alphabet, uchar *symbols, uchar *widths, int verbose);
+uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, uchar *alphabet, uchar *symbols, uchar *widths, short *codeOffsets, ushort *totalCodes, int verbose, char *err);
 
 char *stpk_stringBits16(ushort val);
 void stpk_printArray(uchar *arr, uint len, char *name);
