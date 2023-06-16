@@ -136,7 +136,8 @@ uint stpk_decompRLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err)
 		return 1;
 	}
 
-	// Generate escape code lookup table.
+	// Generate escape code lookup table where the index is the escape code
+	// and the value is the escape code's positional property.
 	for (i = 0; i < STPK_RLE_ESCLOOKUP_LEN; i++) escLookup[i] = 0;
 	for (i = 0; i < (escLen & STPK_RLE_ESCLEN_MASK); i++) escLookup[esc[i]] = i + 1;
 	STPK_VERBOSE_ARR(escLookup, STPK_RLE_ESCLOOKUP_LEN, "escLookup");
@@ -258,10 +259,12 @@ uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbo
 
 		if (src->offset > src->len) {
 			STPK_ERR2("Reached unexpected end of source buffer while decoding single-byte runs\n");
+			return 1;
 		}
 
 		if (esc[cur] & 0xFF) {
 			switch (esc[cur]) {
+				// Type 1: One-byte counter for repetitions
 				case 1:
 					rep = src->data[src->offset];
 					cur = src->data[src->offset + 1];
@@ -278,6 +281,10 @@ uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbo
 					}
 					break;
 
+				// Type 2: Used for sequences. Serves no purpose here, but
+				// would be handled by the default case if it were to occur.
+
+				// Type 3: Two-byte counter for repetitions
 				case 3:
 					rep = src->data[src->offset] | src->data[src->offset + 1] << 8;
 					cur = src->data[src->offset + 2];
@@ -294,6 +301,7 @@ uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbo
 					}
 					break;
 
+				// Type n: n repetitions
 				default:
 					rep = esc[cur] - 1;
 					cur = src->data[src->offset++];
@@ -550,7 +558,7 @@ char *stpk_stringBits16(ushort val)
 {
 	static char stpk_b16[16 + 1];
 	int i;
-	for (i = 0; i <  16; i++) stpk_b16[(16 - 1) - i] = '0' + STPK_GET_FLAG(val, (1 << i));
+	for (i = 0; i < 16; i++) stpk_b16[(16 - 1) - i] = '0' + STPK_GET_FLAG(val, (1 << i));
 	stpk_b16[i] = 0;
 
 	return stpk_b16;
