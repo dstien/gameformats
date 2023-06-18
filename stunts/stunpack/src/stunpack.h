@@ -81,11 +81,11 @@ uint stpk_rleDecodeSeq(stpk_Buffer *src, stpk_Buffer *dst, uchar esc, int verbos
 uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbose, char *err);
 
 uint stpk_decompHuff(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err);
-uint stpk_huffGenOffsets(uint levels, uchar *leafNodesPerLevel, short *codeOffsets, ushort *totalCodes, int verbose);
-void stpk_huffGenPrefix(uint levels, uchar *leafNodesPerLevel, uchar *alphabet, uchar *symbols, uchar *widths, int verbose);
-uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, uchar *alphabet, uchar *symbols, uchar *widths, short *codeOffsets, ushort *totalCodes, int verbose, char *err);
+uint stpk_huffGenOffsets(uint levels, const uchar *leafNodesPerLevel, short *codeOffsets, ushort *totalCodes, int verbose);
+void stpk_huffGenPrefix(uint levels, const uchar *leafNodesPerLevel, const uchar *alphabet, uchar *symbols, uchar *widths, int verbose);
+uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, const uchar *alphabet, const uchar *symbols, const uchar *widths, const short *codeOffsets, const ushort *totalCodes, int verbose, char *err);
 
 char *stpk_stringBits16(ushort val);
-void stpk_printArray(uchar *arr, uint len, char *name);
+void stpk_printArray(const uchar *arr, uint len, const char *name);
 
 #endif

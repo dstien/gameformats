@@ -384,7 +384,7 @@ uint stpk_decompHuff(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err)
 }
 
 // Generate offset table for translating Huffman codes wider than 8 bits to alphabet indices.
-uint stpk_huffGenOffsets(uint levels, uchar *leafNodesPerLevel, short *codeOffsets, ushort *totalCodes, int verbose)
+uint stpk_huffGenOffsets(uint levels, const uchar *leafNodesPerLevel, short *codeOffsets, ushort *totalCodes, int verbose)
 {
 	uint level, codes = 0, alphLen = 0;
 
@@ -405,7 +405,7 @@ uint stpk_huffGenOffsets(uint levels, uchar *leafNodesPerLevel, short *codeOffse
 }
 
 // Generate prefix table for direct lookup of Huffman codes up to 8 bits wide.
-void stpk_huffGenPrefix(uint levels, uchar *leafNodesPerLevel, uchar *alphabet, uchar *symbols, uchar *widths, int verbose)
+void stpk_huffGenPrefix(uint levels, const uchar *leafNodesPerLevel, const uchar *alphabet, uchar *symbols, uchar *widths, int verbose)
 {
 	uint prefix, alphabetIndex, width = 1, maxWidth = STPK_MIN(levels, STPK_HUFF_PREFIX_WIDTH);
 	uchar leafNodes, totalNodes = STPK_HUFF_PREFIX_MSB, remainingNodes;
@@ -427,7 +427,7 @@ void stpk_huffGenPrefix(uint levels, uchar *leafNodesPerLevel, uchar *alphabet, 
 }
 
 // Decode Huffman codes.
-uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, uchar *alphabet, uchar *symbols, uchar *widths, short *codeOffsets, ushort *totalCodes, int verbose, char *err)
+uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, const uchar *alphabet, const uchar *symbols, const uchar *widths, const short *codeOffsets, const ushort *totalCodes, int verbose, char *err)
 {
 	uchar readWidth = 8, curWidth = 0, code, level;
 	ushort curWord = 0;
@@ -559,7 +559,7 @@ char *stpk_stringBits16(ushort val)
 }
 
 // Print formatted array. Used in verbose output.
-void stpk_printArray(uchar *arr, uint len, char *name)
+void stpk_printArray(const uchar *arr, uint len, const char *name)
 {
 	uint i = 0;
 
