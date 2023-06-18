@@ -341,10 +341,11 @@ uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbo
 // Decompress Huffman coded sub-file.
 uint stpk_decompHuff(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err)
 {
-	uchar levels, delta, leafNodesPerLevel[STPK_HUFF_LEVELS_MAX], alphabet[STPK_HUFF_ALPH_LEN], symbols[STPK_HUFF_PREFIX_LEN], widths[STPK_HUFF_PREFIX_LEN];
+	uchar levels, leafNodesPerLevel[STPK_HUFF_LEVELS_MAX], alphabet[STPK_HUFF_ALPH_LEN], symbols[STPK_HUFF_PREFIX_LEN], widths[STPK_HUFF_PREFIX_LEN];
 	short codeOffsets[STPK_HUFF_LEVELS_MAX];
 	ushort totalCodes[STPK_HUFF_LEVELS_MAX];
 	uint i, alphLen;
+	int delta;
 
 	levels = src->data[src->offset++];
 	delta = STPK_GET_FLAG(levels, STPK_HUFF_LEVELS_DELTA);
@@ -380,7 +381,7 @@ uint stpk_decompHuff(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err)
 
 	stpk_huffGenPrefix(levels, leafNodesPerLevel, alphabet, symbols, widths, verbose);
 
-	return stpk_huffDecode(src, dst, alphabet, symbols, widths, codeOffsets, totalCodes, verbose, err);
+	return stpk_huffDecode(src, dst, alphabet, symbols, widths, codeOffsets, totalCodes, delta, verbose, err);
 }
 
 // Generate offset table for translating Huffman codes wider than 8 bits to alphabet indices.
@@ -427,9 +428,9 @@ void stpk_huffGenPrefix(uint levels, const uchar *leafNodesPerLevel, const uchar
 }
 
 // Decode Huffman codes.
-uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, const uchar *alphabet, const uchar *symbols, const uchar *widths, const short *codeOffsets, const ushort *totalCodes, int verbose, char *err)
+uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, const uchar *alphabet, const uchar *symbols, const uchar *widths, const short *codeOffsets, const ushort *totalCodes, int delta, int verbose, char *err)
 {
-	uchar readWidth = 8, curWidth = 0, code, level;
+	uchar readWidth = 8, curWidth = 0, code, level, curOut = 0;
 	ushort curWord = 0;
 	uint progress = 0, done;
 
@@ -485,8 +486,16 @@ uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, const uchar *alphabet, 
 						return 1;
 					}
 
-					dst->data[dst->offset++] = alphabet[curWord];
-					STPK_VERBOSE_HUFF("Wrote %02X using offset table", dst->data[dst->offset - 1]);
+					if (delta) {
+						STPK_VERBOSE_HUFF("Using symbol %02X as delta to previous output %02X", alphabet[curWord], curOut);
+						curOut += alphabet[curWord];
+					}
+					else {
+						curOut = alphabet[curWord];
+					}
+
+					dst->data[dst->offset++] = curOut;
+					STPK_VERBOSE_HUFF("Wrote %02X using offset table", curOut);
 
 					done = 1;
 				}
@@ -500,8 +509,15 @@ uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, const uchar *alphabet, 
 		}
 		// Code is 8 bits wide or less, do direct prefix lookup.
 		else {
-			dst->data[dst->offset++] = symbols[code];
-			STPK_VERBOSE_HUFF("Wrote %02X from prefix table", dst->data[dst->offset - 1]);
+			if (delta) {
+				STPK_VERBOSE_HUFF("Using symbol %02X as delta to previous output %02X", symbols[code], curOut);
+				curOut += symbols[code];
+			}
+			else {
+				curOut = symbols[code];
+			}
+			dst->data[dst->offset++] = curOut;
+			STPK_VERBOSE_HUFF("Wrote %02X from prefix table", curOut);
 
 			if (readWidth < curWidth) {
 				curWord <<= readWidth;
