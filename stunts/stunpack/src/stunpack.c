@@ -221,8 +221,10 @@ uint stpk_decompRLE(stpk_Context *ctx)
 			return 1;
 		}
 
+		srcLen = ctx->dst.offset;
 		dstLen = ctx->dst.len;
 		stpk_dst2src(ctx);
+		ctx->src.len = srcLen;
 		ctx->dst.len = dstLen;
 
 		if (stpk_allocDst(ctx)) {
