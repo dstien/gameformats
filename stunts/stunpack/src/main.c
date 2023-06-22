@@ -18,6 +18,7 @@
  */
 
 #include <errno.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,6 +33,10 @@
 
 #define BANNER STPK_NAME" "STPK_VERSION" - Stunts/4D [Sports] Driving game resource unpacker\n\n"
 #define USAGE  "Usage: %s [OPTIONS]... SOURCE-FILE [DESTINATION-FILE]\n"
+
+#define MSG(msg, ...) if (verbose) printf(msg, ## __VA_ARGS__)
+#define ERR(msg, ...) if (verbose) fprintf(stderr, "\n" STPK_NAME ": " msg, ## __VA_ARGS__)
+#define VERBOSE(msg, ...)  if (verbose > 1) printf(msg, ## __VA_ARGS__)
 
 void printHelp(char *progName);
 int decompress(char *srcFileName, char *dstFileName, int passes, int verbose);
@@ -72,7 +77,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	STPK_MSG(BANNER);
+	MSG(BANNER);
 
 	// Max two additional params (file names).
 	for (; optind < argc; optind++) {
@@ -88,7 +93,7 @@ int main(int argc, char **argv)
 	if (dstFileName == NULL) {
 		srcFileNameLen = strlen(srcFileName);
 		if ((dstFileName = (char*)malloc(sizeof(char) * (srcFileNameLen + dstFileNamePostfixLen + 1))) == NULL) {
-			STPK_ERR1("Error allocating memory for generated destination file name. (%s)\n", strerror(errno));
+			ERR("Error allocating memory for generated destination file name. (%s)\n", strerror(errno));
 			return 1;
 		}
 		strcpy(dstFileName, srcFileName);
@@ -123,87 +128,107 @@ void printHelp(char *progName)
 	printf("Report bugs to <"STPK_BUGS">.\n");
 }
 
+void logCallback(stpk_LogType type, const char *msg, ...)
+{
+	va_list args;
+	va_start(args, msg);
+
+	switch (type) {
+		case STPK_LOG_WARN:
+			fprintf(stderr, "Warning: ");
+			vfprintf(stderr, msg, args);
+			break;
+		case STPK_LOG_ERR:
+		fprintf(stderr, "Error: ");
+			vfprintf(stderr, msg, args);
+			break;
+		case STPK_LOG_INFO:
+		default:
+			vprintf(msg, args);
+			break;
+	}
+
+	va_end(args);
+}
+
 int decompress(char *srcFileName, char *dstFileName, int passes, int verbose)
 {
 	uint retval = 1;
 	FILE *srcFile, *dstFile;
-	stpk_Buffer src, dst;
 
-	src.data = dst.data = NULL;
-	src.offset = dst.offset = 0;
+	stpk_Context ctx = stpk_init(passes, verbose, logCallback, malloc, free);
 
 	if ((srcFile = fopen(srcFileName, "rb")) == NULL) {
-		STPK_ERR1("Error opening source file \"%s\" for reading. (%s)\n", srcFileName, strerror(errno));
+		ERR("Error opening source file \"%s\" for reading. (%s)\n", srcFileName, strerror(errno));
 		return 1;
 	}
 
-	STPK_MSG("Reading file \"%s\"...\n", srcFileName);
+	MSG("Reading file \"%s\"...\n", srcFileName);
 
 	if (fseek(srcFile, 0, SEEK_END) != 0) {
-		STPK_ERR1("Error seeking for EOF in source file \"%s\". (%s)\n", srcFileName, strerror(errno));
+		ERR("Error seeking for EOF in source file \"%s\". (%s)\n", srcFileName, strerror(errno));
 		goto closeSrcFile;
 	}
 
-	if ((src.len = ftell(srcFile)) == -1) {
-		STPK_ERR1("Error getting EOF position in source file \"%s\". (%s)\n", srcFileName, strerror(errno));
+	if ((ctx.src.len = ftell(srcFile)) == -1) {
+		ERR("Error getting EOF position in source file \"%s\". (%s)\n", srcFileName, strerror(errno));
 		goto closeSrcFile;
 	}
 
-	if (src.len > STPK_MAX_SIZE) {
-		STPK_ERR1("Source file \"%s\" size (%d) exceeds max size (%d).\n", srcFileName, src.len, STPK_MAX_SIZE);
+	if (ctx.src.len > STPK_MAX_SIZE) {
+		ERR("Source file \"%s\" size (%d) exceeds max size (%d).\n", srcFileName, ctx.src.len, STPK_MAX_SIZE);
 		goto closeSrcFile;
 	}
 
 	if (fseek(srcFile, 0, SEEK_SET) != 0) {
-		STPK_ERR1("Error seeking for start position in source file \"%s\". (%s)\n", srcFileName, strerror(errno));
+		ERR("Error seeking for start position in source file \"%s\". (%s)\n", srcFileName, strerror(errno));
 		goto closeSrcFile;
 	}
 
-	if ((src.data = (uchar*)malloc(sizeof(uchar) * src.len)) == NULL) {
-		STPK_ERR1("Error allocating memory for source file \"%s\" content. (%s)\n", srcFileName, strerror(errno));
+	if ((ctx.src.data = (uchar*)malloc(sizeof(uchar) * ctx.src.len)) == NULL) {
+		ERR("Error allocating memory for source file \"%s\" content. (%s)\n", srcFileName, strerror(errno));
 		goto closeSrcFile;
 	}
 
-	if (fread(src.data, sizeof(uchar), src.len, srcFile) != src.len) {
-		STPK_ERR1("Error reading source file \"%s\" content. (%s)\n", srcFileName, strerror(errno));
+	if (fread(ctx.src.data, sizeof(uchar), ctx.src.len, srcFile) != ctx.src.len) {
+		ERR("Error reading source file \"%s\" content. (%s)\n", srcFileName, strerror(errno));
 		goto freeBuffers;
 	}
 
-	retval = stpk_decomp(&src, &dst, passes, verbose, NULL);
+	retval = stpk_decomp(&ctx);
 
 	// Flush unpacked data to file.
 	if (!retval) {
-		STPK_VERBOSE1("\n");
-		STPK_MSG("Writing file \"%s\"... ", dstFileName);
+		VERBOSE("\n");
+		MSG("Writing file \"%s\"... ", dstFileName);
 
 		if ((dstFile = fopen(dstFileName, "wb")) == NULL) {
-			STPK_ERR1("Error opening destination file \"%s\" for writing. (%s)\n", dstFileName, strerror(errno));
+			ERR("Error opening destination file \"%s\" for writing. (%s)\n", dstFileName, strerror(errno));
 			retval = 1;
 			goto freeBuffers;
 		}
 
-		if (fwrite(dst.data, 1, dst.len, dstFile) != dst.len) {
-			STPK_ERR1("Error writing destination file \"%s\" content. (%s)\n", dstFileName, strerror(errno));
+		if (fwrite(ctx.dst.data, 1, ctx.dst.len, dstFile) != ctx.dst.len) {
+			ERR("Error writing destination file \"%s\" content. (%s)\n", dstFileName, strerror(errno));
 			retval = 1;
 			goto closeDstFile;
 		}
 
-		STPK_MSG("Done!\n");
+		MSG("Done!\n");
 
 closeDstFile:
 		if (fclose(dstFile) != 0) {
-			STPK_ERR1("Error closing destination file \"%s\". (%s)\n", dstFileName, strerror(errno));
+			ERR("Error closing destination file \"%s\". (%s)\n", dstFileName, strerror(errno));
 			retval = 1;
 		}
 	}
 
 freeBuffers:
-	free(src.data);
-	free(dst.data);
+	stpk_deinit(&ctx);
 
 closeSrcFile:
 	if (fclose(srcFile) != 0) {
-		STPK_ERR1("Error closing source file \"%s\". (%s)\n", srcFileName, strerror(errno));
+		ERR("Error closing source file \"%s\". (%s)\n", srcFileName, strerror(errno));
 		retval = 1;
 	}
 

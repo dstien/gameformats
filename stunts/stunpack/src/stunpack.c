@@ -24,32 +24,109 @@
 
 #include "stunpack.h"
 
+#define STPK_LOG(show, type, msg, ...) if (show && ctx->logCallback) ctx->logCallback((type), (msg), ## __VA_ARGS__)
+#define STPK_MSG(msg, ...)       STPK_LOG(ctx->verbosity,      STPK_LOG_INFO, (msg), ## __VA_ARGS__)
+#define STPK_ERR(msg, ...)       STPK_LOG(ctx->verbosity,      STPK_LOG_ERR,  (msg), ## __VA_ARGS__)
+#define STPK_WARN(msg, ...)      STPK_LOG(ctx->verbosity,      STPK_LOG_WARN, (msg), ## __VA_ARGS__)
+#define STPK_NOVERBOSE(msg, ...) STPK_LOG(ctx->verbosity == 1, STPK_LOG_INFO, (msg), ## __VA_ARGS__)
+#define STPK_VERBOSE1(msg, ...)  STPK_LOG(ctx->verbosity >  1, STPK_LOG_INFO, (msg), ## __VA_ARGS__)
+#define STPK_VERBOSE2(msg, ...)  STPK_LOG(ctx->verbosity >  2, STPK_LOG_INFO, (msg), ## __VA_ARGS__)
+#define STPK_VERBOSE_ARR(arr, len, name) if (ctx->verbosity > 1) stpk_printArray(arr, len, name)
+#define STPK_VERBOSE_HUFF(msg, ...) STPK_VERBOSE2("%6d %6d %2d %2d %04X %s %02X -> " msg "\n", \
+					ctx->src.offset, ctx->dst.offset, readWidth, curWidth, curWord, \
+					stpk_stringBits16(curWord), code, ## __VA_ARGS__)
+
+#define STPK_GET_FLAG(data, mask) ((data & mask) == mask)
+#define STPK_MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
+
 inline void stpk_getLength(stpk_Buffer *buf, uint *len);
+inline void stpk_dst2src(stpk_Context *ctx);
+char *stpk_stringBits16(ushort val);
+void stpk_printArray(const uchar *arr, uint len, const char *name);
+
+stpk_Context stpk_init(int maxPasses, int verbosity, stpk_LogCallback logCallback, stpk_AllocCallback allocCallback, stpk_DeallocCallback deallocCallback)
+{
+	return (stpk_Context) {
+		.src = (stpk_Buffer) {
+			.data   = NULL,
+			.offset = 0,
+			.len    = 0
+		},
+		.dst = (stpk_Buffer) {
+			.data   = NULL,
+			.offset = 0,
+			.len    = 0
+		},
+		.maxPasses = maxPasses,
+		.verbosity = verbosity,
+		.logCallback = logCallback,
+		.allocCallback = allocCallback,
+		.deallocCallback = deallocCallback
+	};
+}
+
+void stpk_deinit(stpk_Context *ctx)
+{
+	if (ctx->deallocCallback) {
+		if (ctx->src.data != NULL) {
+			ctx->deallocCallback(ctx->src.data);
+			ctx->src.data = NULL;
+			ctx->src.len = 0;
+			ctx->src.offset = 0;
+		}
+		if (ctx->dst.data != NULL) {
+			ctx->deallocCallback(ctx->dst.data);
+			ctx->dst.data = NULL;
+			ctx->dst.len = 0;
+			ctx->dst.offset = 0;
+		}
+	}
+}
+
+void inline stpk_dst2src(stpk_Context *ctx)
+{
+	if (ctx->src.data != NULL) {
+		ctx->deallocCallback(ctx->src.data);
+	}
+	ctx->src.data = ctx->dst.data;
+	ctx->src.len = ctx->dst.len;
+	ctx->dst.data = NULL;
+	ctx->src.offset = ctx->dst.offset = 0;
+}
+
+int inline stpk_allocDst(stpk_Context *ctx)
+{
+	if ((ctx->dst.data = (uchar*)ctx->allocCallback(sizeof(uchar) * ctx->dst.len)) == NULL) {
+		STPK_ERR("Error allocating memory for destination buffer. (%s)\n", strerror(errno));
+		return 1;
+	}
+	return 0;
+}
 
 // Decompress sub-files in source buffer.
-uint stpk_decomp(stpk_Buffer *src, stpk_Buffer *dst, int maxPasses, int verbose, char *err)
+uint stpk_decomp(stpk_Context *ctx)
 {
 	uchar passes, type, i;
 	uint retval = 1, finalLen;
 
-	passes = src->data[src->offset];
+	passes = ctx->src.data[ctx->src.offset];
 	if (STPK_GET_FLAG(passes, STPK_PASSES_RECUR)) {
-		src->offset++;
+		ctx->src.offset++;
 
 		passes &= STPK_PASSES_MASK;
 		STPK_VERBOSE1("  %-10s %d\n", "passes", passes);
 
-		stpk_getLength(src, &finalLen);
+		stpk_getLength(&ctx->src, &finalLen);
 		STPK_VERBOSE1("  %-10s %d\n", "finalLen", finalLen);
-		STPK_VERBOSE1("    %-8s %d\n", "srcLen", src->len);
-		STPK_VERBOSE1("    %-8s %.2f\n", "ratio", (float)finalLen / src->len);
+		STPK_VERBOSE1("    %-8s %d\n", "srcLen", ctx->src.len);
+		STPK_VERBOSE1("    %-8s %.2f\n", "ratio", (float)finalLen / ctx->src.len);
 	}
 	else {
 		passes = 1;
 	}
 
-	if (src->offset > src->len) {
-		STPK_ERR2("Reached EOF while parsing file header\n");
+	if (ctx->src.offset > ctx->src.len) {
+		STPK_ERR("Reached EOF while parsing file header\n");
 		return 1;
 	}
 
@@ -57,26 +134,25 @@ uint stpk_decomp(stpk_Buffer *src, stpk_Buffer *dst, int maxPasses, int verbose,
 		STPK_NOVERBOSE("Pass %d/%d: ", i + 1, passes);
 		STPK_VERBOSE1("\nPass %d/%d\n", i + 1, passes);
 
-		type = src->data[src->offset++];
-		stpk_getLength(src, &dst->len);
-		STPK_VERBOSE1("  %-10s %d\n", "dstLen", dst->len);
+		type = ctx->src.data[ctx->src.offset++];
+		stpk_getLength(&ctx->src, &ctx->dst.len);
+		STPK_VERBOSE1("  %-10s %d\n", "dstLen", ctx->dst.len);
 
-		if ((dst->data = (uchar*)malloc(sizeof(uchar) * dst->len)) == NULL) {
-			STPK_ERR2("Error allocating memory for destination buffer. (%s)\n", strerror(errno));
+		if (stpk_allocDst(ctx)) {
 			return 1;
 		}
 
 		switch (type) {
 			case STPK_TYPE_RLE:
 				STPK_VERBOSE1("  %-10s Run-length encoding\n", "type");
-				retval = stpk_decompRLE(src, dst, verbose, err);
+				retval = stpk_decompRLE(ctx);
 				break;
 			case STPK_TYPE_HUFF:
 				STPK_VERBOSE1("  %-10s Huffman coding\n", "type");
-				retval = stpk_decompHuff(src, dst, verbose, err);
+				retval = stpk_decompHuff(ctx);
 				break;
 			default:
-				STPK_ERR2("Error parsing source file. Expected type 1 (run-length) or 2 (Huffman), got %02X\n", type);
+				STPK_ERR("Error parsing source file. Expected type 1 (run-length) or 2 (Huffman), got %02X\n", type);
 				return 1;
 		}
 
@@ -84,18 +160,14 @@ uint stpk_decomp(stpk_Buffer *src, stpk_Buffer *dst, int maxPasses, int verbose,
 			return retval;
 		}
 
-		if (i + 1 == maxPasses && passes != maxPasses) {
-			STPK_MSG("Parsing limited to %d decompression pass(es), aborting.\n", maxPasses);
+		if (i + 1 == ctx->maxPasses && passes != ctx->maxPasses) {
+			STPK_MSG("Parsing limited to %d decompression pass(es), aborting.\n", ctx->maxPasses);
 			return 0;
 		}
 
 		// Destination buffer is source for next pass.
 		if (i < (passes - 1)) {
-			free(src->data);
-			src->data = dst->data;
-			src->len = dst->len;
-			dst->data = NULL;
-			src->offset = dst->offset = 0;
+			stpk_dst2src(ctx);
 		}
 	}
 
@@ -103,36 +175,35 @@ uint stpk_decomp(stpk_Buffer *src, stpk_Buffer *dst, int maxPasses, int verbose,
 }
 
 // Decompress run-length encoded sub-file.
-uint stpk_decompRLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err)
+uint stpk_decompRLE(stpk_Context *ctx)
 {
-	uint retval = 1, srcLen, i;
+	uint srcLen, dstLen, i;
 	uchar unk, escLen, esc[STPK_RLE_ESCLEN_MAX], escLookup[STPK_RLE_ESCLOOKUP_LEN];
-	stpk_Buffer tmp, *finalSrc;
 
-	stpk_getLength(src, &srcLen);
+	stpk_getLength(&ctx->src, &srcLen);
 	STPK_VERBOSE1("  %-10s %d\n", "srcLen", srcLen);
 
-	unk = src->data[src->offset++];
+	unk = ctx->src.data[ctx->src.offset++];
 	STPK_VERBOSE1("  %-10s %02X\n", "unk", unk);
 
 	if (unk) {
 		STPK_WARN("Unknown RLE header field (unk) is %02X, expected 0\n", unk);
 	}
 
-	escLen = src->data[src->offset++];
+	escLen = ctx->src.data[ctx->src.offset++];
 	STPK_VERBOSE1("  %-10s %d (no sequences = %d)\n\n", "escLen", escLen & STPK_RLE_ESCLEN_MASK, STPK_GET_FLAG(escLen, STPK_RLE_ESCLEN_NOSEQ));
 
 	if ((escLen & STPK_RLE_ESCLEN_MASK) > STPK_RLE_ESCLEN_MAX) {
-		STPK_ERR2("escLen & STPK_RLE_ESCLEN_MASK greater than max length %02X, got %02X\n", STPK_RLE_ESCLEN_MAX, escLen & STPK_RLE_ESCLEN_MASK);
+		STPK_ERR("escLen & STPK_RLE_ESCLEN_MASK greater than max length %02X, got %02X\n", STPK_RLE_ESCLEN_MAX, escLen & STPK_RLE_ESCLEN_MASK);
 		return 1;
 	}
 
 	// Read escape codes.
-	for (i = 0; i < (escLen & STPK_RLE_ESCLEN_MASK); i++) esc[i] = src->data[src->offset++];
+	for (i = 0; i < (escLen & STPK_RLE_ESCLEN_MASK); i++) esc[i] = ctx->src.data[ctx->src.offset++];
 	STPK_VERBOSE_ARR(esc, escLen & STPK_RLE_ESCLEN_MASK, "esc");
 
-	if (src->offset > src->len) {
-		STPK_ERR2("Reached end of source buffer while parsing run-length header\n");
+	if (ctx->src.offset > ctx->src.len) {
+		STPK_ERR("Reached end of source buffer while parsing run-length header\n");
 		return 1;
 	}
 
@@ -144,40 +215,26 @@ uint stpk_decompRLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err)
 
 	STPK_NOVERBOSE("Run-length ");
 
-	tmp.data = NULL;
-
+	// Decode sequence run as a separate pass.
 	if (!STPK_GET_FLAG(escLen, STPK_RLE_ESCLEN_NOSEQ)) {
-		finalSrc = &tmp;
-
-		tmp.len = dst->len;
-		tmp.offset = 0;
-
-		if ((tmp.data = (uchar*)malloc(sizeof(uchar) * tmp.len)) == NULL) {
-			STPK_ERR2("Error allocating memory for temporary RLE buffer. (%s)\n", strerror(errno));
+		if (stpk_rleDecodeSeq(ctx, esc[STPK_RLE_ESCSEQ_POS])) {
 			return 1;
 		}
 
-		if ((retval = stpk_rleDecodeSeq(src, &tmp, esc[STPK_RLE_ESCSEQ_POS], verbose, err))) {
-			goto freeTmpBuf;
+		dstLen = ctx->dst.len;
+		stpk_dst2src(ctx);
+		ctx->dst.len = dstLen;
+
+		if (stpk_allocDst(ctx)) {
+			return 1;
 		}
-
-		tmp.len = tmp.offset;
-		tmp.offset = 0;
-	}
-	else {
-		finalSrc = src;
 	}
 
-	retval = stpk_rleDecodeOne(finalSrc, dst, escLookup, verbose, err);
-
-freeTmpBuf:
-	free(tmp.data);
-
-	return retval;
+	return stpk_rleDecodeOne(ctx, escLookup);
 }
 
 // Decode sequence runs.
-uint stpk_rleDecodeSeq(stpk_Buffer *src, stpk_Buffer *dst, uchar esc, int verbose, char *err)
+uint stpk_rleDecodeSeq(stpk_Context *ctx, uchar esc)
 {
 	uchar cur;
 	uint progress = 0, seqOffset, rep, i;
@@ -189,48 +246,48 @@ uint stpk_rleDecodeSeq(stpk_Buffer *src, stpk_Buffer *dst, uchar esc, int verbos
 	STPK_VERBOSE2("~~~~~~ ~~~~~~ ~~~ ~~~~~~~~\n");
 
 	// We do not know the destination length for this pass, dst->len covers both RLE passes.
-	while (src->offset < src->len) {
-		cur = src->data[src->offset++];
+	while (ctx->src.offset < ctx->src.len) {
+		cur = ctx->src.data[ctx->src.offset++];
 
 		if (cur == esc) {
-			seqOffset = src->offset;
+			seqOffset = ctx->src.offset;
 
-			while ((cur = src->data[src->offset++]) != esc) {
-				if (src->offset >= src->len) {
-					STPK_ERR2("Reached end of source buffer before finding sequence end escape code %02X\n", esc);
+			while ((cur = ctx->src.data[ctx->src.offset++]) != esc) {
+				if (ctx->src.offset >= ctx->src.len) {
+					STPK_ERR("Reached end of source buffer before finding sequence end escape code %02X\n", esc);
 					return 1;
 				}
 
-				dst->data[dst->offset++] = cur;
+				ctx->dst.data[ctx->dst.offset++] = cur;
 			}
 
-			rep = src->data[src->offset++] - 1; // Already wrote sequence once.
-			STPK_VERBOSE2("%6d %6d %02X  %2.*X\n", src->offset, dst->offset, rep + 1, src->offset - seqOffset - 2, src->data[seqOffset]);
+			rep = ctx->src.data[ctx->src.offset++] - 1; // Already wrote sequence once.
+			STPK_VERBOSE2("%6d %6d %02X  %2.*X\n", ctx->src.offset, ctx->dst.offset, rep + 1, ctx->src.offset - seqOffset - 2, ctx->src.data[seqOffset]);
 
 			while (rep--) {
-				for (i = 0; i < (src->offset - seqOffset - 2); i++) {
-					if (dst->offset >= dst->len) {
-						STPK_ERR2("Reached end of temporary buffer while writing repeated sequence\n");
+				for (i = 0; i < (ctx->src.offset - seqOffset - 2); i++) {
+					if (ctx->dst.offset >= ctx->dst.len) {
+						STPK_ERR("Reached end of temporary buffer while writing repeated sequence\n");
 						return 1;
 					}
 
-					dst->data[dst->offset++] = src->data[seqOffset + i];
+					ctx->dst.data[ctx->dst.offset++] = ctx->src.data[seqOffset + i];
 				}
 			}
 
 		}
 		else {
-			dst->data[dst->offset++] = cur;
-			STPK_VERBOSE2("%6d %6d     %02X\n", src->offset, dst->offset, cur);
+			ctx->dst.data[ctx->dst.offset++] = cur;
+			STPK_VERBOSE2("%6d %6d     %02X\n", ctx->src.offset, ctx->dst.offset, cur);
 
-			if (dst->offset > dst->len) {
-				STPK_ERR2("Reached end of temporary buffer while writing non-RLE byte\n");
+			if (ctx->dst.offset > ctx->dst.len) {
+				STPK_ERR("Reached end of temporary buffer while writing non-RLE byte\n");
 				return 1;
 			}
 		}
 
 		// Progress bar.
-		if (verbose && (verbose < 3) && ((src->offset * 100) / src->len) >= (progress * 25)) {
+		if (ctx->verbosity && (ctx->verbosity < 3) && ((ctx->src.offset * 100) / ctx->src.len) >= (progress * 25)) {
 			printf("%4d%%", progress++ * 25);
 		}
 	}
@@ -242,7 +299,7 @@ uint stpk_rleDecodeSeq(stpk_Buffer *src, stpk_Buffer *dst, uchar esc, int verbos
 }
 
 // Decode single-byte runs.
-uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbose, char *err)
+uint stpk_rleDecodeOne(stpk_Context *ctx, const uchar *escLookup)
 {
 	uchar cur;
 	uint progress = 0, rep;
@@ -254,30 +311,30 @@ uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbo
 	STPK_VERBOSE2("\n\nsrcOff dstOff   rep cur\n");
 	STPK_VERBOSE2("~~~~~~ ~~~~~~ ~~~~~ ~~~\n");
 
-	while (dst->offset < dst->len) {
-		cur = src->data[src->offset++];
+	while (ctx->dst.offset < ctx->dst.len) {
+		cur = ctx->src.data[ctx->src.offset++];
 
-		if (src->offset > src->len) {
-			STPK_ERR2("Reached unexpected end of source buffer while decoding single-byte runs\n");
+		if (ctx->src.offset > ctx->src.len) {
+			STPK_ERR("Reached unexpected end of source buffer while decoding single-byte runs\n");
 			return 1;
 		}
 
-		if (esc[cur] & 0xFF) {
-			switch (esc[cur]) {
+		if (escLookup[cur]) {
+			switch (escLookup[cur]) {
 				// Type 1: One-byte counter for repetitions
 				case 1:
-					rep = src->data[src->offset];
-					cur = src->data[src->offset + 1];
-					src->offset += 2;
-					STPK_VERBOSE2("%6d %6d    %02X  %02X\n", src->offset, dst->offset, rep, cur);
+					rep = ctx->src.data[ctx->src.offset];
+					cur = ctx->src.data[ctx->src.offset + 1];
+					ctx->src.offset += 2;
+					STPK_VERBOSE2("%6d %6d    %02X  %02X\n", ctx->src.offset, ctx->dst.offset, rep, cur);
 
 					while (rep--) {
-						if (dst->offset >= dst->len) {
-							STPK_ERR2("Reached end of temporary buffer while writing byte run\n");
+						if (ctx->dst.offset >= ctx->dst.len) {
+							STPK_ERR("Reached end of temporary buffer while writing byte run\n");
 							return 1;
 						}
 
-						dst->data[dst->offset++] = cur;
+						ctx->dst.data[ctx->dst.offset++] = cur;
 					}
 					break;
 
@@ -286,44 +343,44 @@ uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbo
 
 				// Type 3: Two-byte counter for repetitions
 				case 3:
-					rep = src->data[src->offset] | src->data[src->offset + 1] << 8;
-					cur = src->data[src->offset + 2];
-					src->offset += 3;
-					STPK_VERBOSE2("%6d %6d  %04X  %02X\n", src->offset, dst->offset, rep, cur);
+					rep = ctx->src.data[ctx->src.offset] | ctx->src.data[ctx->src.offset + 1] << 8;
+					cur = ctx->src.data[ctx->src.offset + 2];
+					ctx->src.offset += 3;
+					STPK_VERBOSE2("%6d %6d  %04X  %02X\n", ctx->src.offset, ctx->dst.offset, rep, cur);
 
 					while (rep--) {
-						if (dst->offset >= dst->len) {
-							STPK_ERR2("Reached end of temporary buffer while writing byte run\n");
+						if (ctx->dst.offset >= ctx->dst.len) {
+							STPK_ERR("Reached end of temporary buffer while writing byte run\n");
 							return 1;
 						}
 
-						dst->data[dst->offset++] = cur;
+						ctx->dst.data[ctx->dst.offset++] = cur;
 					}
 					break;
 
 				// Type n: n repetitions
 				default:
-					rep = esc[cur] - 1;
-					cur = src->data[src->offset++];
-					STPK_VERBOSE2("%6d %6d    %02X  %02X\n", src->offset, dst->offset, rep, cur);
+					rep = escLookup[cur] - 1;
+					cur = ctx->src.data[ctx->src.offset++];
+					STPK_VERBOSE2("%6d %6d    %02X  %02X\n", ctx->src.offset, ctx->dst.offset, rep, cur);
 
 					while (rep--) {
-						if (dst->offset >= dst->len) {
-							STPK_ERR2("Reached end of temporary buffer while writing byte run\n");
+						if (ctx->dst.offset >= ctx->dst.len) {
+							STPK_ERR("Reached end of temporary buffer while writing byte run\n");
 							return 1;
 						}
 
-						dst->data[dst->offset++] = cur;
+						ctx->dst.data[ctx->dst.offset++] = cur;
 					}
 			}
 		}
 		else {
-			dst->data[dst->offset++] = cur;
-			STPK_VERBOSE2("%6d %6d        %02X\n", src->offset, dst->offset, cur);
+			ctx->dst.data[ctx->dst.offset++] = cur;
+			STPK_VERBOSE2("%6d %6d        %02X\n", ctx->src.offset, ctx->dst.offset, cur);
 		}
 
 		// Progress bar.
-		if (verbose && (verbose < 3) && ((src->offset * 100) / src->len) >= (progress * 25)) {
+		if (ctx->verbosity && (ctx->verbosity < 3) && ((ctx->src.offset * 100) / ctx->src.len) >= (progress * 25)) {
 			printf("%4d%%", progress++ * 25);
 		}
 	}
@@ -331,15 +388,15 @@ uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbo
 	STPK_VERBOSE1("\n");
 	STPK_NOVERBOSE("]\n");
 
-	if (src->offset < src->len) {
-		STPK_WARN("RLE decoding finished with unprocessed data left in source buffer (%d bytes left)\n", src->len - src->offset);
+	if (ctx->src.offset < ctx->src.len) {
+		STPK_WARN("RLE decoding finished with unprocessed data left in source buffer (%d bytes left)\n", ctx->src.len - ctx->src.offset);
 	}
 
 	return 0;
 }
 
 // Decompress Huffman coded sub-file.
-uint stpk_decompHuff(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err)
+uint stpk_decompHuff(stpk_Context *ctx)
 {
 	uchar levels, leafNodesPerLevel[STPK_HUFF_LEVELS_MAX], alphabet[STPK_HUFF_ALPH_LEN], symbols[STPK_HUFF_PREFIX_LEN], widths[STPK_HUFF_PREFIX_LEN];
 	short codeOffsets[STPK_HUFF_LEVELS_MAX];
@@ -347,7 +404,7 @@ uint stpk_decompHuff(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err)
 	uint i, alphLen;
 	int delta;
 
-	levels = src->data[src->offset++];
+	levels = ctx->src.data[ctx->src.offset++];
 	delta = STPK_GET_FLAG(levels, STPK_HUFF_LEVELS_DELTA);
 	levels &= STPK_HUFF_LEVELS_MASK;
 
@@ -355,37 +412,37 @@ uint stpk_decompHuff(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err)
 	STPK_VERBOSE1("  %-10s %d\n\n", "delta", delta);
 
 	if ((levels & STPK_HUFF_LEVELS_MASK) > STPK_HUFF_LEVELS_MAX) {
-		STPK_ERR2("Huffman tree levels greater than %d, got %d\n", STPK_HUFF_LEVELS_MAX, levels & STPK_HUFF_LEVELS_MASK);
+		STPK_ERR("Huffman tree levels greater than %d, got %d\n", STPK_HUFF_LEVELS_MAX, levels & STPK_HUFF_LEVELS_MASK);
 		return 1;
 	}
 
 	for (i = 0; i < levels; i++) {
-		leafNodesPerLevel[i] = src->data[src->offset++];
+		leafNodesPerLevel[i] = ctx->src.data[ctx->src.offset++];
 	}
 
-	alphLen = stpk_huffGenOffsets(levels, leafNodesPerLevel, codeOffsets, totalCodes, verbose);
+	alphLen = stpk_huffGenOffsets(ctx, levels, leafNodesPerLevel, codeOffsets, totalCodes);
 
 	if (alphLen > STPK_HUFF_ALPH_LEN) {
-		STPK_ERR2("Alphabet longer than than %d, got %d\n", STPK_HUFF_ALPH_LEN, alphLen);
+		STPK_ERR("Alphabet longer than than %d, got %d\n", STPK_HUFF_ALPH_LEN, alphLen);
 		return 1;
 	}
 
 	// Read alphabet.
-	for (i = 0; i < alphLen; i++) alphabet[i] = src->data[src->offset++];
+	for (i = 0; i < alphLen; i++) alphabet[i] = ctx->src.data[ctx->src.offset++];
 	STPK_VERBOSE_ARR(alphabet, alphLen, "alphabet");
 
-	if (src->offset > src->len) {
-		STPK_ERR2("Reached end of source buffer while parsing Huffman header\n");
+	if (ctx->src.offset > ctx->src.len) {
+		STPK_ERR("Reached end of source buffer while parsing Huffman header\n");
 		return 1;
 	}
 
-	stpk_huffGenPrefix(levels, leafNodesPerLevel, alphabet, symbols, widths, verbose);
+	stpk_huffGenPrefix(ctx, levels, leafNodesPerLevel, alphabet, symbols, widths);
 
-	return stpk_huffDecode(src, dst, alphabet, symbols, widths, codeOffsets, totalCodes, delta, verbose, err);
+	return stpk_huffDecode(ctx, alphabet, symbols, widths, codeOffsets, totalCodes, delta);
 }
 
 // Generate offset table for translating Huffman codes wider than 8 bits to alphabet indices.
-uint stpk_huffGenOffsets(uint levels, const uchar *leafNodesPerLevel, short *codeOffsets, ushort *totalCodes, int verbose)
+uint stpk_huffGenOffsets(stpk_Context *ctx, uint levels, const uchar *leafNodesPerLevel, short *codeOffsets, ushort *totalCodes)
 {
 	uint level, codes = 0, alphLen = 0;
 
@@ -406,7 +463,7 @@ uint stpk_huffGenOffsets(uint levels, const uchar *leafNodesPerLevel, short *cod
 }
 
 // Generate prefix table for direct lookup of Huffman codes up to 8 bits wide.
-void stpk_huffGenPrefix(uint levels, const uchar *leafNodesPerLevel, const uchar *alphabet, uchar *symbols, uchar *widths, int verbose)
+void stpk_huffGenPrefix(stpk_Context *ctx, uint levels, const uchar *leafNodesPerLevel, const uchar *alphabet, uchar *symbols, uchar *widths)
 {
 	uint prefix, alphabetIndex, width = 1, maxWidth = STPK_MIN(levels, STPK_HUFF_PREFIX_WIDTH);
 	uchar leafNodes, totalNodes = STPK_HUFF_PREFIX_MSB, remainingNodes;
@@ -428,21 +485,21 @@ void stpk_huffGenPrefix(uint levels, const uchar *leafNodesPerLevel, const uchar
 }
 
 // Decode Huffman codes.
-uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, const uchar *alphabet, const uchar *symbols, const uchar *widths, const short *codeOffsets, const ushort *totalCodes, int delta, int verbose, char *err)
+uint stpk_huffDecode(stpk_Context *ctx, const uchar *alphabet, const uchar *symbols, const uchar *widths, const short *codeOffsets, const ushort *totalCodes, int delta)
 {
 	uchar readWidth = 8, curWidth = 0, code, level, curOut = 0;
 	ushort curWord = 0;
 	uint progress = 0, done;
 
-	curWord = src->data[src->offset++] << 8;
-	curWord |= src->data[src->offset++];
+	curWord = ctx->src.data[ctx->src.offset++] << 8;
+	curWord |= ctx->src.data[ctx->src.offset++];
 
 	STPK_NOVERBOSE("Huffman    [");
 
 	STPK_VERBOSE1("Decoding Huffman codes... \n");
 	STPK_VERBOSE2("\nsrcOff dstOff rW cW curWord               cd    Description\n");
 
-	while (dst->offset < dst->len) {
+	while (ctx->dst.offset < ctx->dst.len) {
 		STPK_VERBOSE2("~~~~~~ ~~~~~~ ~~ ~~ ~~~~~~~~~~~~~~~~~~~~~ ~~    ~~~~~~~~~~~~~~~~~~\n");
 
 		code = (curWord & 0xFF00) >> 8;
@@ -453,7 +510,7 @@ uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, const uchar *alphabet, 
 		// If code is wider than 8 bits, read more bits and decode with offset table.
 		if (curWidth > STPK_HUFF_PREFIX_WIDTH) {
 			if (curWidth != STPK_HUFF_WIDTH_ESC) {
-				STPK_ERR2("Invalid escape value. curWidth != %02X, got %02X\n", STPK_HUFF_WIDTH_ESC, curWidth);
+				STPK_ERR("Invalid escape value. curWidth != %02X, got %02X\n", STPK_HUFF_WIDTH_ESC, curWidth);
 				return 1;
 			}
 
@@ -463,9 +520,9 @@ uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, const uchar *alphabet, 
 
 			for (level = STPK_HUFF_PREFIX_WIDTH, done = 0; !done; level++) {
 				if (!readWidth) {
-					code = src->data[src->offset++];
+					code = ctx->src.data[ctx->src.offset++];
 					readWidth = STPK_HUFF_PREFIX_WIDTH;
-					STPK_VERBOSE_HUFF("Read %02X", src->data[src->offset - 1]);
+					STPK_VERBOSE_HUFF("Read %02X", ctx->src.data[ctx->src.offset - 1]);
 				}
 
 				curWord = (curWord << 1) + STPK_GET_FLAG(code, STPK_HUFF_PREFIX_MSB);
@@ -474,7 +531,7 @@ uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, const uchar *alphabet, 
 				STPK_VERBOSE_HUFF("level = %d", level);
 
 				if (level >= STPK_HUFF_LEVELS_MAX) {
-					STPK_ERR2("Offset table out of bounds (%d >= %d)\n", level, STPK_HUFF_LEVELS_MAX);
+					STPK_ERR("Offset table out of bounds (%d >= %d)\n", level, STPK_HUFF_LEVELS_MAX);
 					return 1;
 				}
 
@@ -482,7 +539,7 @@ uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, const uchar *alphabet, 
 					curWord += codeOffsets[level];
 
 					if (curWord > 0xFF) {
-						STPK_ERR2("Alphabet index out of bounds (%04X > %04X)\n", curWord, STPK_HUFF_ALPH_LEN);
+						STPK_ERR("Alphabet index out of bounds (%04X > %04X)\n", curWord, STPK_HUFF_ALPH_LEN);
 						return 1;
 					}
 
@@ -494,7 +551,7 @@ uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, const uchar *alphabet, 
 						curOut = alphabet[curWord];
 					}
 
-					dst->data[dst->offset++] = curOut;
+					ctx->dst.data[ctx->dst.offset++] = curOut;
 					STPK_VERBOSE_HUFF("Wrote %02X using offset table", curOut);
 
 					done = 1;
@@ -502,10 +559,10 @@ uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, const uchar *alphabet, 
 			}
 
 			// Read another byte since the processed code was wider than a byte.
-			curWord = (code << readWidth) | src->data[src->offset++];
+			curWord = (code << readWidth) | ctx->src.data[ctx->src.offset++];
 			curWidth = 8 - readWidth;
 			readWidth = 8;
-			STPK_VERBOSE_HUFF("Read %02X", src->data[src->offset - 1]);
+			STPK_VERBOSE_HUFF("Read %02X", ctx->src.data[ctx->src.offset - 1]);
 		}
 		// Code is 8 bits wide or less, do direct prefix lookup.
 		else {
@@ -516,7 +573,7 @@ uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, const uchar *alphabet, 
 			else {
 				curOut = symbols[code];
 			}
-			dst->data[dst->offset++] = curOut;
+			ctx->dst.data[ctx->dst.offset++] = curOut;
 			STPK_VERBOSE_HUFF("Wrote %02X from prefix table", curOut);
 
 			if (readWidth < curWidth) {
@@ -526,21 +583,21 @@ uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, const uchar *alphabet, 
 				curWidth -= readWidth;
 				readWidth = 8;
 
-				curWord |= src->data[src->offset++];
-				STPK_VERBOSE_HUFF("Read %02X", src->data[src->offset - 1]);
+				curWord |= ctx->src.data[ctx->src.offset++];
+				STPK_VERBOSE_HUFF("Read %02X", ctx->src.data[ctx->src.offset - 1]);
 			}
 		}
 
 		curWord <<= curWidth;
 		readWidth -= curWidth;
 
-		if ((src->offset - 1) > src->len && dst->offset < dst->len) {
-			STPK_ERR2("Reached unexpected end of source buffer while decoding Huffman codes\n");
+		if ((ctx->src.offset - 1) > ctx->src.len && ctx->dst.offset < ctx->dst.len) {
+			STPK_ERR("Reached unexpected end of source buffer while decoding Huffman codes\n");
 			return 1;
 		}
 
 		// Progress bar.
-		if (verbose && (verbose < 3) && ((dst->offset * 100) / dst->len) >= (progress * 10)) {
+		if (ctx->verbosity && (ctx->verbosity < 3) && ((ctx->dst.offset * 100) / ctx->dst.len) >= (progress * 10)) {
 			printf("%4d%%", progress++ * 10);
 		}
 	}
@@ -548,8 +605,8 @@ uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, const uchar *alphabet, 
 	STPK_NOVERBOSE("]\n");
 	STPK_VERBOSE1("\n");
 
-	if (src->offset < src->len) {
-		STPK_WARN("Huffman decoding finished with unprocessed data left in source buffer (%d bytes left)\n", src->len - src->offset);
+	if (ctx->src.offset < ctx->src.len) {
+		STPK_WARN("Huffman decoding finished with unprocessed data left in source buffer (%d bytes left)\n", ctx->src.len - ctx->src.offset);
 	}
 
 	return 0;

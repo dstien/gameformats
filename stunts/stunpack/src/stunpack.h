@@ -24,23 +24,6 @@
 #define STPK_NAME    "stunpack"
 #define STPK_BUGS    "daniel@stien.org"
 
-#define STPK_MSG(msg, ...) if (verbose) printf(msg, ## __VA_ARGS__)
-#define STPK_ERR1(msg, ...) if (verbose) fprintf(stderr, "\n" STPK_NAME ": " msg, ## __VA_ARGS__)
-#define STPK_ERR2(msg, ...) STPK_ERR1(msg, ## __VA_ARGS__); \
-					if (err != NULL) snprintf(err, 255, msg, ## __VA_ARGS__)
-#define STPK_WARN(msg, ...) STPK_ERR1("(Warning) " msg, ## __VA_ARGS__);
-
-#define STPK_NOVERBOSE(msg, ...) if (verbose == 1) printf(msg, ## __VA_ARGS__)
-#define STPK_VERBOSE1(msg, ...)  if (verbose > 1)  printf(msg, ## __VA_ARGS__)
-#define STPK_VERBOSE2(msg, ...)  if (verbose > 2)  printf(msg, ## __VA_ARGS__)
-#define STPK_VERBOSE_ARR(arr, len, name) if (verbose > 1) stpk_printArray(arr, len, name)
-#define STPK_VERBOSE_HUFF(msg, ...) STPK_VERBOSE2("%6d %6d %2d %2d %04X %s %02X -> " msg "\n", \
-					src->offset, dst->offset, readWidth, curWidth, curWord, \
-					stpk_stringBits16(curWord), code, ## __VA_ARGS__)
-
-#define STPK_GET_FLAG(data, mask) ((data & mask) == mask)
-#define STPK_MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
-
 #define STPK_MAX_SIZE          0xFFFFFF
 #define STPK_PASSES_MASK       0x7F
 #define STPK_PASSES_RECUR      0x80
@@ -68,24 +51,38 @@ typedef unsigned char  uchar;
 typedef unsigned short ushort;
 typedef unsigned int   uint;
 
+typedef enum { STPK_LOG_INFO, STPK_LOG_WARN, STPK_LOG_ERR } stpk_LogType;
+typedef void (*stpk_LogCallback)(stpk_LogType type, const char *msg, ...);
+typedef void* (*stpk_AllocCallback)(size_t size);
+typedef void (*stpk_DeallocCallback)(void *ptr);
+
 typedef struct {
 	uchar *data;
 	uint  offset;
 	uint  len;
 } stpk_Buffer;
 
-uint stpk_decomp(stpk_Buffer *src, stpk_Buffer *dst, int maxPasses, int verbose, char *err);
+typedef struct {
+	stpk_Buffer          src;
+	stpk_Buffer          dst;
+	int                  maxPasses;
+	int                  verbosity;
+	stpk_LogCallback     logCallback;
+	stpk_AllocCallback   allocCallback;
+	stpk_DeallocCallback deallocCallback;
+} stpk_Context;
 
-uint stpk_decompRLE(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err);
-uint stpk_rleDecodeSeq(stpk_Buffer *src, stpk_Buffer *dst, uchar esc, int verbose, char *err);
-uint stpk_rleDecodeOne(stpk_Buffer *src, stpk_Buffer *dst, uchar *esc, int verbose, char *err);
+stpk_Context stpk_init(int maxPasses, int verbosity, stpk_LogCallback logCallback, stpk_AllocCallback allocCallback, stpk_DeallocCallback deallocCallback);
+void stpk_deinit(stpk_Context *ctx);
+uint stpk_decomp(stpk_Context *ctx);
 
-uint stpk_decompHuff(stpk_Buffer *src, stpk_Buffer *dst, int verbose, char *err);
-uint stpk_huffGenOffsets(uint levels, const uchar *leafNodesPerLevel, short *codeOffsets, ushort *totalCodes, int verbose);
-void stpk_huffGenPrefix(uint levels, const uchar *leafNodesPerLevel, const uchar *alphabet, uchar *symbols, uchar *widths, int verbose);
-uint stpk_huffDecode(stpk_Buffer *src, stpk_Buffer *dst, const uchar *alphabet, const uchar *symbols, const uchar *widths, const short *codeOffsets, const ushort *totalCodes, int delta, int verbose, char *err);
+uint stpk_decompRLE(stpk_Context *ctx);
+uint stpk_rleDecodeSeq(stpk_Context *ctx, uchar esc);
+uint stpk_rleDecodeOne(stpk_Context *ctx, const uchar *escLookup);
 
-char *stpk_stringBits16(ushort val);
-void stpk_printArray(const uchar *arr, uint len, const char *name);
+uint stpk_decompHuff(stpk_Context *ctx);
+uint stpk_huffGenOffsets(stpk_Context *ctx, uint levels, const uchar *leafNodesPerLevel, short *codeOffsets, ushort *totalCodes);
+void stpk_huffGenPrefix(stpk_Context *ctx, uint levels, const uchar *leafNodesPerLevel, const uchar *alphabet, uchar *symbols, uchar *widths);
+uint stpk_huffDecode(stpk_Context *ctx, const uchar *alphabet, const uchar *symbols, const uchar *widths, const short *codeOffsets, const ushort *totalCodes, int delta);
 
 #endif
