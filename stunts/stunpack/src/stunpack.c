@@ -39,12 +39,13 @@
 #define STPK_GET_FLAG(data, mask) ((data & mask) == mask)
 #define STPK_MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
+inline uchar stpk_getHuffByte(stpk_Context *ctx);
 inline void stpk_getLength(stpk_Buffer *buf, uint *len);
 inline void stpk_dst2src(stpk_Context *ctx);
 char *stpk_stringBits16(ushort val);
 void stpk_printArray(const uchar *arr, uint len, const char *name);
 
-stpk_Context stpk_init(int maxPasses, int verbosity, stpk_LogCallback logCallback, stpk_AllocCallback allocCallback, stpk_DeallocCallback deallocCallback)
+stpk_Context stpk_init(stpk_Version version, int maxPasses, int verbosity, stpk_LogCallback logCallback, stpk_AllocCallback allocCallback, stpk_DeallocCallback deallocCallback)
 {
 	return (stpk_Context) {
 		.src = (stpk_Buffer) {
@@ -57,6 +58,7 @@ stpk_Context stpk_init(int maxPasses, int verbosity, stpk_LogCallback logCallbac
 			.offset = 0,
 			.len    = 0
 		},
+		.version = version,
 		.maxPasses = maxPasses,
 		.verbosity = verbosity,
 		.logCallback = logCallback,
@@ -489,12 +491,11 @@ void stpk_huffGenPrefix(stpk_Context *ctx, uint levels, const uchar *leafNodesPe
 // Decode Huffman codes.
 uint stpk_huffDecode(stpk_Context *ctx, const uchar *alphabet, const uchar *symbols, const uchar *widths, const short *codeOffsets, const ushort *totalCodes, int delta)
 {
-	uchar readWidth = 8, curWidth = 0, code, level, curOut = 0;
+	uchar readWidth = 8, curWidth = 0, curByte, code, level, curOut = 0;
 	ushort curWord = 0;
-	uint progress = 0, done;
+	uint progress = 0;
 
-	curWord = ctx->src.data[ctx->src.offset++] << 8;
-	curWord |= ctx->src.data[ctx->src.offset++];
+	curWord = (stpk_getHuffByte(ctx) << 8) | stpk_getHuffByte(ctx);
 
 	STPK_NOVERBOSE("Huffman    [");
 
@@ -516,19 +517,20 @@ uint stpk_huffDecode(stpk_Context *ctx, const uchar *alphabet, const uchar *symb
 				return 1;
 			}
 
-			code = (curWord & 0x00FF);
+			curByte = (curWord & 0x00FF);
 			curWord >>= STPK_HUFF_PREFIX_WIDTH;
 			STPK_VERBOSE_HUFF("Escaping to offset table");
 
-			for (level = STPK_HUFF_PREFIX_WIDTH, done = 0; !done; level++) {
+			// Read bit by bit until a level is found, starting at the max width of the prefix table.
+			for (level = STPK_HUFF_PREFIX_WIDTH; 1; level++) {
 				if (!readWidth) {
-					code = ctx->src.data[ctx->src.offset++];
-					readWidth = STPK_HUFF_PREFIX_WIDTH;
+					curByte = stpk_getHuffByte(ctx);
+					readWidth = 8;
 					STPK_VERBOSE_HUFF("Read %02X", ctx->src.data[ctx->src.offset - 1]);
 				}
 
-				curWord = (curWord << 1) + STPK_GET_FLAG(code, STPK_HUFF_PREFIX_MSB);
-				code <<= 1;
+				curWord = (curWord << 1) + STPK_GET_FLAG(curByte, STPK_HUFF_PREFIX_MSB);
+				curByte <<= 1;
 				readWidth--;
 				STPK_VERBOSE_HUFF("level = %d", level);
 
@@ -556,12 +558,12 @@ uint stpk_huffDecode(stpk_Context *ctx, const uchar *alphabet, const uchar *symb
 					ctx->dst.data[ctx->dst.offset++] = curOut;
 					STPK_VERBOSE_HUFF("Wrote %02X using offset table", curOut);
 
-					done = 1;
+					break;
 				}
 			}
 
 			// Read another byte since the processed code was wider than a byte.
-			curWord = (code << readWidth) | ctx->src.data[ctx->src.offset++];
+			curWord = (curByte << readWidth) | stpk_getHuffByte(ctx);
 			curWidth = 8 - readWidth;
 			readWidth = 8;
 			STPK_VERBOSE_HUFF("Read %02X", ctx->src.data[ctx->src.offset - 1]);
@@ -585,7 +587,7 @@ uint stpk_huffDecode(stpk_Context *ctx, const uchar *alphabet, const uchar *symb
 				curWidth -= readWidth;
 				readWidth = 8;
 
-				curWord |= ctx->src.data[ctx->src.offset++];
+				curWord |= stpk_getHuffByte(ctx);
 				STPK_VERBOSE_HUFF("Read %02X", ctx->src.data[ctx->src.offset - 1]);
 			}
 		}
@@ -612,6 +614,24 @@ uint stpk_huffDecode(stpk_Context *ctx, const uchar *alphabet, const uchar *symb
 	}
 
 	return 0;
+}
+
+// Read a byte from the Huffman code bit stream, reverse bits if game version is Brøderbund Stunts 1.0.
+inline uchar stpk_getHuffByte(stpk_Context *ctx)
+{
+	// https://graphics.stanford.edu/~seander/bithacks.html#BitReverseTable
+	static const uchar reverseBits[] = {
+#		define R2(n)   (n),   (n + 2 * 64),   (n + 1 * 64),   (n + 3 * 64)
+#		define R4(n) R2(n), R2(n + 2 * 16), R2(n + 1 * 16), R2(n + 3 * 16)
+#		define R6(n) R4(n), R4(n + 2 *  4), R4(n + 1 *  4), R4(n + 3 *  4)
+		R6(0), R6(2), R6(1), R6(3)
+	};
+
+	uchar byte = ctx->src.data[ctx->src.offset++];
+	if (ctx->version == STPK_VER_STUNTS10) {
+		byte = reverseBits[byte];
+	}
+	return byte;
 }
 
 // Read file length: WORD remainder + BYTE multiplier * 0x10000.

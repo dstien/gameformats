@@ -39,7 +39,7 @@
 #define VERBOSE(msg, ...)  if (verbose > 1) printf(msg, ## __VA_ARGS__)
 
 void printHelp(char *progName);
-int decompress(char *srcFileName, char *dstFileName, int passes, int verbose);
+int decompress(char *srcFileName, char *dstFileName, stpk_Version version, int passes, int verbose);
 
 int main(int argc, char **argv)
 {
@@ -50,10 +50,26 @@ int main(int argc, char **argv)
 #else
 	const int dstFileNamePostfixLen = 4;
 #endif
+	stpk_Version gameVersion = STPK_VER_AUTO;
 
 	// Parse options.
-	while ((opt = getopt(argc, argv, "p:hqv")) != -1) {
+	while ((opt = getopt(argc, argv, "g:p:hqv")) != -1) {
 		switch (opt) {
+			case 'g':
+				if (strcmp(optarg, "stunts10") == 0) {
+					gameVersion = STPK_VER_STUNTS10;
+				}
+				else if (strcmp(optarg, "stunts11") == 0) {
+					gameVersion = STPK_VER_STUNTS11;
+				}
+				else if (strcmp(optarg, "auto") == 0) {
+					gameVersion = STPK_VER_AUTO;
+				}
+				else {
+					fprintf(stderr, "Invalid game version \"%s\".\n", optarg);
+					retval = 1;
+				}
+				break;
 			case 'p':
 				passes = atoi(optarg);
 				break;
@@ -104,7 +120,7 @@ int main(int argc, char **argv)
 #endif
 	}
 
-	retval = decompress(srcFileName, dstFileName, passes, verbose);
+	retval = decompress(srcFileName, dstFileName, gameVersion, passes, verbose);
 
 	// Clean up.
 	if (dstFileName != NULL && srcFileNameLen) {
@@ -119,6 +135,7 @@ void printHelp(char *progName)
 	printf(BANNER);
 
 	printf(USAGE, progName);
+	printf("  -g VER   game version: \"auto\" (default), \"stunts10\", \"stunts11\")\n");
 	printf("  -p NUM   limit to NUM decompression passes\n");
 	printf("  -v       verbose output\n");
 	printf("  -vv      very verbose output\n");
@@ -151,12 +168,12 @@ void logCallback(stpk_LogType type, const char *msg, ...)
 	va_end(args);
 }
 
-int decompress(char *srcFileName, char *dstFileName, int passes, int verbose)
+int decompress(char *srcFileName, char *dstFileName, stpk_Version version, int passes, int verbose)
 {
 	uint retval = 1;
 	FILE *srcFile, *dstFile;
 
-	stpk_Context ctx = stpk_init(passes, verbose, logCallback, malloc, free);
+	stpk_Context ctx = stpk_init(version, passes, verbose, logCallback, malloc, free);
 
 	if ((srcFile = fopen(srcFileName, "rb")) == NULL) {
 		ERR("Error opening source file \"%s\" for reading. (%s)\n", srcFileName, strerror(errno));

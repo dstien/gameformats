@@ -51,6 +51,7 @@ typedef unsigned char  uchar;
 typedef unsigned short ushort;
 typedef unsigned int   uint;
 
+typedef enum { STPK_VER_AUTO, STPK_VER_STUNTS10, STPK_VER_STUNTS11 } stpk_Version;
 typedef enum { STPK_LOG_INFO, STPK_LOG_WARN, STPK_LOG_ERR } stpk_LogType;
 typedef void (*stpk_LogCallback)(stpk_LogType type, const char *msg, ...);
 typedef void* (*stpk_AllocCallback)(size_t size);
@@ -65,6 +66,7 @@ typedef struct {
 typedef struct {
 	stpk_Buffer          src;
 	stpk_Buffer          dst;
+	stpk_Version         version;
 	int                  maxPasses;
 	int                  verbosity;
 	stpk_LogCallback     logCallback;
@@ -72,7 +74,7 @@ typedef struct {
 	stpk_DeallocCallback deallocCallback;
 } stpk_Context;
 
-stpk_Context stpk_init(int maxPasses, int verbosity, stpk_LogCallback logCallback, stpk_AllocCallback allocCallback, stpk_DeallocCallback deallocCallback);
+stpk_Context stpk_init(stpk_Version version, int maxPasses, int verbosity, stpk_LogCallback logCallback, stpk_AllocCallback allocCallback, stpk_DeallocCallback deallocCallback);
 void stpk_deinit(stpk_Context *ctx);
 uint stpk_decomp(stpk_Context *ctx);
 

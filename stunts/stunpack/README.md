@@ -6,8 +6,6 @@ This program decodes packed resources and graphics routine code files used by th
 
 An encoder has not been made as the game accepts uncompressed resource files.
 
-Stunts 1.0 files are not supported.
-
 ## Building
 
 Run "make".
