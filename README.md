@@ -12,4 +12,4 @@ Contents
 
 * **stunts** - Stunts/4D [Sports] Driving (DSI, DOS 1990)
   * *stressed*: Resource editor.
-  * *stunpack*: Data and code unpacker.
+  * *[stunpack](https://github.com/dstien/stunpack)*: Data and code unpacker.<br><small>*(Moved to https://github.com/dstien/stunpack)*</small>
